@@ -1,0 +1,64 @@
+version: "3.8"
+
+# Local development setup with database
+# For production, use the published Docker image with external database
+
+services:
+  # PostgreSQL Database (for local development only)
+  postgres:
+    image: postgres:15-alpine
+    container_name: rabbitmq-admin-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rabbitmq_admin}
+      POSTGRES_USER: ${POSTGRES_USER:-rabbitmq_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-rabbitmq_admin} -d ${POSTGRES_DB:-rabbitmq_admin}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # RabbitMQ Admin Application (local development build)
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: rabbitmq-admin-app
+    environment:
+      # Database connection (points to local postgres service)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-rabbitmq_admin}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-rabbitmq_admin}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-password}
+
+      # JWT configuration (change in production!)
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-dev-secret-key-change-in-production}
+
+      # Development profile
+      - SPRING_PROFILES_ACTIVE=docker
+
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

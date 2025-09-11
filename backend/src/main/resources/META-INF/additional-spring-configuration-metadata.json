@@ -1,0 +1,28 @@
+{
+  "properties": [
+    {
+      "name": "app.jwt.secret-key",
+      "type": "java.lang.String",
+      "description": "Secret key used for JWT token signing and verification. Should be at least 256 bits for HS256 algorithm.",
+      "defaultValue": "your-256-bit-secret-key-here-change-in-production"
+    },
+    {
+      "name": "app.jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "JWT token expiration time in milliseconds.",
+      "defaultValue": 86400000
+    }
+  ],
+  "groups": [
+    {
+      "name": "app",
+      "type": "com.rabbitmq.admin.config.AppProperties",
+      "description": "Custom application configuration properties."
+    },
+    {
+      "name": "app.jwt",
+      "type": "com.rabbitmq.admin.config.AppProperties$Jwt",
+      "description": "JWT authentication configuration properties."
+    }
+  ]
+}
