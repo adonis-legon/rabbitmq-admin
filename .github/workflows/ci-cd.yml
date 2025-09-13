@@ -1,11 +1,14 @@
 name: Build and Publish
 
 on:
+  # Run on pushes to main branch (direct pushes or merges)
   push:
     branches: [main]
     tags: ["v*"]
+  # Run on pull requests targeting main branch
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
 
 env:
   DOCKER_IMAGE_NAME: rabbitmq-admin
@@ -17,21 +20,6 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: rabbitmq_admin_test
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -49,26 +37,62 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install frontend dependencies
         run: |
           cd frontend
-          npm ci
+          pnpm install --force
 
       - name: Run frontend tests
         run: |
           cd frontend
-          npm test -- --run --reporter=verbose
+          pnpm test -- --run --reporter=verbose
 
-      - name: Run backend tests
-        env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/rabbitmq_admin_test
-          SPRING_DATASOURCE_USERNAME: test_user
-          SPRING_DATASOURCE_PASSWORD: test_password
-          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only
+      - name: Start services for TestContainers
         run: |
-          mvn test -pl backend
+          # Start Docker daemon
+          sudo systemctl start docker
+          sudo chmod 666 /var/run/docker.sock
+          
+          # Verify Docker is working
+          docker info
+          docker ps
+          
+          # Pre-pull required images to avoid timeouts
+          docker pull postgres:15-alpine
+
+      - name: Run unit tests
+        env:
+          # JWT configuration for tests
+          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
+          # JVM options for tests
+          MAVEN_OPTS: "-Xmx3072m -XX:+UseG1GC"
+        run: |
+          mvn test -pl backend -Dspring.profiles.active=test -Dtest="!**/*IntegrationTest"
+
+      - name: Run integration tests
+        env:
+          # Testcontainers configuration for CI
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_REUSE_ENABLE: false
+          TESTCONTAINERS_CHECKS_DISABLE: true
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
+          DOCKER_HOST: unix:///var/run/docker.sock
+          # JWT configuration for tests
+          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
+          # JVM options for tests with increased memory
+          MAVEN_OPTS: "-Xmx4096m -XX:+UseG1GC -XX:MaxMetaspaceSize=512m"
+          # Increase test timeouts for CI environment
+          SUREFIRE_TIMEOUT: 600
+        run: |
+          mvn test -pl backend -Dspring.profiles.active=integration-test -Dtest="**/*IntegrationTest" \
+            -Dfork.count=1 -Dfork.reuse=false \
+            -Dsurefire.timeout=${SUREFIRE_TIMEOUT} \
+            -Dmaven.test.failure.ignore=false
 
   # Build JAR
   build-jar:
@@ -92,7 +116,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Build application JAR
         run: |

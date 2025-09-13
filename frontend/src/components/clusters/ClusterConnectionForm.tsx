@@ -57,7 +57,7 @@ interface FormErrors {
 }
 
 const ClusterConnectionForm: React.FC<ClusterConnectionFormProps> = ({ open, cluster, onClose, onSuccess }) => {
-    const { createCluster, updateCluster, testConnection } = useClusters();
+    const { createCluster, updateCluster, testConnection, testNewConnection } = useClusters();
     const { users, loading: usersLoading } = useUsers();
 
     const [formData, setFormData] = useState<FormData>({
@@ -74,7 +74,7 @@ const ClusterConnectionForm: React.FC<ClusterConnectionFormProps> = ({ open, clu
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [testing, setTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testResult, setTestResult] = useState<{ successful: boolean; message: string } | null>(null);
 
     const isEditing = !!cluster;
 
@@ -141,7 +141,7 @@ const ClusterConnectionForm: React.FC<ClusterConnectionFormProps> = ({ open, clu
         // Validate required fields for testing
         if (!formData.apiUrl || !formData.username || !formData.password) {
             setTestResult({
-                success: false,
+                successful: false,
                 message: 'API URL, username, and password are required for testing'
             });
             return;
@@ -157,12 +157,17 @@ const ClusterConnectionForm: React.FC<ClusterConnectionFormProps> = ({ open, clu
                 password: formData.password
             };
 
-            const result = await testConnection(cluster?.id || 'test', testData);
+            console.log('Testing connection - cluster:', cluster);
+            console.log('Testing connection - cluster.id:', cluster?.id);
+
+            const result = cluster?.id
+                ? await testConnection(cluster.id, testData)
+                : await testNewConnection(testData);
             setTestResult(result);
         } catch (err: any) {
             console.error('Error testing connection:', err);
             setTestResult({
-                success: false,
+                successful: false,
                 message: err.response?.data?.message || 'Connection test failed'
             });
         } finally {
@@ -421,7 +426,7 @@ const ClusterConnectionForm: React.FC<ClusterConnectionFormProps> = ({ open, clu
                         </Box>
 
                         {testResult && (
-                            <Alert severity={testResult.success ? 'success' : 'error'}>
+                            <Alert severity={testResult.successful ? 'success' : 'error'}>
                                 {testResult.message}
                             </Alert>
                         )}

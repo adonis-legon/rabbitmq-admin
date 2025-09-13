@@ -9,19 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.junit.jupiter.api.AfterAll;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,67 +22,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for AuthController using TestContainers with PostgreSQL.
  * Tests complete authentication flow with real database.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
-@ActiveProfiles("integration-test")
-@Transactional
-class AuthControllerIntegrationTest {
+class AuthControllerIntegrationTest extends IntegrationTestBase {
 
-        @Container
-        @SuppressWarnings("resource")
-        static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-                        .withDatabaseName("testdb")
-                        .withUsername("test")
-                        .withPassword("test")
-                        .withReuse(true);
+    @Autowired
+    private MockMvc mockMvc;
 
-        @DynamicPropertySource
-        static void configureProperties(DynamicPropertyRegistry registry) {
-                registry.add("spring.datasource.url", postgres::getJdbcUrl);
-                registry.add("spring.datasource.username", postgres::getUsername);
-                registry.add("spring.datasource.password", postgres::getPassword);
-                registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-                registry.add("spring.flyway.enabled", () -> "false");
+    @Autowired
+    private ObjectMapper objectMapper;
 
-                // Optimize connection pool for tests - aggressive cleanup
-                registry.add("spring.datasource.hikari.maximum-pool-size", () -> "2");
-                registry.add("spring.datasource.hikari.minimum-idle", () -> "0");
-                registry.add("spring.datasource.hikari.connection-timeout", () -> "5000");
-                registry.add("spring.datasource.hikari.idle-timeout", () -> "10000");
-                registry.add("spring.datasource.hikari.max-lifetime", () -> "20000");
-                registry.add("spring.datasource.hikari.validation-timeout", () -> "3000");
-                registry.add("spring.datasource.hikari.leak-detection-threshold", () -> "10000");
-        }
+    @Autowired
+    private UserRepository userRepository;
 
-        @AfterAll
-        static void tearDown() {
-                try {
-                        if (postgres != null && postgres.isRunning()) {
-                                postgres.stop();
-                        }
-                } catch (Exception e) {
-                        // Ignore cleanup errors to prevent hanging
-                        System.err.println("Warning: Error during test cleanup: " + e.getMessage());
-                }
-        }
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
-        @Autowired
-        private MockMvc mockMvc;
+    private User testUser;
 
-        @Autowired
-        private ObjectMapper objectMapper;
-
-        @Autowired
-        private UserRepository userRepository;
-
-        @Autowired
-        private PasswordEncoder passwordEncoder;
-
-        private User testUser;
-
-        @BeforeEach
-        void setUp() {
+    @BeforeEach
+    void setUpTestData() {
                 userRepository.deleteAll();
 
                 // Create test user

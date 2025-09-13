@@ -9,15 +9,6 @@ import com.rabbitmq.admin.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.junit.jupiter.api.AfterAll;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,49 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * PostgreSQL.
  * Tests complete database functionality with real PostgreSQL database.
  */
-@SpringBootTest
-@Testcontainers
-@ActiveProfiles("integration-test")
-@Transactional
-class DatabaseIntegrationTest {
-
-    @Container
-    @SuppressWarnings("resource")
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test")
-            .withReuse(true);
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.flyway.enabled", () -> "false");
-
-        // Optimize connection pool for tests - aggressive cleanup
-        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "2");
-        registry.add("spring.datasource.hikari.minimum-idle", () -> "0");
-        registry.add("spring.datasource.hikari.connection-timeout", () -> "5000");
-        registry.add("spring.datasource.hikari.idle-timeout", () -> "10000");
-        registry.add("spring.datasource.hikari.max-lifetime", () -> "20000");
-        registry.add("spring.datasource.hikari.validation-timeout", () -> "3000");
-        registry.add("spring.datasource.hikari.leak-detection-threshold", () -> "10000");
-    }
-
-    @AfterAll
-    static void tearDown() {
-        try {
-            if (postgres != null && postgres.isRunning()) {
-                postgres.stop();
-            }
-        } catch (Exception e) {
-            // Ignore cleanup errors to prevent hanging
-            System.err.println("Warning: Error during test cleanup: " + e.getMessage());
-        }
-    }
+class DatabaseIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private UserRepository userRepository;
@@ -83,7 +32,7 @@ class DatabaseIntegrationTest {
     private UserClusterAssignmentRepository userClusterAssignmentRepository;
 
     @BeforeEach
-    void setUp() {
+    void setUpTestData() {
         // Clean up before each test
         userClusterAssignmentRepository.deleteAll();
         clusterConnectionRepository.deleteAll();

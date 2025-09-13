@@ -82,6 +82,8 @@ application-*.yaml
 !application.properties
 !application.yml
 !application.yaml
+!application-docker.yml
+!application-production.yml
 
 # Security - Never commit these
 *.pem

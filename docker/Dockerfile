@@ -1,5 +1,27 @@
 # Multi-stage build for RabbitMQ Admin Dashboard
-FROM maven:3.9.6-eclipse-temurin-21 AS build
+# Use a minimal base image with JDK and install Maven manually
+FROM eclipse-temurin:21-jdk-jammy AS build
+
+# Install Maven manually for better security control
+ENV MAVEN_VERSION=3.9.9
+ENV MAVEN_HOME=/opt/maven
+ENV PATH=${MAVEN_HOME}/bin:${PATH}
+
+RUN apt-get update && \
+  apt-get install -y wget ca-certificates && \
+  wget -q https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz && \
+  wget -q https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz.sha512 && \
+  echo "$(cat apache-maven-${MAVEN_VERSION}-bin.tar.gz.sha512) apache-maven-${MAVEN_VERSION}-bin.tar.gz" | sha512sum -c - && \
+  tar xzf apache-maven-${MAVEN_VERSION}-bin.tar.gz -C /opt/ && \
+  ln -s /opt/apache-maven-${MAVEN_VERSION} ${MAVEN_HOME} && \
+  rm apache-maven-${MAVEN_VERSION}-bin.tar.gz apache-maven-${MAVEN_VERSION}-bin.tar.gz.sha512 && \
+  apt-get remove -y wget && \
+  apt-get autoremove -y && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
+
+# Update packages to latest versions for security
+RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -10,7 +32,8 @@ COPY backend/pom.xml backend/
 COPY frontend/pom.xml frontend/
 
 # Copy frontend package files for dependency installation
-COPY frontend/package*.json frontend/
+COPY frontend/package.json frontend/
+COPY frontend/pnpm-lock.yaml frontend/
 COPY frontend/vite.config.ts frontend/
 COPY frontend/tsconfig.json frontend/
 COPY frontend/tsconfig.node.json frontend/
@@ -25,15 +48,10 @@ COPY frontend/public frontend/public
 COPY frontend/index.html frontend/
 
 # Build the complete application with frontend assets included
-RUN mvn clean package -DskipTests -Pproduction
+RUN mvn clean package -DskipTests -pl backend -am
 
-# Runtime stage
-FROM eclipse-temurin:21-jre-alpine
-
-# Install curl for health checks and create non-root user
-RUN apk add --no-cache curl && \
-    addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# Runtime stage - using distroless for security
+FROM gcr.io/distroless/java21-debian12:nonroot
 
 # Set working directory
 WORKDIR /app
@@ -41,21 +59,14 @@ WORKDIR /app
 # Copy the built jar from build stage
 COPY --from=build /app/backend/target/*.jar app.jar
 
-# Change ownership to non-root user
-RUN chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
+# Distroless images already run as non-root user
+# No need for user management or package installation
 
 # Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:8080/actuator/health || exit 1
+# Note: Health checks should be handled by the orchestration platform (k8s, docker-compose)
+# Distroless images don't include curl or shell for health checks
 
-# JVM optimization for containerized environment
-ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
-
-# Run the application
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# Run the application (distroless uses java as entrypoint)
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-XX:+UseG1GC", "-jar", "app.jar"]

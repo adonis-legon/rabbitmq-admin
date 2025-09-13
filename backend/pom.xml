@@ -50,6 +50,12 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
+            <version>10.21.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>10.21.0</version>
         </dependency>
 
         <!-- JWT -->
@@ -147,10 +153,80 @@
         </resources>
         
         <plugins>
+            <!-- Build frontend and copy assets before backend build -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <?m2e ignore?>
+                        <id>build-frontend</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>mvn</executable>
+                            <workingDirectory>${project.parent.basedir}</workingDirectory>
+                            <arguments>
+                                <argument>clean</argument>
+                                <argument>package</argument>
+                                <argument>-pl</argument>
+                                <argument>frontend</argument>
+                                <argument>-am</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- Copy frontend build artifacts to backend static resources -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <?m2e ignore?>
+                        <id>copy-frontend-build</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.parent.basedir}/frontend/build</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>**/*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                            <overwrite>true</overwrite>
+                            <!-- Suppress security warnings for accessing parent directory -->
+                            <nonFilteredFileExtensions>
+                                <nonFilteredFileExtension>jar</nonFilteredFileExtension>
+                            </nonFilteredFileExtensions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
+                    <mainClass>com.rabbitmq.admin.RabbitMQAdminApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
@@ -171,19 +247,38 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <forkedProcessExitTimeoutInSeconds>30</forkedProcessExitTimeoutInSeconds>
-                    <forkedProcessTimeoutInSeconds>180</forkedProcessTimeoutInSeconds>
+                    <forkedProcessExitTimeoutInSeconds>120</forkedProcessExitTimeoutInSeconds>
+                    <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
                     <systemPropertyVariables>
-                        <testcontainers.reuse.enable>true</testcontainers.reuse.enable>
+                        <testcontainers.reuse.enable>false</testcontainers.reuse.enable>
+                        <testcontainers.ryuk.disabled>true</testcontainers.ryuk.disabled>
+                        <testcontainers.checks.disable>true</testcontainers.checks.disable>
+                        <java.awt.headless>true</java.awt.headless>
                     </systemPropertyVariables>
-                    <argLine>-Xmx1024m -XX:+UseG1GC -XX:+DisableExplicitGC -Djava.awt.headless=true</argLine>
+                    <argLine>-Xmx4096m -XX:+UseG1GC -XX:+DisableExplicitGC -XX:MaxMetaspaceSize=512m -Djava.awt.headless=true</argLine>
                     <shutdown>kill</shutdown>
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <parallel>none</parallel>
+                    <perCoreThreadCount>false</perCoreThreadCount>
+                    <threadCount>1</threadCount>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*IntegrationTest.java</include>
+                    </includes>
+                    <environmentVariables>
+                        <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
+                        <TESTCONTAINERS_REUSE_ENABLE>false</TESTCONTAINERS_REUSE_ENABLE>
+                        <TESTCONTAINERS_CHECKS_DISABLE>true</TESTCONTAINERS_CHECKS_DISABLE>
+                    </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
     <profiles>
+        <!-- Production profile with optimizations -->
         <profile>
             <id>production</id>
             <activation>
@@ -193,62 +288,12 @@
             </activation>
             <build>
                 <plugins>
-                    <!-- Ensure frontend is built first -->
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <executions>
-                            <execution>
-                                <id>build-frontend</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>mvn</executable>
-                                    <workingDirectory>${project.parent.basedir}</workingDirectory>
-                                    <arguments>
-                                        <argument>clean</argument>
-                                        <argument>compile</argument>
-                                        <argument>-pl</argument>
-                                        <argument>frontend</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    
-                    <!-- Copy frontend build artifacts to Spring Boot static resources -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>3.3.1</version>
-                        <executions>
-                            <execution>
-                                <id>copy-frontend-build</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>../frontend/build</directory>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    
                     <!-- Production-specific Spring Boot plugin configuration -->
                     <plugin>
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-maven-plugin</artifactId>
                         <configuration>
+                            <mainClass>com.rabbitmq.admin.RabbitMQAdminApplication</mainClass>
                             <excludes>
                                 <exclude>
                                     <groupId>org.projectlombok</groupId>
@@ -261,44 +306,6 @@
                                 <enabled>true</enabled>
                             </layers>
                         </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        
-        <!-- Docker build profile -->
-        <profile>
-            <id>docker</id>
-            <activation>
-                <property>
-                    <name>docker</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <!-- Copy frontend build artifacts for Docker -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>3.3.1</version>
-                        <executions>
-                            <execution>
-                                <id>copy-frontend-build-docker</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>../frontend/build</directory>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>

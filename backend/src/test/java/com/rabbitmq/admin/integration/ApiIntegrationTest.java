@@ -5,95 +5,36 @@ import com.rabbitmq.admin.dto.JwtAuthenticationResponse;
 import com.rabbitmq.admin.dto.LoginRequest;
 import com.rabbitmq.admin.dto.UserInfo;
 import com.rabbitmq.admin.dto.UserResponse;
-import com.rabbitmq.admin.model.User;
 import com.rabbitmq.admin.model.UserRole;
-import com.rabbitmq.admin.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.junit.jupiter.api.AfterAll;
+
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for API endpoints using TestContainers with PostgreSQL.
  * Tests complete API functionality with real database and authentication.
+ * Note: No @Transactional at class level for web-based tests with RANDOM_PORT
+ * since they need committed data to work with the embedded web server.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-@ActiveProfiles("integration-test")
-class ApiIntegrationTest {
-
-        @Container
-        @SuppressWarnings("resource")
-        static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-                        .withDatabaseName("testdb")
-                        .withUsername("test")
-                        .withPassword("test")
-                        .withReuse(true);
-
-        @DynamicPropertySource
-        static void configureProperties(DynamicPropertyRegistry registry) {
-                registry.add("spring.datasource.url", postgres::getJdbcUrl);
-                registry.add("spring.datasource.username", postgres::getUsername);
-                registry.add("spring.datasource.password", postgres::getPassword);
-                registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-                registry.add("spring.flyway.enabled", () -> "false");
-
-                // Optimize connection pool for tests - aggressive cleanup
-                registry.add("spring.datasource.hikari.maximum-pool-size", () -> "2");
-                registry.add("spring.datasource.hikari.minimum-idle", () -> "0");
-                registry.add("spring.datasource.hikari.connection-timeout", () -> "5000");
-                registry.add("spring.datasource.hikari.idle-timeout", () -> "10000");
-                registry.add("spring.datasource.hikari.max-lifetime", () -> "20000");
-                registry.add("spring.datasource.hikari.validation-timeout", () -> "3000");
-                registry.add("spring.datasource.hikari.leak-detection-threshold", () -> "10000");
-        }
-
-        @AfterAll
-        static void tearDown() {
-                try {
-                        if (postgres != null && postgres.isRunning()) {
-                                postgres.stop();
-                        }
-                } catch (Exception e) {
-                        // Ignore cleanup errors to prevent hanging
-                        System.err.println("Warning: Error during test cleanup: " + e.getMessage());
-                }
-        }
+class ApiIntegrationTest extends ApiIntegrationTestBase {
 
         @Autowired
         private TestRestTemplate restTemplate;
 
-        @Autowired
-        private UserRepository userRepository;
-
-        @Autowired
-        private PasswordEncoder passwordEncoder;
-
-        @BeforeEach
-        void setUp() {
-                userRepository.deleteAll();
-        }
-
         @Test
         void completeAuthenticationFlow_ShouldWork() throws Exception {
-                // 1. Create initial admin user and commit to database
-                User adminUser = new User("admin", passwordEncoder.encode("AdminPass123!"), UserRole.ADMINISTRATOR);
-                userRepository.saveAndFlush(adminUser);
+                // The admin user is already created by IntegrationTestBase
+                // Use the admin credentials from the base class
 
                 // 2. Login as admin
-                LoginRequest loginRequest = new LoginRequest("admin", "AdminPass123!");
+                LoginRequest loginRequest = new LoginRequest(testAdminUsername, testAdminPassword);
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 HttpEntity<LoginRequest> loginEntity = new HttpEntity<>(loginRequest, headers);
@@ -103,11 +44,13 @@ class ApiIntegrationTest {
 
                 assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(loginResponse.getBody()).isNotNull();
-                assertThat(loginResponse.getBody().getAccessToken()).isNotNull();
-                assertThat(loginResponse.getBody().getUser().getUsername()).isEqualTo("admin");
-                assertThat(loginResponse.getBody().getUser().getRole()).isEqualTo(UserRole.ADMINISTRATOR);
 
-                String adminToken = loginResponse.getBody().getAccessToken();
+                JwtAuthenticationResponse loginBody = Objects.requireNonNull(loginResponse.getBody());
+                assertThat(loginBody.getAccessToken()).isNotNull();
+                assertThat(loginBody.getUser().getUsername()).isEqualTo(testAdminUsername);
+                assertThat(loginBody.getUser().getRole()).isEqualTo(UserRole.ADMINISTRATOR);
+
+                String adminToken = loginBody.getAccessToken();
 
                 // 3. Access protected endpoint
                 HttpHeaders authHeaders = new HttpHeaders();
@@ -119,8 +62,9 @@ class ApiIntegrationTest {
 
                 assertThat(meResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(meResponse.getBody()).isNotNull();
-                assertThat(meResponse.getBody().getUsername()).isEqualTo("admin");
-                assertThat(meResponse.getBody().getRole()).isEqualTo(UserRole.ADMINISTRATOR);
+                UserInfo meBody = Objects.requireNonNull(meResponse.getBody());
+                assertThat(meBody.getUsername()).isEqualTo(testAdminUsername);
+                assertThat(meBody.getRole()).isEqualTo(UserRole.ADMINISTRATOR);
 
                 // 4. Create new user
                 CreateUserRequest createUserRequest = new CreateUserRequest();
@@ -138,8 +82,9 @@ class ApiIntegrationTest {
 
                 assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
                 assertThat(createResponse.getBody()).isNotNull();
-                assertThat(createResponse.getBody().getUsername()).isEqualTo("newuser");
-                assertThat(createResponse.getBody().getRole()).isEqualTo(UserRole.USER);
+                UserResponse createBody = Objects.requireNonNull(createResponse.getBody());
+                assertThat(createBody.getUsername()).isEqualTo("newuser");
+                assertThat(createBody.getRole()).isEqualTo(UserRole.USER);
 
                 // 5. New user should be able to login
                 LoginRequest newUserLogin = new LoginRequest("newuser", "NewUserPass123!");
@@ -150,8 +95,9 @@ class ApiIntegrationTest {
 
                 assertThat(newUserResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(newUserResponse.getBody()).isNotNull();
-                assertThat(newUserResponse.getBody().getUser().getUsername()).isEqualTo("newuser");
-                assertThat(newUserResponse.getBody().getUser().getRole()).isEqualTo(UserRole.USER);
+                JwtAuthenticationResponse newUserBody = Objects.requireNonNull(newUserResponse.getBody());
+                assertThat(newUserBody.getUser().getUsername()).isEqualTo("newuser");
+                assertThat(newUserBody.getUser().getRole()).isEqualTo(UserRole.USER);
 
                 // 6. Logout
                 ResponseEntity<String> logoutResponse = restTemplate.exchange(
@@ -162,12 +108,8 @@ class ApiIntegrationTest {
 
         @Test
         void login_ShouldReturnUnauthorized_WhenCredentialsAreInvalid() throws Exception {
-                // Create a user first
-                User user = new User("testuser", passwordEncoder.encode("correctpassword"), UserRole.USER);
-                userRepository.saveAndFlush(user);
-
-                // Try to login with wrong password
-                LoginRequest loginRequest = new LoginRequest("testuser", "wrongpassword");
+                // Try to login with existing user but wrong password
+                LoginRequest loginRequest = new LoginRequest(testUserUsername, "wrongpassword");
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);
                 HttpEntity<LoginRequest> loginEntity = new HttpEntity<>(loginRequest, headers);

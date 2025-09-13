@@ -1,11 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { ApiError } from '../../types/error';
 
-// Extend AxiosRequestConfig to include _retry property
-interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
-  _retry?: boolean;
-}
-
 // API base URL - will be configured based on environment
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -40,45 +35,16 @@ class ApiClient {
       }
     );
 
-    // Response interceptor to handle token expiration and errors
+    // Response interceptor to handle errors (simplified - no automatic token refresh)
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
         return response;
       },
-      async (error: AxiosError) => {
-        const originalRequest = error.config as ExtendedAxiosRequestConfig;
-
-        // Handle 401 Unauthorized - token expiration
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-          originalRequest._retry = true;
-
-          // Try to refresh token
-          const refreshToken = this.getRefreshToken();
-          if (refreshToken) {
-            try {
-              const response = await this.refreshToken(refreshToken);
-              const newToken = response.data.accessToken;
-              this.setToken(newToken);
-
-              // Retry original request with new token
-              if (!originalRequest.headers) {
-                originalRequest.headers = {};
-              }
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
-              return this.client(originalRequest);
-            } catch (refreshError) {
-              // Refresh failed, redirect to login
-              this.clearTokens();
-              this.redirectToLogin();
-              return Promise.reject(this.handleError(refreshError as AxiosError));
-            }
-          } else {
-            // No refresh token, redirect to login
-            this.clearTokens();
-            this.redirectToLogin();
-          }
+      (error: AxiosError) => {
+        // Handle 401 Unauthorized - just clear tokens and let AuthProvider handle it
+        if (error.response?.status === 401) {
+          this.clearTokens();
         }
-
         return Promise.reject(this.handleError(error));
       }
     );
@@ -153,32 +119,13 @@ class ApiClient {
     }
   }
 
-  private redirectToLogin(): void {
-    // Only redirect if we're not already on the login page
-    if (window.location.pathname !== '/login') {
-      window.location.href = '/login';
-    }
-  }
-
   private getToken(): string | null {
     return localStorage.getItem('accessToken');
-  }
-
-  private getRefreshToken(): string | null {
-    return localStorage.getItem('refreshToken');
-  }
-
-  private setToken(token: string): void {
-    localStorage.setItem('accessToken', token);
   }
 
   private clearTokens(): void {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-  }
-
-  private async refreshToken(refreshToken: string): Promise<AxiosResponse> {
-    return this.client.post('/auth/refresh', { refreshToken });
   }
 
   // HTTP methods

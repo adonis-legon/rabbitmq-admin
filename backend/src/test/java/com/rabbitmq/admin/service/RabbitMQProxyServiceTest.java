@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -280,7 +281,7 @@ class RabbitMQProxyServiceTest {
         // Given
         String path = "/api/queues";
         WebClientResponseException webEx = WebClientResponseException.create(
-                401, "Unauthorized", null, null, null);
+                401, "Unauthorized", new HttpHeaders(), new byte[0], null);
 
         when(clusterConnectionService.getClusterConnectionById(clusterId)).thenReturn(testCluster);
         when(clientService.get(testCluster, path, String.class)).thenReturn(Mono.error(webEx));
@@ -370,7 +371,7 @@ class RabbitMQProxyServiceTest {
         // Given
         String path = "/api/queues";
         WebClientResponseException webEx = WebClientResponseException.create(
-                statusCode, "Status Text", null, null, null);
+                statusCode, "Status Text", new HttpHeaders(), new byte[0], null);
 
         when(clusterConnectionService.getClusterConnectionById(clusterId)).thenReturn(testCluster);
         when(clientService.get(testCluster, path, String.class)).thenReturn(Mono.error(webEx));

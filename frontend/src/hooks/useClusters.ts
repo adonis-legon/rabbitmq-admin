@@ -14,6 +14,7 @@ interface UseClustersActions {
   updateCluster: (id: string, clusterData: UpdateClusterConnectionRequest) => Promise<ClusterConnection>;
   deleteCluster: (id: string) => Promise<void>;
   testConnection: (id: string, testData: ConnectionTestRequest) => Promise<ConnectionTestResponse>;
+  testNewConnection: (testData: ConnectionTestRequest) => Promise<ConnectionTestResponse>;
   clearError: () => void;
 }
 
@@ -33,9 +34,9 @@ export const useClusters = (): UseClustersState & UseClustersActions => {
   };
 
   const setClusters = (clusters: ClusterConnection[] | ((prev: ClusterConnection[]) => ClusterConnection[])) => {
-    setState(prev => ({ 
-      ...prev, 
-      clusters: typeof clusters === 'function' ? clusters(prev.clusters) : clusters 
+    setState(prev => ({
+      ...prev,
+      clusters: typeof clusters === 'function' ? clusters(prev.clusters) : clusters
     }));
   };
 
@@ -108,6 +109,19 @@ export const useClusters = (): UseClustersState & UseClustersActions => {
     }
   }, []);
 
+  const testNewConnection = useCallback(async (testData: ConnectionTestRequest): Promise<ConnectionTestResponse> => {
+    try {
+      setError(null);
+      const result = await clusterApi.testNewConnection(testData);
+      return result;
+    } catch (err: any) {
+      console.error('Error testing new connection:', err);
+      const errorMessage = err.response?.data?.message || 'Connection test failed. Please check your connection details and try again.';
+      setError(errorMessage);
+      throw err;
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -124,6 +138,7 @@ export const useClusters = (): UseClustersState & UseClustersActions => {
     updateCluster,
     deleteCluster,
     testConnection,
+    testNewConnection,
     clearError
   };
 };

@@ -8,7 +8,7 @@ INSERT INTO users (id, username, password_hash, role, created_at)
 VALUES (
     gen_random_uuid(),
     'admin',
-    '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewfBzj6dBjIBrjP6',
+    '$2a$12$eOMGTKVzuIwWNMgvm7xHP.JCjXqf6ZoZltHOciH4FnzKPpWoU5iIG',
     'ADMINISTRATOR',
     CURRENT_TIMESTAMP
 ) ON CONFLICT (username) DO NOTHING;

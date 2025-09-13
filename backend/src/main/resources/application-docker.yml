@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/rabbitmq_admin
+    username: ${DB_USERNAME:rabbitmq_admin}
+    password: ${DB_PASSWORD:password}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    "[com.rabbitmq.admin]": INFO
+    "[org.springframework.security]": INFO
+    "[org.flywaydb]": INFO

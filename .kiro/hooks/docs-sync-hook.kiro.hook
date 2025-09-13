@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "name": "Documentation Sync",
+  "description": "Listens to Java source files, TypeScript files, configuration files, and other relevant project files. When changes are detected, triggers documentation updates in README.md and the /design folder to keep documentation in sync with code changes.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "backend/src/**/*.java",
+      "frontend/src/**/*.tsx",
+      "frontend/src/**/*.ts",
+      "backend/src/main/resources/**/*.yml",
+      "backend/src/main/resources/**/*.sql",
+      "frontend/package.json",
+      "backend/pom.xml",
+      "pom.xml",
+      "frontend/vite.config.ts",
+      "frontend/tsconfig.json",
+      "scripts/*.sh"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source code files have been modified in this Java Spring Boot and React TypeScript project. Please review the changes and update the documentation accordingly. Focus on:\n\n1. Update README.md if there are significant architectural changes, new features, or setup instructions that need modification\n2. Update relevant files in the /design folder (architecture, API documentation, database schema, etc.) based on the specific changes made\n3. Ensure API documentation reflects any controller or endpoint changes\n4. Update database documentation if schema migrations were modified\n5. Refresh any configuration or deployment documentation if relevant files changed\n\nPlease analyze the changed files and determine which documentation needs updates, then make the necessary changes to keep the docs current with the codebase."
+  }
+}
