@@ -49,10 +49,18 @@ jobs:
           cd frontend
           pnpm test -- --run --reporter=verbose
 
-      - name: Start Docker daemon
+      - name: Start services for TestContainers
         run: |
+          # Start Docker daemon
           sudo systemctl start docker
           sudo chmod 666 /var/run/docker.sock
+          
+          # Verify Docker is working
+          docker info
+          docker ps
+          
+          # Pre-pull required images to avoid timeouts
+          docker pull postgres:15-alpine
 
       - name: Run unit tests
         env:
@@ -69,12 +77,19 @@ jobs:
           TESTCONTAINERS_RYUK_DISABLED: true
           TESTCONTAINERS_REUSE_ENABLE: false
           TESTCONTAINERS_CHECKS_DISABLE: true
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
+          DOCKER_HOST: unix:///var/run/docker.sock
           # JWT configuration for tests
           JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
-          # JVM options for tests
-          MAVEN_OPTS: "-Xmx3072m -XX:+UseG1GC"
+          # JVM options for tests with increased memory
+          MAVEN_OPTS: "-Xmx4096m -XX:+UseG1GC -XX:MaxMetaspaceSize=512m"
+          # Increase test timeouts for CI environment
+          SUREFIRE_TIMEOUT: 600
         run: |
-          mvn test -pl backend -Dspring.profiles.active=integration-test -Dtest="**/*IntegrationTest"
+          mvn test -pl backend -Dspring.profiles.active=integration-test -Dtest="**/*IntegrationTest" \
+            -Dfork.count=1 -Dfork.reuse=false \
+            -Dsurefire.timeout=${SUREFIRE_TIMEOUT} \
+            -Dmaven.test.failure.ignore=false
 
   # Build JAR
   build-jar:
