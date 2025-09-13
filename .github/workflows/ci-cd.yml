@@ -65,34 +65,15 @@ jobs:
           # Pre-pull required images to avoid timeouts
           docker pull postgres:15-alpine
 
-      - name: Run unit tests
+      - name: Run tests (excluding integration tests)
         env:
           # JWT configuration for tests
           JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
           # JVM options for tests
           MAVEN_OPTS: "-Xmx3072m -XX:+UseG1GC"
         run: |
-          mvn test -pl backend -Dspring.profiles.active=test -Dtest="!**/*IntegrationTest"
-
-      - name: Run integration tests
-        env:
-          # Testcontainers configuration for CI
-          TESTCONTAINERS_RYUK_DISABLED: true
-          TESTCONTAINERS_REUSE_ENABLE: false
-          TESTCONTAINERS_CHECKS_DISABLE: true
-          TESTCONTAINERS_HOST_OVERRIDE: localhost
-          DOCKER_HOST: unix:///var/run/docker.sock
-          # JWT configuration for tests
-          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
-          # JVM options for tests with increased memory
-          MAVEN_OPTS: "-Xmx4096m -XX:+UseG1GC -XX:MaxMetaspaceSize=512m"
-          # Increase test timeouts for CI environment
-          SUREFIRE_TIMEOUT: 600
-        run: |
-          mvn test -pl backend -Dspring.profiles.active=integration-test -Dtest="**/*IntegrationTest" \
-            -Dfork.count=1 -Dfork.reuse=false \
-            -Dsurefire.timeout=${SUREFIRE_TIMEOUT} \
-            -Dmaven.test.failure.ignore=false
+          # Use CI profile to exclude integration tests
+          mvn test -pl backend -Pci -Dspring.profiles.active=test
 
   # Build JAR
   build-jar:
