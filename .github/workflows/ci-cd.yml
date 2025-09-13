@@ -1,11 +1,14 @@
 name: Build and Publish
 
 on:
+  # Run on pushes to main branch (direct pushes or merges)
   push:
     branches: [main]
     tags: ["v*"]
+  # Run on pull requests targeting main branch
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
 
 env:
   DOCKER_IMAGE_NAME: rabbitmq-admin

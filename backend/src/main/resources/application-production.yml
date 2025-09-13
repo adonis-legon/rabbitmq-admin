@@ -1,0 +1,87 @@
+spring:
+  # Production database configuration
+  datasource:
+    url: jdbc:postgresql://postgres:5432/${POSTGRES_DB:rabbitmq_admin}
+    username: ${DB_USERNAME:rabbitmq_admin}
+    password: ${DB_PASSWORD}
+    # Production connection pool settings
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+
+  # Production JPA settings
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        "[format_sql]": false
+        "[use_sql_comments]": false
+        "[jdbc.batch_size]": 25
+        "[order_inserts]": true
+        "[order_updates]": true
+
+  # Production Flyway settings
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+# Production server configuration
+server:
+  port: 8080
+  # Production error handling
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+  # Production compression
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+
+# Production management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+
+# Production logging configuration
+logging:
+  level:
+    "[com.rabbitmq.admin]": INFO
+    "[org.springframework.security]": WARN
+    "[org.springframework.web]": WARN
+    "[org.hibernate]": WARN
+    "[org.flywaydb]": INFO
+    "[org.springframework.boot.actuate]": WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /app/logs/rabbitmq-admin.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+
+# Production application configuration
+app:
+  jwt:
+    secret-key: ${JWT_SECRET_KEY}
+    expiration: 3600000 # 1 hour in production for better security
