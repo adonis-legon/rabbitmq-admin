@@ -3,6 +3,7 @@ package com.rabbitmq.admin.integration;
 import com.rabbitmq.admin.dto.CreateUserRequest;
 import com.rabbitmq.admin.model.UserRole;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -18,6 +19,13 @@ class UserControllerIntegrationTest extends IntegrationTestBase {
 
         @Autowired
         private ObjectMapper objectMapper;
+
+        @BeforeEach
+        @Override
+        void setUpTestData() {
+                // Call parent setup to ensure tokens are initialized
+                super.setUpTestData();
+        }
 
         @Test
         void getAllUsers_ShouldReturnUsers_WhenAdminAuthenticated() throws Exception {
