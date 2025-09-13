@@ -257,16 +257,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleMethodArgumentTypeMismatchException(
             MethodArgumentTypeMismatchException ex, WebRequest request) {
 
+        Class<?> requiredType = ex.getRequiredType();
         String message = String.format("Invalid value '%s' for parameter '%s'. Expected type: %s",
-                ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
+                ex.getValue(), ex.getName(),
+                requiredType != null ? requiredType.getSimpleName() : "unknown");
 
         Map<String, Object> response = createErrorResponse(
                 HttpStatus.BAD_REQUEST, "Invalid Parameter", message, request);
-
         Map<String, Object> details = new HashMap<>();
         details.put("parameter", ex.getName());
         details.put("rejectedValue", ex.getValue());
-        details.put("expectedType", ex.getRequiredType().getSimpleName());
+        details.put("expectedType", requiredType != null ? requiredType.getSimpleName() : "unknown");
         response.put("details", details);
 
         logger.warn("Method argument type mismatch: {}", message);

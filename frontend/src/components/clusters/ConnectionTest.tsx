@@ -107,17 +107,17 @@ const ConnectionTest: React.FC<ConnectionTestProps> = ({ open, cluster, onClose 
 
         if (testState.result) {
             return (
-                <Alert severity={testState.result.success ? 'success' : 'error'} sx={{ mb: 2 }}>
+                <Alert severity={testState.result.successful ? 'success' : 'error'} sx={{ mb: 2 }}>
                     <Typography variant="body2" fontWeight="medium">
-                        {testState.result.success ? 'Connection Successful' : 'Connection Failed'}
+                        {testState.result.successful ? 'Connection Successful' : 'Connection Failed'}
                     </Typography>
                     <Typography variant="body2" sx={{ mt: 1 }}>
                         {testState.result.message}
                     </Typography>
-                    {testState.result.details && (
+                    {testState.result.errorDetails && (
                         <Box sx={{ mt: 2 }}>
                             <Typography variant="body2" fontWeight="medium">
-                                Details:
+                                Error Details:
                             </Typography>
                             <Box component="pre" sx={{
                                 fontSize: '0.75rem',
@@ -129,9 +129,14 @@ const ConnectionTest: React.FC<ConnectionTestProps> = ({ open, cluster, onClose 
                                 overflow: 'auto',
                                 maxHeight: '200px'
                             }}>
-                                {JSON.stringify(testState.result.details, null, 2)}
+                                {testState.result.errorDetails}
                             </Box>
                         </Box>
+                    )}
+                    {testState.result.responseTimeMs && testState.result.successful && (
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                            Response time: {testState.result.responseTimeMs}ms
+                        </Typography>
                     )}
                 </Alert>
             );
@@ -152,9 +157,9 @@ const ConnectionTest: React.FC<ConnectionTestProps> = ({ open, cluster, onClose 
         if (testState.result) {
             return (
                 <Chip
-                    icon={testState.result.success ? <CheckCircleIcon /> : <ErrorIcon />}
-                    label={testState.result.success ? 'Connected' : 'Failed'}
-                    color={testState.result.success ? 'success' : 'error'}
+                    icon={testState.result.successful ? <CheckCircleIcon /> : <ErrorIcon />}
+                    label={testState.result.successful ? 'Connected' : 'Failed'}
+                    color={testState.result.successful ? 'success' : 'error'}
                 />
             );
         }

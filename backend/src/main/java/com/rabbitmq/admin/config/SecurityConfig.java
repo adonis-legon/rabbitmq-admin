@@ -105,9 +105,15 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/info").permitAll()
 
                         // Static resources (frontend)
-                        .requestMatchers("/", "/static/**", "/*.js", "/*.css", "/*.ico", "/*.png", "/*.jpg", "/*.gif")
+                        .requestMatchers("/", "/static/**", "/assets/**", "/*.js", "/*.css", "/*.ico", "/*.png",
+                                "/*.jpg", "/*.gif")
                         .permitAll()
                         .requestMatchers("/index.html", "/manifest.json").permitAll()
+
+                        // Frontend routes (let React Router handle authentication)
+                        .requestMatchers("/dashboard", "/dashboard/**", "/users", "/users/**", "/clusters",
+                                "/clusters/**", "/login", "/login/**")
+                        .permitAll()
 
                         // Admin-only endpoints
                         .requestMatchers("/api/users/**").hasRole("ADMINISTRATOR")

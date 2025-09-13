@@ -21,12 +21,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       if (tokenService.hasValidToken()) {
         const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+        if (currentUser) {
+          setUser(currentUser);
+        } else {
+          // If getCurrentUser returns null, clear tokens
+          tokenService.clearTokens();
+        }
       }
     } catch (error) {
       console.error('Failed to initialize auth:', error);
       // Clear invalid tokens
       tokenService.clearTokens();
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(null);
         throw new Error('Token refresh failed');
       }
-      
+
       // Get updated user info after token refresh
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser);

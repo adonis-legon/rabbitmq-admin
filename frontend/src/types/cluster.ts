@@ -34,9 +34,10 @@ export interface ConnectionTestRequest {
 }
 
 export interface ConnectionTestResponse {
-  success: boolean;
+  successful: boolean;
   message: string;
-  details?: any;
+  errorDetails?: string;
+  responseTimeMs?: number;
 }
 
 interface User {

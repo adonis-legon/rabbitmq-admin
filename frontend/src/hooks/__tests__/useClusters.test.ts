@@ -86,7 +86,7 @@ describe('useClusters', () => {
     await result.current.createCluster(createData);
 
     expect(mockClusterApi.createCluster).toHaveBeenCalledWith(createData);
-    
+
     await waitFor(() => {
       expect(result.current.clusters).toContainEqual(newCluster);
     });
@@ -105,14 +105,14 @@ describe('useClusters', () => {
     await result.current.deleteCluster('1');
 
     expect(mockClusterApi.deleteCluster).toHaveBeenCalledWith('1');
-    
+
     await waitFor(() => {
       expect(result.current.clusters).not.toContainEqual(mockClusters[0]);
     });
   });
 
   it('tests connection successfully', async () => {
-    const testResult = { success: true, message: 'Connection successful' };
+    const testResult = { successful: true, message: 'Connection successful' };
     mockClusterApi.getClusters.mockResolvedValue(mockClusters);
     mockClusterApi.testConnection.mockResolvedValue(testResult);
 
@@ -131,6 +131,29 @@ describe('useClusters', () => {
     const response = await result.current.testConnection('1', testData);
 
     expect(mockClusterApi.testConnection).toHaveBeenCalledWith('1', testData);
+    expect(response).toEqual(testResult);
+  });
+
+  it('tests new connection successfully', async () => {
+    const testResult = { successful: true, message: 'Connection successful' };
+    mockClusterApi.getClusters.mockResolvedValue(mockClusters);
+    mockClusterApi.testNewConnection.mockResolvedValue(testResult);
+
+    const { result } = renderHook(() => useClusters());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    const testData = {
+      apiUrl: 'http://localhost:15672',
+      username: 'admin',
+      password: 'password'
+    };
+
+    const response = await result.current.testNewConnection(testData);
+
+    expect(mockClusterApi.testNewConnection).toHaveBeenCalledWith(testData);
     expect(response).toEqual(testResult);
   });
 });

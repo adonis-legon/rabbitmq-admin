@@ -1,10 +1,13 @@
 package com.rabbitmq.admin.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Response DTO for connection test results.
  */
 public class ConnectionTestResponse {
 
+    @JsonProperty("successful")
     private boolean successful;
     private String message;
     private String errorDetails;

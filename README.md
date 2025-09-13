@@ -2,6 +2,59 @@
 
 A comprehensive web application for managing RabbitMQ clusters with authentication, authorization, and multi-cluster support.
 
+## 📑 Table of Contents
+
+- [🚀 Features](#-features)
+- [📋 Prerequisites](#-prerequisites)
+- [🏃‍♂️ Quick Start](#️-quick-start)
+  - [Option 1: Docker (Recommended)](#option-1-docker-recommended)
+  - [Option 2: Standalone JAR](#option-2-standalone-jar)
+  - [Option 3: Development Setup](#option-3-development-setup)
+- [🏗️ Project Structure](#️-project-structure)
+- [🛠️ CLI Tool](#️-cli-tool)
+  - [Quick Start](#quick-start)
+  - [Available Commands](#available-commands)
+  - [Build Options](#build-options)
+  - [Deploy Options](#deploy-options)
+- [🔧 Configuration](#-configuration)
+  - [Environment Variables](#environment-variables)
+  - [Security Configuration](#security-configuration)
+- [🔐 Default Credentials](#-default-credentials)
+- [🛠️ Build & Deployment](#️-build--deployment)
+  - [Build Commands](#build-commands)
+  - [Deployment Commands](#deployment-commands)
+- [🧪 Testing](#-testing)
+  - [Run Tests](#run-tests)
+  - [Test Coverage](#test-coverage)
+- [📊 Monitoring & Health Checks](#-monitoring--health-checks)
+  - [Health Endpoints](#health-endpoints)
+  - [Custom Health Checks](#custom-health-checks)
+- [🔒 Security Features](#-security-features)
+  - [Application Security](#application-security)
+  - [Container Security](#container-security)
+  - [Database Security](#database-security)
+- [🚀 Production Deployment](#-production-deployment)
+  - [Pre-deployment Checklist](#pre-deployment-checklist)
+  - [Production Environment](#production-environment)
+- [📝 API Documentation](#-api-documentation)
+  - [Authentication Endpoints](#authentication-endpoints)
+  - [User Management](#user-management-admin-only)
+  - [Cluster Management](#cluster-management-admin-only)
+  - [RabbitMQ Proxy](#rabbitmq-proxy)
+- [📦 Versioning](#-versioning)
+  - [Version Management](#version-management)
+  - [Version Commands](#version-commands)
+  - [Version Display](#version-display)
+  - [Changing Version](#changing-version)
+- [🏛️ Architecture & Design](#️-architecture--design)
+- [🤝 Contributing](#-contributing)
+  - [Development Guidelines](#development-guidelines)
+- [📄 License](#-license)
+- [🆘 Troubleshooting](#-troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Getting Help](#getting-help)
+- [📞 Support](#-support)
+
 ## 🚀 Features
 
 - **Authentication & Authorization**: JWT-based authentication with role-based access control
@@ -88,36 +141,59 @@ mvn spring-boot:run -pl backend -Dspring.profiles.active=local
 
 cd frontend && npm start
 
-```
+````
 
 ## 🏗️ Project Structure
 
-```
+The project is organized into several key directories, each serving a specific purpose:
 
-rabbitmq-admin/
-├── backend/ # Spring Boot application
-│ ├── src/main/java/ # Java source code
-│ ├── src/main/resources/ # Configuration files
-│ └── src/test/ # Backend tests
-├── frontend/ # React TypeScript application
-│ ├── src/ # Frontend source code
-│ ├── public/ # Static assets
-│ └── build/ # Built frontend (generated)
-├── docker/ # Docker configuration
-│ ├── Dockerfile # Multi-stage build
-│ ├── docker-compose.yml # Development setup
-│ ├── docker-compose.prod.yml # Production overrides
-│ └── scripts/ # Deployment scripts
-├── scripts/ # Build and deployment automation
-│ ├── build.sh # Build automation script
-│ ├── run.sh # Run application script
-│ ├── deploy.sh # Deployment automation script
-│ └── sync-versions.sh # Version synchronization
-├── .github/workflows/ # CI/CD pipelines
-├── radmin-cli # Unified CLI tool
-└── README.md # This file
+### 📁 Core Application
 
-````
+| Directory | Description |
+|-----------|-------------|
+| `backend/` | Spring Boot application with REST API |
+| `├── src/main/java/` | Java source code and business logic |
+| `├── src/main/resources/` | Configuration files and database migrations |
+| `└── src/test/` | Backend unit and integration tests |
+| `frontend/` | React TypeScript application |
+| `├── src/` | Frontend source code and components |
+| `├── public/` | Static assets and HTML template |
+| `└── build/` | Built frontend assets (generated) |
+
+### 📋 Documentation & Design
+
+| Directory | Description |
+|-----------|-------------|
+| `design/` | Architecture and design documentation |
+| `├── architecture/` | System architecture diagrams and documentation |
+| `├── api/` | API design specifications and examples |
+| `├── database/` | Database schema and migration documentation |
+| `├── security/` | Security design and implementation details |
+| `└── testing/` | Testing strategy and coverage documentation |
+
+### 🐳 Infrastructure & Deployment
+
+| Directory | Description |
+|-----------|-------------|
+| `docker/` | Docker configuration and containerization |
+| `├── Dockerfile` | Multi-stage build configuration |
+| `├── docker-compose.yml` | Development environment setup |
+| `├── docker-compose.prod.yml` | Production environment overrides |
+| `└── scripts/` | Container deployment scripts |
+| `scripts/` | Build and deployment automation |
+| `├── build.sh` | Application build automation |
+| `├── run.sh` | Application runtime scripts |
+| `├── deploy.sh` | Production deployment automation |
+| `└── sync-versions.sh` | Version synchronization utility |
+
+### 🔧 Development Tools
+
+| Directory | Description |
+|-----------|-------------|
+| `.github/workflows/` | CI/CD pipeline configurations |
+| `radmin-cli` | Unified command-line interface tool |
+| `generate-hash.sh` | BCrypt password hash generation utility |
+| `README.md` | Project documentation (this file) |
 
 ## 🛠️ CLI Tool
 
@@ -141,11 +217,12 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 # Deploy to production
 ./radmin-cli deploy run --db-url jdbc:postgresql://db:5432/rabbitmq_admin \
                         --db-user admin --db-pass secret --jwt-secret my-secret
-```
+````
 
 ### Available Commands
 
 #### Build Commands
+
 ```bash
 ./radmin-cli build jar          # Build standalone JAR
 ./radmin-cli build docker       # Build Docker image
@@ -155,6 +232,7 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 ```
 
 #### Run Commands
+
 ```bash
 ./radmin-cli run jar            # Run JAR (requires external DB)
 ./radmin-cli run docker         # Run with Docker Compose
@@ -162,6 +240,7 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 ```
 
 #### Deploy Commands
+
 ```bash
 ./radmin-cli deploy run         # Deploy container
 ./radmin-cli deploy stop        # Stop container
@@ -170,9 +249,16 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 ```
 
 #### Version Commands
+
 ```bash
 ./radmin-cli version            # Show current version
 ./radmin-cli version sync       # Sync versions across components
+```
+
+#### Utility Commands
+
+```bash
+./generate-hash.sh              # Generate BCrypt hash for admin password
 ```
 
 ### Build Options
@@ -219,9 +305,23 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 ## 🔐 Default Credentials
 
 - **Username**: `admin`
-- **Password**: `admin`
+- **Password**: `admin123!`
 
 **⚠️ Change these immediately in production!**
+
+### Password Hash Generation
+
+For development and testing purposes, you can generate BCrypt password hashes using the built-in utility:
+
+```bash
+# Generate hash for the default password
+java -jar rabbitmq-admin-backend-*.jar generate-hash
+
+# Or during development
+mvn spring-boot:run -pl backend -Dspring-boot.run.arguments=generate-hash
+```
+
+This utility generates a BCrypt hash for the default password and verifies it matches the expected format used in database migrations.
 
 ## 🛠️ Build & Deployment
 
@@ -239,7 +339,14 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 
 # Clean build artifacts
 ./radmin-cli build clean
-````
+```
+
+**Build Process Notes:**
+
+- The build automatically cleans old static resources before copying new frontend assets
+- Frontend build artifacts are copied to Spring Boot's static resources directory
+- Enhanced resource copying ensures proper overwrite of existing files
+- Static resources are excluded from Maven filtering to prevent modification during build
 
 ### Deployment Commands
 
@@ -277,9 +384,11 @@ cd frontend && npm test
 
 ### Test Coverage
 
-- **Backend**: JUnit 5, Mockito, TestContainers
+- **Backend**: JUnit 5, Mockito, TestContainers with optimized Surefire configuration
 - **Frontend**: Vitest, React Testing Library
 - **Integration**: Docker Compose with real services
+- **Test Isolation**: Enhanced configuration for reliable CI/CD execution
+- **Testing Framework**: Uses modern `@MockitoBean` annotation (migrated from deprecated `@MockBean` in Spring Boot 3.4.0+)
 
 ## 📊 Monitoring & Health Checks
 
@@ -308,6 +417,7 @@ docker logs rabbitmq-admin-db
 
 - JWT authentication with configurable expiration
 - Role-based access control (RBAC)
+- Hybrid security model: API endpoints protected server-side, frontend routes protected client-side
 - Input validation and sanitization
 - SQL injection prevention
 - XSS protection with CSP headers
@@ -378,11 +488,19 @@ curl -f http://localhost:8080/actuator/health
 - `POST /api/clusters` - Create cluster connection
 - `PUT /api/clusters/{id}` - Update cluster connection
 - `DELETE /api/clusters/{id}` - Delete cluster connection
-- `POST /api/clusters/{id}/test` - Test connection
+- `POST /api/clusters/test` - Test new connection (before creating)
+- `POST /api/clusters/{id}/test` - Test existing cluster connection
 
 ### RabbitMQ Proxy
 
 - `GET /api/rabbitmq/{clusterId}/*` - Proxy to RabbitMQ Management API
+
+### Debug Endpoints (Development Only)
+
+- `GET /api/debug/hash?password=<password>` - Generate BCrypt hash for password (requires authentication)
+- `GET /api/debug/verify?password=<password>&hash=<hash>` - Verify password against hash (requires authentication)
+
+⚠️ **Security Note**: Debug endpoints require valid JWT authentication and are intended for development use only. They should be disabled or secured in production environments.
 
 ## 📦 Versioning
 
@@ -427,6 +545,81 @@ git add .
 git commit -m "chore: bump version to 2.0.0"
 git tag v2.0.0
 ```
+
+## 🏛️ Architecture & Design
+
+RabbitMQ Admin is a three-tier web application that provides a comprehensive administrative interface for managing RabbitMQ clusters. The application implements role-based access control with JWT authentication and follows modern web development practices.
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Client Tier"
+        UI[React Frontend<br/>Material UI Admin Template]
+    end
+
+    subgraph "Application Tier"
+        BFF[Spring Boot BFF<br/>JWT Authentication<br/>Business Logic]
+        RMQ[RabbitMQ API Client]
+    end
+
+    subgraph "Data Tier"
+        DB[(PostgreSQL Database<br/>JPA + Flyway)]
+    end
+
+    subgraph "External Services"
+        RMQAPI[RabbitMQ Management API]
+    end
+
+    UI --> BFF
+    BFF --> DB
+    BFF --> RMQ
+    RMQ --> RMQAPI
+```
+
+### Technology Stack
+
+**Frontend:**
+
+- React 18+ with Material UI v5
+- TypeScript for type safety
+- Vite for fast development and building
+- React Router for client-side routing
+
+**Backend:**
+
+- Java 21 with Spring Boot 3.x
+- Spring Security for authentication and authorization
+- Spring Data JPA for data access
+- Spring WebFlux for RabbitMQ API client
+- JWT for stateless authentication
+
+**Database:**
+
+- PostgreSQL 15+ for data persistence
+- Flyway for database migrations
+- HikariCP for connection pooling
+
+**Infrastructure:**
+
+- Docker and Docker Compose for containerization
+- Maven for backend build management
+- pnpm for frontend dependency management
+
+### Key Features
+
+- **Multi-Cluster Support**: Dynamic client pool for multiple RabbitMQ clusters
+- **Role-Based Security**: Admin and User roles with resource-level access control
+- **Stateless Design**: JWT-based authentication for horizontal scaling
+- **Modern UI**: Responsive React interface with Material UI components
+- **Production Ready**: Health checks, monitoring, logging, and security configurations
+
+### Security Architecture
+
+- **Authentication**: Stateless JWT tokens with configurable expiration
+- **Authorization**: Role-based access control with method-level security
+- **Data Protection**: Input validation, SQL injection prevention, XSS protection
+- **Token Management**: Simplified approach with centralized authentication logic
 
 ## 🤝 Contributing
 
@@ -487,12 +680,49 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 4. **Frontend build failures**
 
    ```bash
-   # Clear npm cache
-   cd frontend && npm cache clean --force
+   # Clear pnpm cache
+   cd frontend && pnpm store prune
 
-   # Reinstall dependencies
-   rm -rf node_modules package-lock.json
-   npm install
+   # Reinstall dependencies (force reinstall if needed)
+   rm -rf node_modules pnpm-lock.yaml
+   pnpm install --force
+
+   # If static resources aren't updating properly
+   # The build now automatically cleans old static resources
+   # But you can manually clean if needed:
+   mvn clean -pl backend
+   ```
+
+5. **Dependency resolution conflicts**
+
+   ```bash
+   # The build now uses --force flag for pnpm install to resolve conflicts
+   # If you encounter dependency issues during development:
+
+   # Option 1: Use force flag (matches build configuration)
+   pnpm install --force
+
+   # Option 2: Clear cache and reinstall
+   pnpm store prune
+   rm -rf node_modules
+   pnpm install --force
+   ```
+
+6. **Test execution timeouts or failures**
+
+   ```bash
+   # Run tests with increased verbosity
+   mvn test -pl backend -X
+
+   # Skip tests for build if needed
+   mvn package -pl backend -DskipTests
+
+   # Run specific test class
+   mvn test -pl backend -Dtest=UserServiceTest
+
+   # Clean test containers and retry
+   docker system prune -f
+   mvn clean test -pl backend
    ```
 
 ### Getting Help

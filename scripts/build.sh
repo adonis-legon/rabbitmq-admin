@@ -93,23 +93,35 @@ run_tests() {
 }
 
 build_jar() {
-    log "${BLUE}Building standalone JAR...${NC}"
+    log "${BLUE}Building standalone JAR with frontend assets...${NC}"
     
     if [ "$SKIP_TESTS" != "true" ]; then
         run_tests
     fi
     
-    # Build with production profile (includes frontend assets)
-    log "Building application with frontend assets..."
-    mvn clean package -Pproduction -q
+    # Build application (this will automatically build frontend and include assets)
+    log "Building application with integrated frontend..."
+    mvn clean package -pl backend -am -q
     
     # Verify frontend assets are included
-    if [ -f "backend/target/rabbitmq-admin-backend-*.jar" ]; then
+    if [ -f "backend/target/rabbitmq-admin-backend-"*.jar ]; then
         jar_file=$(ls backend/target/rabbitmq-admin-backend-*.jar | head -1)
         if jar tf "$jar_file" | grep -q "BOOT-INF/classes/static/" > /dev/null 2>&1; then
             log "${GREEN}✓${NC} Frontend assets included in JAR"
+            
+            # Show some details about included static files
+            static_files=$(jar tf "$jar_file" | grep "BOOT-INF/classes/static/" | wc -l)
+            log "  → $static_files frontend files included"
+            
+            # Check for key frontend files
+            if jar tf "$jar_file" | grep -q "BOOT-INF/classes/static/index.html" > /dev/null 2>&1; then
+                log "  → index.html found"
+            fi
+            if jar tf "$jar_file" | grep -q "BOOT-INF/classes/static/assets/" > /dev/null 2>&1; then
+                log "  → Assets directory found"
+            fi
         else
-            log "${YELLOW}⚠${NC} Frontend assets not found in JAR"
+            log "${YELLOW}⚠${NC} Frontend assets not found in JAR - this may be expected if frontend build failed"
         fi
         
         log "${GREEN}✓${NC} Standalone JAR build completed"

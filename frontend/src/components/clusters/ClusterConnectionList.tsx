@@ -26,7 +26,8 @@ import {
     Delete as DeleteIcon,
     Science as TestIcon,
     CheckCircle as CheckCircleIcon,
-    Error as ErrorIcon
+    Error as ErrorIcon,
+    Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { ClusterConnection } from '../../types/cluster';
 import { useClusters } from '../../hooks/useClusters';
@@ -34,7 +35,7 @@ import ClusterConnectionForm from './ClusterConnectionForm';
 import ConnectionTest from './ConnectionTest';
 
 const ClusterConnectionList: React.FC = () => {
-    const { clusters, loading, error, deleteCluster, clearError } = useClusters();
+    const { clusters, loading, error, deleteCluster, clearError, loadClusters } = useClusters();
     const [formOpen, setFormOpen] = useState(false);
     const [testOpen, setTestOpen] = useState(false);
     const [selectedCluster, setSelectedCluster] = useState<ClusterConnection | null>(null);
@@ -79,8 +80,11 @@ const ClusterConnectionList: React.FC = () => {
         }
     };
 
-    const handleFormSuccess = (_cluster: ClusterConnection) => {
-        // The hook handles updating the clusters state
+    const handleFormSuccess = (cluster: ClusterConnection) => {
+        // The useClusters hook should automatically update the state
+        // but let's also trigger a manual refresh to ensure consistency
+        console.log('Cluster form success:', cluster.name);
+        loadClusters();
         setFormOpen(false);
         setSelectedCluster(null);
     };
@@ -109,13 +113,23 @@ const ClusterConnectionList: React.FC = () => {
                 <Typography variant="h4" component="h1">
                     Cluster Connections
                 </Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleCreateCluster}
-                >
-                    Add Cluster Connection
-                </Button>
+                <Box display="flex" gap={1}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                        onClick={loadClusters}
+                        disabled={loading}
+                    >
+                        Refresh
+                    </Button>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={handleCreateCluster}
+                    >
+                        Add Cluster Connection
+                    </Button>
+                </Box>
             </Box>
 
             {error && (

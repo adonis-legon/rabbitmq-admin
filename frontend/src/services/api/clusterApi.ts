@@ -1,10 +1,10 @@
 import apiClient from './apiClient';
-import { 
-  ClusterConnection, 
-  CreateClusterConnectionRequest, 
+import {
+  ClusterConnection,
+  CreateClusterConnectionRequest,
   UpdateClusterConnectionRequest,
   ConnectionTestRequest,
-  ConnectionTestResponse 
+  ConnectionTestResponse
 } from '../../types/cluster';
 
 export const clusterApi = {
@@ -34,6 +34,13 @@ export const clusterApi = {
 
   testConnection: async (id: string, testData: ConnectionTestRequest): Promise<ConnectionTestResponse> => {
     const response = await apiClient.post<ConnectionTestResponse>(`/clusters/${id}/test`, testData);
+    return response.data;
+  },
+
+  testNewConnection: async (testData: ConnectionTestRequest): Promise<ConnectionTestResponse> => {
+    console.log('Calling testNewConnection API with URL: /clusters/test');
+    console.log('Test data:', testData);
+    const response = await apiClient.post<ConnectionTestResponse>('/clusters/test', testData);
     return response.data;
   }
 };

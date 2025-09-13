@@ -23,6 +23,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.junit.jupiter.api.AfterAll;
 
+import java.util.Objects;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -103,11 +105,13 @@ class ApiIntegrationTest {
 
                 assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(loginResponse.getBody()).isNotNull();
-                assertThat(loginResponse.getBody().getAccessToken()).isNotNull();
-                assertThat(loginResponse.getBody().getUser().getUsername()).isEqualTo("admin");
-                assertThat(loginResponse.getBody().getUser().getRole()).isEqualTo(UserRole.ADMINISTRATOR);
 
-                String adminToken = loginResponse.getBody().getAccessToken();
+                JwtAuthenticationResponse loginBody = Objects.requireNonNull(loginResponse.getBody());
+                assertThat(loginBody.getAccessToken()).isNotNull();
+                assertThat(loginBody.getUser().getUsername()).isEqualTo("admin");
+                assertThat(loginBody.getUser().getRole()).isEqualTo(UserRole.ADMINISTRATOR);
+
+                String adminToken = loginBody.getAccessToken();
 
                 // 3. Access protected endpoint
                 HttpHeaders authHeaders = new HttpHeaders();
@@ -119,8 +123,9 @@ class ApiIntegrationTest {
 
                 assertThat(meResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(meResponse.getBody()).isNotNull();
-                assertThat(meResponse.getBody().getUsername()).isEqualTo("admin");
-                assertThat(meResponse.getBody().getRole()).isEqualTo(UserRole.ADMINISTRATOR);
+                UserInfo meBody = Objects.requireNonNull(meResponse.getBody());
+                assertThat(meBody.getUsername()).isEqualTo("admin");
+                assertThat(meBody.getRole()).isEqualTo(UserRole.ADMINISTRATOR);
 
                 // 4. Create new user
                 CreateUserRequest createUserRequest = new CreateUserRequest();
@@ -138,8 +143,9 @@ class ApiIntegrationTest {
 
                 assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
                 assertThat(createResponse.getBody()).isNotNull();
-                assertThat(createResponse.getBody().getUsername()).isEqualTo("newuser");
-                assertThat(createResponse.getBody().getRole()).isEqualTo(UserRole.USER);
+                UserResponse createBody = Objects.requireNonNull(createResponse.getBody());
+                assertThat(createBody.getUsername()).isEqualTo("newuser");
+                assertThat(createBody.getRole()).isEqualTo(UserRole.USER);
 
                 // 5. New user should be able to login
                 LoginRequest newUserLogin = new LoginRequest("newuser", "NewUserPass123!");
@@ -150,8 +156,9 @@ class ApiIntegrationTest {
 
                 assertThat(newUserResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(newUserResponse.getBody()).isNotNull();
-                assertThat(newUserResponse.getBody().getUser().getUsername()).isEqualTo("newuser");
-                assertThat(newUserResponse.getBody().getUser().getRole()).isEqualTo(UserRole.USER);
+                JwtAuthenticationResponse newUserBody = Objects.requireNonNull(newUserResponse.getBody());
+                assertThat(newUserBody.getUser().getUsername()).isEqualTo("newuser");
+                assertThat(newUserBody.getUser().getRole()).isEqualTo(UserRole.USER);
 
                 // 6. Logout
                 ResponseEntity<String> logoutResponse = restTemplate.exchange(

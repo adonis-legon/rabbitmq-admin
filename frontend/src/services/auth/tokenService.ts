@@ -25,16 +25,23 @@ export const tokenService = {
 
   isTokenExpired: (token: string): boolean => {
     try {
+      if (!token || token.split('.').length !== 3) {
+        return true;
+      }
       const payload = JSON.parse(atob(token.split('.')[1]));
       const currentTime = Date.now() / 1000;
       return payload.exp < currentTime;
     } catch (error) {
+      console.error('Error checking token expiration:', error);
       return true;
     }
   },
 
   hasValidToken: (): boolean => {
     const token = tokenService.getAccessToken();
-    return token !== null && !tokenService.isTokenExpired(token);
+    if (!token) {
+      return false;
+    }
+    return !tokenService.isTokenExpired(token);
   }
 };

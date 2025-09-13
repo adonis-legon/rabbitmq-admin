@@ -18,21 +18,6 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: rabbitmq_admin_test
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,26 +34,47 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install frontend dependencies
         run: |
           cd frontend
-          npm ci
+          pnpm install --force
 
       - name: Run frontend tests
         run: |
           cd frontend
-          npm test -- --run --reporter=verbose
+          pnpm test -- --run --reporter=verbose
 
-      - name: Run backend tests
-        env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/rabbitmq_admin_test
-          SPRING_DATASOURCE_USERNAME: test_user
-          SPRING_DATASOURCE_PASSWORD: test_password
-          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only
+      - name: Start Docker daemon
         run: |
-          mvn test -pl backend
+          sudo systemctl start docker
+          sudo chmod 666 /var/run/docker.sock
+
+      - name: Run unit tests
+        env:
+          # JWT configuration for tests
+          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
+          # JVM options for tests
+          MAVEN_OPTS: "-Xmx3072m -XX:+UseG1GC"
+        run: |
+          mvn test -pl backend -Dspring.profiles.active=test -Dtest="!**/*IntegrationTest"
+
+      - name: Run integration tests
+        env:
+          # Testcontainers configuration for CI
+          TESTCONTAINERS_RYUK_DISABLED: true
+          TESTCONTAINERS_REUSE_ENABLE: false
+          TESTCONTAINERS_CHECKS_DISABLE: true
+          # JWT configuration for tests
+          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
+          # JVM options for tests
+          MAVEN_OPTS: "-Xmx3072m -XX:+UseG1GC"
+        run: |
+          mvn test -pl backend -Dspring.profiles.active=integration-test -Dtest="**/*IntegrationTest"
 
   # Build JAR
   build-jar:
@@ -92,7 +98,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Build application JAR
         run: |
