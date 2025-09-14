@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <name>RabbitMQ Admin</name>
-    <description>RabbitMQ Admin Dashboard with Authentication and Authorization</description>
+    <description>RabbitMQ Adminn</description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

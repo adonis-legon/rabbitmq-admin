@@ -42,7 +42,7 @@ const VersionDisplay: React.FC<VersionDisplayProps> = ({
         return (
             <Box sx={{ textAlign: 'center', mt: 2 }}>
                 <Typography variant="caption" color={color}>
-                    RabbitMQ Admin Dashboard
+                    RabbitMQ Admin
                 </Typography>
                 <Typography variant="caption" color={color} display="block">
                     Version {versionInfo.displayVersion}

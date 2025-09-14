@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <name>RabbitMQ Admin Frontend</name>
-    <description>React frontend for RabbitMQ Admin Dashboard</description>
+    <description>React frontend for RabbitMQ Admin</description>
 
     <build>
         <plugins>

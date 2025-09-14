@@ -16,7 +16,7 @@ public class VersionService {
     @Value("${app.name:RabbitMQ Admin}")
     private String name;
 
-    @Value("${app.description:RabbitMQ Admin Dashboard}")
+    @Value("${app.description:RabbitMQ Admin}")
     private String description;
 
     public VersionInfo getVersionInfo() {
