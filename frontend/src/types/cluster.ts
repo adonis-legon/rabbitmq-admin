@@ -16,6 +16,7 @@ export interface CreateClusterConnectionRequest {
   password: string;
   description?: string;
   active: boolean;
+  assignedUserIds?: string[];
 }
 
 export interface UpdateClusterConnectionRequest {
@@ -25,6 +26,7 @@ export interface UpdateClusterConnectionRequest {
   password?: string;
   description?: string;
   active?: boolean;
+  assignedUserIds?: string[];
 }
 
 export interface ConnectionTestRequest {
