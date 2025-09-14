@@ -6,7 +6,7 @@ import { ErrorProvider } from './contexts/ErrorContext';
 import { AuthProvider, LoginForm, ProtectedRoute, AdminRoute } from './components/auth';
 import { AppLayout } from './components/layout';
 import { Dashboard } from './components/dashboard';
-import { UserList } from './components/users';
+import { UserList, Profile } from './components/users';
 import { ClusterConnectionList } from './components/clusters';
 import { ROUTES } from './utils/constants';
 
@@ -96,6 +96,7 @@ function App() {
                       <AppLayout>
                         <Routes>
                           <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+                          <Route path={ROUTES.PROFILE} element={<Profile />} />
                           <Route
                             path={ROUTES.USERS}
                             element={

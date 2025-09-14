@@ -3,7 +3,8 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   USERS: '/users',
   CLUSTERS: '/clusters',
-  RABBITMQ: '/rabbitmq'
+  RABBITMQ: '/rabbitmq',
+  PROFILE: '/profile'
 } as const;
 
 export const API_ENDPOINTS = {

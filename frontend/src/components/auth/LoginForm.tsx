@@ -44,17 +44,30 @@ const LoginForm: React.FC = () => {
     try {
       const loggedInUser = await login({ username, password });
 
-      // Check if the intended destination is appropriate for the user's role
-      const isAdminOnlyRoute = adminOnlyRoutes.some(route => from.startsWith(route));
-      const isUserAdmin = loggedInUser.role === UserRole.ADMINISTRATOR;
+      // Determine where to redirect after login
+      let redirectTo = ROUTES.DASHBOARD; // Default destination
 
-      if (isAdminOnlyRoute && !isUserAdmin) {
-        // Redirect to dashboard if user tries to access admin-only route without permissions
-        navigate(ROUTES.DASHBOARD, { replace: true });
-      } else {
-        // Redirect to intended destination
-        navigate(from, { replace: true });
+      // Only redirect to the "from" location if it's a legitimate intended destination
+      // and not just the result of a logout or token expiration
+      if (from && from !== ROUTES.LOGIN && from !== '/') {
+        const isAdminOnlyRoute = adminOnlyRoutes.some(route => from.startsWith(route));
+        const isUserAdmin = loggedInUser.role === UserRole.ADMINISTRATOR;
+
+        if (isAdminOnlyRoute && !isUserAdmin) {
+          // Redirect to dashboard if user tries to access admin-only route without permissions
+          redirectTo = ROUTES.DASHBOARD;
+        } else {
+          // Only redirect to non-profile routes, or profile if it's an admin
+          // For regular users, always go to dashboard on fresh login
+          if (from === ROUTES.PROFILE) {
+            redirectTo = ROUTES.DASHBOARD; // Always redirect to dashboard after login
+          } else {
+            redirectTo = from;
+          }
+        }
       }
+
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

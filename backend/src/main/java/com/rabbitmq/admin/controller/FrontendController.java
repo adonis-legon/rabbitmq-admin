@@ -22,6 +22,8 @@ public class FrontendController {
             "/users/**",
             "/clusters",
             "/clusters/**",
+            "/profile",
+            "/profile/**",
             "/login",
             "/login/**"
     })
