@@ -13,12 +13,12 @@ export interface CreateUserRequest {
   username: string;
   password: string;
   role: UserRole;
-  assignedClusterIds?: string[];
+  clusterConnectionIds?: string[];
 }
 
 export interface UpdateUserRequest {
   username?: string;
   password?: string;
   role?: UserRole;
-  assignedClusterIds?: string[];
+  clusterConnectionIds?: string[];
 }

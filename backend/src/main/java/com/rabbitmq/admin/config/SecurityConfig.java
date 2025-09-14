@@ -117,6 +117,16 @@ public class SecurityConfig {
 
                         // Admin-only endpoints
                         .requestMatchers("/api/users/**").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/api/clusters/create").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/api/clusters/*/edit").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/api/clusters/*/delete").hasRole("ADMINISTRATOR")
+                        .requestMatchers("/api/clusters/*/test").hasRole("ADMINISTRATOR")
+
+                        // User endpoints (allow both roles - method-level @PreAuthorize will handle
+                        // specifics)
+                        .requestMatchers("/api/clusters/my/**").hasAnyRole("USER", "ADMINISTRATOR")
+
+                        // Remaining admin cluster endpoints
                         .requestMatchers("/api/clusters/**").hasRole("ADMINISTRATOR")
 
                         // Protected auth endpoints (require authentication)

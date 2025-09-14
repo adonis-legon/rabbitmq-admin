@@ -38,10 +38,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (credentials: LoginRequest): Promise<void> => {
+  const login = async (credentials: LoginRequest): Promise<UserInfo> => {
     try {
       const response = await authService.login(credentials);
       setUser(response.user);
+      return response.user;
     } catch (error) {
       console.error('Login failed:', error);
       throw error;

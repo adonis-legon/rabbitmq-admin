@@ -13,6 +13,16 @@ export const clusterApi = {
     return response.data;
   },
 
+  getMyClusters: async (): Promise<ClusterConnection[]> => {
+    const response = await apiClient.get<ClusterConnection[]>('/clusters/my');
+    return response.data;
+  },
+
+  getMyActiveClusters: async (): Promise<ClusterConnection[]> => {
+    const response = await apiClient.get<ClusterConnection[]>('/clusters/my/active');
+    return response.data;
+  },
+
   getCluster: async (id: string): Promise<ClusterConnection> => {
     const response = await apiClient.get<ClusterConnection>(`/clusters/${id}`);
     return response.data;

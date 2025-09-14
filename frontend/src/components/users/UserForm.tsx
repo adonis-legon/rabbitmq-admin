@@ -41,14 +41,14 @@ interface FormData {
     username: string;
     password: string;
     role: UserRole;
-    assignedClusterIds: string[];
+    clusterConnectionIds: string[];
 }
 
 interface FormErrors {
     username?: string;
     password?: string;
     role?: string;
-    assignedClusterIds?: string;
+    clusterConnectionIds?: string;
 }
 
 const UserForm: React.FC<UserFormProps> = ({ open, user, onClose, onSuccess }) => {
@@ -56,7 +56,7 @@ const UserForm: React.FC<UserFormProps> = ({ open, user, onClose, onSuccess }) =
         username: '',
         password: '',
         role: UserRole.USER,
-        assignedClusterIds: []
+        clusterConnectionIds: []
     });
     const [errors, setErrors] = useState<FormErrors>({});
     const [loading, setLoading] = useState(false);
@@ -75,14 +75,14 @@ const UserForm: React.FC<UserFormProps> = ({ open, user, onClose, onSuccess }) =
                     username: user.username,
                     password: '',
                     role: user.role,
-                    assignedClusterIds: user.assignedClusters.map(c => c.id)
+                    clusterConnectionIds: user.assignedClusters.map(c => c.id)
                 });
             } else {
                 setFormData({
                     username: '',
                     password: '',
                     role: UserRole.USER,
-                    assignedClusterIds: []
+                    clusterConnectionIds: []
                 });
             }
             setErrors({});
@@ -141,7 +141,7 @@ const UserForm: React.FC<UserFormProps> = ({ open, user, onClose, onSuccess }) =
                 const updateData: UpdateUserRequest = {
                     username: formData.username,
                     role: formData.role,
-                    assignedClusterIds: formData.assignedClusterIds
+                    clusterConnectionIds: formData.clusterConnectionIds
                 };
 
                 if (formData.password) {
@@ -154,7 +154,7 @@ const UserForm: React.FC<UserFormProps> = ({ open, user, onClose, onSuccess }) =
                     username: formData.username,
                     password: formData.password,
                     role: formData.role,
-                    assignedClusterIds: formData.assignedClusterIds
+                    clusterConnectionIds: formData.clusterConnectionIds
                 };
 
                 savedUser = await userApi.createUser(createData);
@@ -198,7 +198,7 @@ const UserForm: React.FC<UserFormProps> = ({ open, user, onClose, onSuccess }) =
         const value = event.target.value;
         setFormData(prev => ({
             ...prev,
-            assignedClusterIds: typeof value === 'string' ? value.split(',') : value
+            clusterConnectionIds: typeof value === 'string' ? value.split(',') : value
         }));
     };
 
@@ -274,7 +274,7 @@ const UserForm: React.FC<UserFormProps> = ({ open, user, onClose, onSuccess }) =
                         <InputLabel>Assigned Clusters</InputLabel>
                         <Select
                             multiple
-                            value={formData.assignedClusterIds}
+                            value={formData.clusterConnectionIds}
                             onChange={handleClusterChange}
                             input={<OutlinedInput label="Assigned Clusters" />}
                             renderValue={(selected) => (

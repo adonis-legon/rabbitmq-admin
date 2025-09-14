@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../utils/constants';
 
 export const UserMenu: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -33,15 +34,21 @@ export const UserMenu: React.FC = () => {
     setAnchorEl(null);
   };
 
+  const handleProfile = () => {
+    handleMenuClose();
+    navigate(ROUTES.PROFILE);
+  };
+
   const handleLogout = async () => {
     handleMenuClose();
     try {
       await logout();
-      navigate('/login');
+      // Navigate to login and clear any previous location state
+      navigate(ROUTES.LOGIN, { replace: true, state: null });
     } catch (error) {
       console.error('Logout failed:', error);
-      // Even if logout fails, redirect to login
-      navigate('/login');
+      // Even if logout fails, redirect to login and clear state
+      navigate(ROUTES.LOGIN, { replace: true, state: null });
     }
   };
 
@@ -117,7 +124,7 @@ export const UserMenu: React.FC = () => {
         <Divider />
 
         {/* Profile menu item */}
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={handleProfile}>
           <ListItemIcon>
             <PersonIcon fontSize="small" />
           </ListItemIcon>

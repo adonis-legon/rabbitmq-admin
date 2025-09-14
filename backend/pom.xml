@@ -278,6 +278,30 @@
     </build>
 
     <profiles>
+        <!-- CI profile that skips integration tests -->
+        <profile>
+            <id>ci</id>
+            <activation>
+                <property>
+                    <name>ci</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <!-- Exclude integration tests in CI environment -->
+                            <excludes>
+                                <exclude>**/*IntegrationTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
         <!-- Production profile with optimizations -->
         <profile>
             <id>production</id>

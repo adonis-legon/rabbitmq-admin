@@ -16,6 +16,7 @@ import { Visibility, VisibilityOff, Person, Lock } from '@mui/icons-material';
 import { useAuth } from './AuthProvider';
 import { getErrorMessage } from '../../utils/helpers';
 import { ROUTES } from '../../utils/constants';
+import { UserRole } from '../../types/auth';
 import VersionDisplay from '../VersionDisplay';
 
 const LoginForm: React.FC = () => {
@@ -32,14 +33,41 @@ const LoginForm: React.FC = () => {
   // Get the intended destination or default to dashboard
   const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
 
+  // Admin-only routes that require ADMINISTRATOR role
+  const adminOnlyRoutes = [ROUTES.USERS, ROUTES.CLUSTERS];
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      await login({ username, password });
-      navigate(from, { replace: true });
+      const loggedInUser = await login({ username, password });
+
+      // Determine where to redirect after login
+      let redirectTo = ROUTES.DASHBOARD; // Default destination
+
+      // Only redirect to the "from" location if it's a legitimate intended destination
+      // and not just the result of a logout or token expiration
+      if (from && from !== ROUTES.LOGIN && from !== '/') {
+        const isAdminOnlyRoute = adminOnlyRoutes.some(route => from.startsWith(route));
+        const isUserAdmin = loggedInUser.role === UserRole.ADMINISTRATOR;
+
+        if (isAdminOnlyRoute && !isUserAdmin) {
+          // Redirect to dashboard if user tries to access admin-only route without permissions
+          redirectTo = ROUTES.DASHBOARD;
+        } else {
+          // Only redirect to non-profile routes, or profile if it's an admin
+          // For regular users, always go to dashboard on fresh login
+          if (from === ROUTES.PROFILE) {
+            redirectTo = ROUTES.DASHBOARD; // Always redirect to dashboard after login
+          } else {
+            redirectTo = from;
+          }
+        }
+      }
+
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
