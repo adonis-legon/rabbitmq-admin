@@ -1,6 +1,6 @@
 # Docker Configuration
 
-Simple Docker setup for RabbitMQ Admin Dashboard.
+Simple Docker setup for RabbitMQ Admin.
 
 ## Files
 

@@ -17,7 +17,7 @@ const theme = createTheme({
       main: '#87CEEB', // Sky blue
       dark: '#4682B4', // Steel blue
       light: '#B0E0E6', // Powder blue
-      contrastText: '#FFFFFF',
+      contrastText: '#000000', // Changed from white to black for better visibility
     },
     secondary: {
       main: '#2E8B57', // Sea green for accents
@@ -45,6 +45,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#87CEEB',
+          color: '#000000', // Ensure black text color
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         },
       },

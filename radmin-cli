@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RabbitMQ Admin CLI
-# Unified command-line interface for RabbitMQ Admin Dashboard
+# Unified command-line interface for RabbitMQ Admin
 
 set -e
 
@@ -14,7 +14,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Project info
-PROJECT_NAME="RabbitMQ Admin Dashboard"
+PROJECT_NAME="RabbitMQ Admin"
 VERSION="0.0.1"
 
 log() {
@@ -24,9 +24,9 @@ log() {
 show_banner() {
     echo -e "${CYAN}"
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║                    RabbitMQ Admin CLI                       ║"
-    echo "║              Command-line interface for                     ║"
-    echo "║            RabbitMQ Admin Dashboard v${VERSION}                ║"
+    echo "║                    RabbitMQ Admin CLI                        ║"
+    echo "║              Command-line interface for                      ║"
+    echo "║            RabbitMQ Admin v${VERSION}                        ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
@@ -160,7 +160,7 @@ case $COMMAND in
                 sync_versions
                 ;;
             ""|show)
-                echo -e "${GREEN}RabbitMQ Admin Dashboard${NC}"
+                echo -e "${GREEN}RabbitMQ Admin${NC}"
                 echo "Version: $VERSION"
                 echo ""
                 # Try to get version from pom.xml

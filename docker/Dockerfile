@@ -1,4 +1,4 @@
-# Multi-stage build for RabbitMQ Admin Dashboard
+# Multi-stage build for RabbitMQ Admin
 # Use a minimal base image with JDK and install Maven manually
 FROM eclipse-temurin:21-jdk-jammy AS build
 

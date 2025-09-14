@@ -35,9 +35,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
           onClick={onMenuClick}
           sx={{
             mr: 2,
-            color: 'white',
+            color: theme.palette.primary.contrastText,
             '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'rgba(0, 0, 0, 0.1)', // Changed to dark overlay for better contrast
             },
           }}
         >
@@ -52,8 +52,8 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick }) => {
             component="div"
             sx={{
               fontWeight: 600,
-              color: 'white',
-              textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+              color: theme.palette.primary.contrastText,
+              textShadow: '0 1px 2px rgba(255,255,255,0.3)', // Adjusted shadow for black text
             }}
           >
             RabbitMQ Admin

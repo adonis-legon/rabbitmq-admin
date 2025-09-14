@@ -66,9 +66,9 @@ export const UserMenu: React.FC = () => {
         aria-haspopup="true"
         onClick={handleMenuOpen}
         sx={{
-          color: 'white',
+          color: theme.palette.primary.contrastText,
           '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'rgba(0, 0, 0, 0.1)', // Changed to dark overlay for better contrast
           },
         }}
       >
@@ -77,6 +77,7 @@ export const UserMenu: React.FC = () => {
             width: 32,
             height: 32,
             backgroundColor: theme.palette.primary.dark,
+            color: '#FFFFFF', // Keep white text in avatar for contrast against dark blue background
             fontSize: '0.875rem',
             fontWeight: 600,
           }}

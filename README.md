@@ -1,4 +1,4 @@
-# RabbitMQ Admin Dashboard
+# RabbitMQ Admin
 
 A comprehensive web application for managing RabbitMQ clusters with authentication, authorization, and multi-cluster support.
 
