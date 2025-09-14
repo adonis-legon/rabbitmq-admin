@@ -5,10 +5,10 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
-  # Run on pull requests targeting main branch
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
+  # Disabled pull request triggers to prevent runs on feature branches
+  # pull_request:
+  #   branches: [main]
+  #   types: [opened, synchronize, reopened]
 
 env:
   DOCKER_IMAGE_NAME: rabbitmq-admin
@@ -254,7 +254,7 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            ## RabbitMQ Admin Dashboard ${{ github.ref_name }}
+            ## RabbitMQ Admin ${{ github.ref_name }}
 
             ### 🚀 Deployment Options
 
