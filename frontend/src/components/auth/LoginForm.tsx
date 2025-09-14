@@ -16,6 +16,7 @@ import { Visibility, VisibilityOff, Person, Lock } from '@mui/icons-material';
 import { useAuth } from './AuthProvider';
 import { getErrorMessage } from '../../utils/helpers';
 import { ROUTES } from '../../utils/constants';
+import { UserRole } from '../../types/auth';
 import VersionDisplay from '../VersionDisplay';
 
 const LoginForm: React.FC = () => {
@@ -32,14 +33,28 @@ const LoginForm: React.FC = () => {
   // Get the intended destination or default to dashboard
   const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
 
+  // Admin-only routes that require ADMINISTRATOR role
+  const adminOnlyRoutes = [ROUTES.USERS, ROUTES.CLUSTERS];
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      await login({ username, password });
-      navigate(from, { replace: true });
+      const loggedInUser = await login({ username, password });
+
+      // Check if the intended destination is appropriate for the user's role
+      const isAdminOnlyRoute = adminOnlyRoutes.some(route => from.startsWith(route));
+      const isUserAdmin = loggedInUser.role === UserRole.ADMINISTRATOR;
+
+      if (isAdminOnlyRoute && !isUserAdmin) {
+        // Redirect to dashboard if user tries to access admin-only route without permissions
+        navigate(ROUTES.DASHBOARD, { replace: true });
+      } else {
+        // Redirect to intended destination
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {

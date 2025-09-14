@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ClusterConnection } from '../types/cluster';
 import { clusterApi } from '../services/api/clusterApi';
+import { useAuth } from '../hooks';
+import { UserRole } from '../types/auth';
 
 interface UseDashboardClustersState {
   clusters: ClusterConnection[];
@@ -16,6 +18,7 @@ interface UseDashboardClustersActions {
 }
 
 export const useDashboardClusters = (): UseDashboardClustersState & UseDashboardClustersActions => {
+  const { user } = useAuth();
   const [state, setState] = useState<UseDashboardClustersState>({
     clusters: [],
     selectedCluster: null,
@@ -43,9 +46,17 @@ export const useDashboardClusters = (): UseDashboardClustersState & UseDashboard
     try {
       setLoading(true);
       setError(null);
-      const clustersData = await clusterApi.getClusters();
+
+      // Use role-appropriate endpoint
+      let clustersData: ClusterConnection[];
+      if (user?.role === UserRole.ADMINISTRATOR) {
+        clustersData = await clusterApi.getClusters();
+      } else {
+        clustersData = await clusterApi.getMyActiveClusters();
+      }
+
       setClusters(clustersData);
-      
+
       // If no cluster is selected and there are clusters, select the first active one
       if (!state.selectedCluster && clustersData.length > 0) {
         const firstActiveCluster = clustersData.find(c => c.active) || clustersData[0];
@@ -58,7 +69,7 @@ export const useDashboardClusters = (): UseDashboardClustersState & UseDashboard
     } finally {
       setLoading(false);
     }
-  }, [state.selectedCluster]);
+  }, [state.selectedCluster, user?.role]);
 
   const selectCluster = useCallback((cluster: ClusterConnection) => {
     setSelectedCluster(cluster);
