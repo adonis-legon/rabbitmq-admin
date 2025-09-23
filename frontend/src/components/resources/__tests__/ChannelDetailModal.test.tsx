@@ -15,6 +15,40 @@ vi.mock("../../../hooks/useChannels", () => ({
   })),
 }));
 
+// Mock useDetailRefresh hook
+vi.mock("../../../hooks/useDetailRefresh", () => ({
+  useDetailRefresh: vi.fn(() => ({
+    refreshing: false,
+    lastUpdated: null,
+    autoRefresh: false,
+    refreshInterval: 30,
+    handleRefresh: vi.fn(),
+    setAutoRefresh: vi.fn(),
+    setRefreshInterval: vi.fn(),
+  })),
+}));
+
+// Mock NotificationContext
+vi.mock("../../../contexts/NotificationContext", () => ({
+  useNotification: vi.fn(() => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  })),
+}));
+
+// Mock RefreshControls component
+vi.mock("../shared/RefreshControls", () => ({
+  default: ({ onRefresh, loading }: any) => (
+    <div data-testid="refresh-controls">
+      <button onClick={onRefresh} disabled={loading}>
+        Refresh
+      </button>
+    </div>
+  ),
+}));
+
 // Mock clipboard API
 Object.assign(navigator, {
   clipboard: {

@@ -5,6 +5,8 @@ import com.rabbitmq.admin.model.ClusterConnection;
 import com.rabbitmq.admin.model.User;
 import com.rabbitmq.admin.repository.ClusterConnectionRepository;
 import com.rabbitmq.admin.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import org.springframework.http.HttpMethod;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,6 +33,8 @@ import java.util.UUID;
 @Service
 @Transactional
 public class ClusterConnectionService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClusterConnectionService.class);
 
     private final ClusterConnectionRepository clusterConnectionRepository;
     private final UserRepository userRepository;
@@ -192,7 +197,10 @@ public class ClusterConnectionService {
         ClusterConnection clusterConnection = getClusterConnectionById(clusterId);
 
         // Remove cluster from all user assignments before deletion
-        clusterConnection.getAssignedUsers().clear();
+        Set<User> currentUsers = new HashSet<>(clusterConnection.getAssignedUsers());
+        for (User user : currentUsers) {
+            clusterConnection.removeUser(user);
+        }
         clusterConnectionRepository.save(clusterConnection);
 
         clusterConnectionRepository.delete(clusterConnection);
@@ -240,8 +248,23 @@ public class ClusterConnectionService {
     public void updateClusterUserAssignments(UUID clusterId, Set<UUID> userIds) {
         ClusterConnection clusterConnection = getClusterConnectionById(clusterId);
 
-        // Clear existing assignments
-        clusterConnection.getAssignedUsers().clear();
+        logger.info("Updating user assignments for cluster {}: current users = {}, new users = {}",
+                clusterId, clusterConnection.getAssignedUsers().size(), userIds != null ? userIds.size() : 0);
+
+        // Log current user assignments before clearing
+        if (!clusterConnection.getAssignedUsers().isEmpty()) {
+            logger.info("Current assigned users before update: {}",
+                    clusterConnection.getAssignedUsers().stream()
+                            .map(User::getUsername)
+                            .toList());
+        }
+
+        // Clear existing assignments properly maintaining bidirectional relationship
+        Set<User> currentUsers = new HashSet<>(clusterConnection.getAssignedUsers());
+        for (User user : currentUsers) {
+            clusterConnection.removeUser(user);
+        }
+        logger.info("Cleared existing user assignments for cluster {}", clusterId);
 
         // Add new assignments
         if (userIds != null && !userIds.isEmpty()) {
@@ -249,10 +272,24 @@ public class ClusterConnectionService {
                 User user = userRepository.findById(userId)
                         .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
                 clusterConnection.addUser(user);
+                logger.info("Added user {} to cluster {}", user.getUsername(), clusterId);
             }
+        } else {
+            logger.info("No users to assign - all users will be removed from cluster {}", clusterId);
         }
 
         clusterConnectionRepository.save(clusterConnection);
+        logger.info("Saved cluster {} with {} assigned users", clusterId, clusterConnection.getAssignedUsers().size());
+
+        // Log final user assignments after update
+        if (!clusterConnection.getAssignedUsers().isEmpty()) {
+            logger.info("Final assigned users after update: {}",
+                    clusterConnection.getAssignedUsers().stream()
+                            .map(User::getUsername)
+                            .toList());
+        } else {
+            logger.info("No users assigned to cluster {} after update", clusterId);
+        }
     }
 
     /**

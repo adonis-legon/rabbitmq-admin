@@ -21,6 +21,8 @@ export const tokenService = {
   clearTokens: (): void => {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    // Also clear selected cluster on logout
+    localStorage.removeItem('selectedClusterId');
   },
 
   isTokenExpired: (token: string): boolean => {

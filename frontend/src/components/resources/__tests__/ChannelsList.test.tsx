@@ -91,10 +91,105 @@ vi.mock("../../../hooks/useChannels", () => ({
     },
     loading: false,
     error: null,
+    lastUpdated: new Date(),
     loadChannels: vi.fn(),
     refreshChannels: vi.fn(),
     clearError: vi.fn(),
   })),
+}));
+
+// Mock useDebouncedSearch hook
+vi.mock("../../../hooks/useDebouncedSearch", () => ({
+  useDebouncedSearch: vi.fn((initialValue: string) => ({
+    searchTerm: initialValue,
+    debouncedSearchTerm: initialValue,
+    isSearching: false,
+    setSearchTerm: vi.fn(),
+    clearSearch: vi.fn(),
+  })),
+}));
+
+// Mock ResourceTable component
+vi.mock("../shared/ResourceTable", () => ({
+  default: ({ data, onRowClick, loading }: any) => (
+    <div data-testid="resource-table" role="grid">
+      {loading ? (
+        <div>Loading...</div>
+      ) : (
+        data.map((item: any, index: number) => (
+          <div
+            key={item.id || index}
+            role="row"
+            onClick={() => onRowClick && onRowClick({ row: item })}
+            style={{
+              cursor: "pointer",
+              padding: "8px",
+              border: "1px solid #ccc",
+              margin: "4px",
+            }}
+          >
+            <div>{item.name}</div>
+            <div>Channel #{item.number}</div>
+            <div>{item.state}</div>
+            <div>{item.connectionName}</div>
+            <div>{item.connectionHost}</div>
+          </div>
+        ))
+      )}
+    </div>
+  ),
+}));
+
+// Mock ResourceFilters component
+vi.mock("../shared/ResourceFilters", () => ({
+  default: ({
+    searchTerm,
+    onSearchChange,
+    onClearFilters,
+    searchPlaceholder,
+  }: any) => (
+    <div data-testid="resource-filters">
+      <input
+        placeholder={searchPlaceholder}
+        value={searchTerm}
+        onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+      />
+      {searchTerm && <button onClick={onClearFilters}>Clear Filters</button>}
+    </div>
+  ),
+}));
+
+// Mock RefreshControls component
+vi.mock("../shared/RefreshControls", () => ({
+  default: ({ onRefresh, autoRefresh, onAutoRefreshChange, loading }: any) => (
+    <div data-testid="refresh-controls">
+      <button onClick={onRefresh} disabled={loading}>
+        Refresh
+      </button>
+      <label>
+        <input
+          type="checkbox"
+          checked={autoRefresh}
+          onChange={(e) =>
+            onAutoRefreshChange && onAutoRefreshChange(e.target.checked)
+          }
+        />
+        Auto-refresh
+      </label>
+    </div>
+  ),
+}));
+
+// Mock ChannelDetailModal component
+vi.mock("../ChannelDetailModal", () => ({
+  default: ({ open, onClose, channel }: any) =>
+    open ? (
+      <div data-testid="channel-detail-modal">
+        <h2>Channel Details</h2>
+        {channel && <div>Channel: {channel.name}</div>}
+        <button onClick={onClose}>Close</button>
+      </div>
+    ) : null,
 }));
 
 // Mock the API

@@ -5,6 +5,8 @@ import com.rabbitmq.admin.model.ClusterConnection;
 import com.rabbitmq.admin.security.UserPrincipal;
 import com.rabbitmq.admin.service.ClusterConnectionService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/clusters")
 public class ClusterController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ClusterController.class);
     private final ClusterConnectionService clusterConnectionService;
 
     public ClusterController(ClusterConnectionService clusterConnectionService) {
@@ -80,8 +83,8 @@ public class ClusterController {
                 request.getDescription(),
                 request.getActive());
 
-        // Assign users if provided
-        if (request.getAssignedUserIds() != null && !request.getAssignedUserIds().isEmpty()) {
+        // Assign users if provided (including empty array to remove all users)
+        if (request.getAssignedUserIds() != null) {
             clusterConnectionService.updateClusterUserAssignments(cluster.getId(), request.getAssignedUserIds());
             // Reload cluster to get updated user assignments
             cluster = clusterConnectionService.getClusterConnectionById(cluster.getId());
@@ -110,9 +113,11 @@ public class ClusterController {
 
         // Update user assignments if provided
         if (request.getAssignedUserIds() != null) {
+            logger.info("Updating user assignments for cluster {}: {}", id, request.getAssignedUserIds());
             clusterConnectionService.updateClusterUserAssignments(id, request.getAssignedUserIds());
             // Reload cluster to get updated user assignments
             cluster = clusterConnectionService.getClusterConnectionById(id);
+            logger.info("Cluster {} now has {} assigned users", id, cluster.getAssignedUsers().size());
         }
 
         return ResponseEntity.ok(ClusterConnectionResponse.fromClusterConnection(cluster));

@@ -12,18 +12,8 @@ import {
   useTheme,
   Collapse,
 } from "@mui/material";
-import {
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  Storage as StorageIcon,
-  ViewList as ViewListIcon,
-  Cable as CableIcon,
-  Hub as HubIcon,
-  SwapHoriz as SwapHorizIcon,
-  Queue as QueueIcon,
-  ExpandLess,
-  ExpandMore,
-} from "@mui/icons-material";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
+import { AppIcons } from "../../utils/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { UserRole } from "../../types/auth";
@@ -46,52 +36,60 @@ interface NavigationItem {
 const navigationItems: NavigationItem[] = [
   {
     text: "Dashboard",
-    icon: <DashboardIcon />,
+    icon: AppIcons.dashboard,
     path: ROUTES.DASHBOARD,
   },
   {
     text: "Resources",
-    icon: <ViewListIcon />,
+    icon: AppIcons.resources,
     path: ROUTES.RESOURCES,
     requiresCluster: true,
     children: [
       {
         text: "Connections",
-        icon: <CableIcon />,
+        icon: AppIcons.connections,
         path: ROUTES.RESOURCES_CONNECTIONS,
         requiresCluster: true,
       },
       {
         text: "Channels",
-        icon: <HubIcon />,
+        icon: AppIcons.channels,
         path: ROUTES.RESOURCES_CHANNELS,
         requiresCluster: true,
       },
       {
         text: "Exchanges",
-        icon: <SwapHorizIcon />,
+        icon: AppIcons.exchanges,
         path: ROUTES.RESOURCES_EXCHANGES,
         requiresCluster: true,
       },
       {
         text: "Queues",
-        icon: <QueueIcon />,
+        icon: AppIcons.queues,
         path: ROUTES.RESOURCES_QUEUES,
         requiresCluster: true,
       },
     ],
   },
   {
-    text: "User Management",
-    icon: <PeopleIcon />,
-    path: ROUTES.USERS,
+    text: "Management",
+    icon: AppIcons.management,
+    path: ROUTES.USERS, // Default to first child when clicked
     adminOnly: true,
-  },
-  {
-    text: "Cluster Management",
-    icon: <StorageIcon />,
-    path: ROUTES.CLUSTERS,
-    adminOnly: true,
+    children: [
+      {
+        text: "Users",
+        icon: AppIcons.users,
+        path: ROUTES.USERS,
+        adminOnly: true,
+      },
+      {
+        text: "Clusters",
+        icon: AppIcons.clusters,
+        path: ROUTES.CLUSTERS,
+        adminOnly: true,
+      },
+    ],
   },
 ];
 
@@ -103,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
   const { clusters } = useClusterContext();
   const [expandedItems, setExpandedItems] = React.useState<string[]>([
     "Resources",
+    "Management",
   ]);
 
   const isAdmin = user?.role === UserRole.ADMINISTRATOR;
@@ -181,9 +180,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
                     onClick={() => {
                       if (item.children) {
                         handleExpandToggle(item.text);
-                        // If has children and cluster access, navigate to first child
-                        if (hasClusterAccess && item.children.length > 0) {
-                          handleNavigation(item.children[0].path);
+                        // Navigate to first child if available and not disabled
+                        if (item.children.length > 0) {
+                          const firstChild = item.children[0];
+                          const isFirstChildDisabled =
+                            firstChild.requiresCluster && !hasClusterAccess;
+                          if (!isFirstChildDisabled) {
+                            handleNavigation(firstChild.path);
+                          }
                         }
                       } else {
                         handleNavigation(item.path);

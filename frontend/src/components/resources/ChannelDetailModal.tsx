@@ -41,6 +41,7 @@ import { RabbitMQChannel } from "../../types/rabbitmq";
 import { useChannels } from "../../hooks/useChannels";
 import { useDetailRefresh } from "../../hooks/useDetailRefresh";
 import RefreshControls from "./shared/RefreshControls";
+import { useNotification } from "../../contexts/NotificationContext";
 
 interface ChannelDetailModalProps {
   open: boolean;
@@ -61,6 +62,7 @@ export const ChannelDetailModal: React.FC<ChannelDetailModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const { loadChannels } = useChannels();
+  const { success } = useNotification();
 
   const {
     refreshing,
@@ -102,8 +104,7 @@ export const ChannelDetailModal: React.FC<ChannelDetailModalProps> = ({
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      // Could show a toast notification here
-      console.log("Copied to clipboard:", text);
+      success("Copied to clipboard");
     });
   };
 
@@ -610,7 +611,7 @@ export const ChannelDetailModal: React.FC<ChannelDetailModalProps> = ({
           </AccordionSummary>
           <AccordionDetails>
             {currentChannel.consumer_details &&
-              currentChannel.consumer_details.length > 0 ? (
+            currentChannel.consumer_details.length > 0 ? (
               <Box>
                 {currentChannel.consumer_details.map((consumer, index) => (
                   <Card

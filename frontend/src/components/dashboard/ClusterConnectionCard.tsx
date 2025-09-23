@@ -11,12 +11,11 @@ import {
   Tooltip,
 } from "@mui/material";
 import {
-  Storage as StorageIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Launch as LaunchIcon,
   ViewList as ViewListIcon,
 } from "@mui/icons-material";
+import { AppIcons } from "../../utils/icons";
 import { ClusterConnection } from "../../types/cluster";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../utils/constants";
@@ -33,12 +32,6 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
   onSelect,
 }) => {
   const navigate = useNavigate();
-
-  const handleNavigateToRabbitMQ = () => {
-    // Navigate to RabbitMQ management with cluster ID as query parameter
-    // This allows the RabbitMQ page to know which cluster to work with
-    navigate(`${ROUTES.RABBITMQ}?clusterId=${cluster.id}`);
-  };
 
   const getStatusColor = () => {
     return cluster.active ? "success" : "error";
@@ -66,7 +59,9 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
     >
       <CardContent sx={{ flexGrow: 1 }}>
         <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
-          <StorageIcon sx={{ mr: 1, mt: 0.5, color: "primary.main" }} />
+          {React.cloneElement(AppIcons.clusters, {
+            sx: { mr: 1, mt: 0.5, color: "primary.main" },
+          })}
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" component="h3" gutterBottom>
               {cluster.name}
@@ -135,17 +130,6 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
               </IconButton>
             </Tooltip>
           )}
-
-          <Tooltip title="Open RabbitMQ Management">
-            <IconButton
-              color="primary"
-              onClick={handleNavigateToRabbitMQ}
-              disabled={!cluster.active}
-              size="small"
-            >
-              <LaunchIcon />
-            </IconButton>
-          </Tooltip>
         </Box>
       </CardActions>
     </Card>

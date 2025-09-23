@@ -14,6 +14,7 @@ Before diving into specific issues, run through this quick checklist:
 - [ ] Network connectivity to the cluster is working
 - [ ] Browser has JavaScript enabled
 - [ ] No browser console errors are present
+- [ ] RabbitMQ Management UI is accessible (test by navigating directly to cluster URL)
 
 ## Authentication and Authorization Issues
 
@@ -330,6 +331,61 @@ Before diving into specific issues, run through this quick checklist:
 
 ## Data Loading Issues
 
+### Issue: Unexpected Redirects During Page Refresh
+
+**Symptoms:**
+
+- Being redirected to dashboard when refreshing a resource page
+- Losing current page context after browser refresh
+- Intermittent redirects when navigating directly to resource URLs
+
+**Causes:**
+
+- Application loading state not properly handled during page refresh
+- Race condition between cluster data loading and route protection
+- Browser cache issues affecting initial load sequence
+
+**Resolution Steps:**
+
+1. **Understanding the fix:**
+
+   The application now properly handles loading states to prevent premature redirects during page refresh. The route guard waits for cluster data to fully load before making redirect decisions.
+
+2. **Use debug logging to diagnose issues:**
+
+   Open the browser console to see ResourceRoute debug logs that show:
+
+   ```
+   ResourceRoute render: {
+     loading: false,
+     clustersLength: 2,
+     selectedCluster: "production-cluster",
+     error: null
+   }
+   ```
+
+   If you see `loading: true` for extended periods or `clustersLength: 0` when clusters should be available, this indicates a cluster loading issue.
+
+3. **If still experiencing issues:**
+
+   - Clear browser cache and reload the page
+   - Ensure JavaScript is enabled in your browser
+   - Check browser console for ResourceRoute debug logs and any loading errors
+   - Try logging out and back in to reset session state
+
+4. **Verify proper behavior:**
+
+   - Refresh any resource page - you should stay on the same page
+   - Navigate directly to resource URLs - they should load properly after authentication
+   - Switch between clusters - navigation should remain stable
+
+**Prevention:**
+
+- Keep browser updated to latest version
+- Avoid interrupting page loads during initial startup
+- Allow sufficient time for application initialization
+- Monitor ResourceRoute debug logs during development
+
 ### Issue: Empty or Missing Resource Data
 
 **Symptoms:**
@@ -627,6 +683,107 @@ Before diving into specific issues, run through this quick checklist:
 - Use efficient query patterns
 - Implement proper caching strategies
 
+## RabbitMQ Management UI Access Issues
+
+### Issue: Cannot Access RabbitMQ Management UI
+
+**Symptoms:**
+
+- Unable to access Management UI directly via cluster URL
+- Management UI shows authentication errors
+- Management UI loads but shows different data than expected
+
+**Causes:**
+
+- Incorrect cluster API URL configuration
+- RabbitMQ Management plugin not enabled
+- Network connectivity issues to Management UI
+- Authentication credential problems
+
+**Resolution Steps:**
+
+1. **Verify cluster configuration:**
+
+   - Ensure cluster API URL is correct and accessible
+   - Test the URL directly in a browser: `http://cluster-host:15672`
+   - Verify the URL includes the correct protocol (http/https) and port
+
+2. **Test Management UI directly:**
+
+   ```bash
+   # Test Management UI accessibility
+   curl -u admin:admin http://cluster-host:15672/api/overview
+
+   # Check if Management plugin is enabled
+   curl -u admin:admin http://cluster-host:15672/api/nodes
+   ```
+
+3. **Verify cluster credentials:**
+
+   - Ensure the cluster username/password are correct
+   - Test credentials in the Management UI directly
+   - Check if credentials have sufficient permissions
+
+4. **Check network connectivity:**
+   - Verify firewall settings allow access to port 15672
+   - Test network connectivity to the cluster host
+   - Check VPN or proxy settings if applicable
+
+**Prevention:**
+
+- Regularly test Management UI accessibility
+- Keep cluster configurations up to date
+- Monitor RabbitMQ Management plugin status
+- Document cluster access procedures
+
+### Issue: Management UI Opens But Shows Different Data
+
+**Symptoms:**
+
+- Management UI opens successfully but shows different resources
+- Resource counts don't match between interfaces
+- Different virtual hosts or permissions visible
+- Inconsistent cluster information
+
+**Causes:**
+
+- Different user credentials between interfaces
+- Virtual host access differences
+- Cluster configuration discrepancies
+- Time synchronization issues
+
+**Resolution Steps:**
+
+1. **Compare credentials:**
+
+   - Verify both interfaces use the same cluster configuration
+   - Check if Management UI uses different authentication
+   - Ensure virtual host access is consistent
+
+2. **Check virtual host selection:**
+
+   - Verify you're viewing the same virtual host in both interfaces
+   - Switch virtual hosts in Management UI to match
+   - Check virtual host permissions for the user
+
+3. **Refresh both interfaces:**
+
+   - Refresh the integrated resource browser
+   - Refresh the Management UI tab
+   - Compare timestamps and data freshness
+
+4. **Verify cluster selection:**
+   - Ensure you're connected to the same cluster in both interfaces
+   - Check cluster node information in Management UI
+   - Verify cluster API URL matches the Management UI URL
+
+**Prevention:**
+
+- Use consistent cluster configurations
+- Document virtual host access patterns
+- Regularly synchronize data between interfaces
+- Monitor cluster configuration changes
+
 ## Browser and Client Issues
 
 ### Issue: JavaScript Errors or Console Warnings
@@ -832,7 +989,31 @@ For troubleshooting, enable debug logging:
    - User authentication details and authorities
    - Security context setup and errors
 
-2. **Browser Console Logging:**
+2. **Cluster Management Debug Logging:**
+
+   Enable detailed cluster management logging to track user assignment operations:
+
+   ```yaml
+   # In application.yml
+   logging:
+     level:
+       com.rabbitmq.admin.controller.ClusterController: INFO
+   ```
+
+   Or using environment variables:
+
+   ```bash
+   # Set environment variable
+   export LOGGING_LEVEL_COM_RABBITMQ_ADMIN_CONTROLLER_CLUSTERCONTROLLER=INFO
+   ```
+
+   This provides logs for:
+
+   - User assignment updates during cluster modifications
+   - Number of users assigned to clusters after updates
+   - Cluster configuration changes and their impact
+
+3. **Browser Console Logging:**
 
    ```javascript
    // Enable debug logging
@@ -845,7 +1026,23 @@ For troubleshooting, enable debug logging:
    location.reload();
    ```
 
-3. **Network Request Monitoring:**
+4. **Frontend Component Debug Logging:**
+
+   The ResourceRoute component now includes built-in debug logging to help troubleshoot loading and cluster selection issues. When you open the browser console, you'll see detailed logs including:
+
+   - Component render state (loading, cluster count, selected cluster)
+   - Loading state transitions
+   - Cluster context information
+
+   This is particularly useful for diagnosing:
+
+   - Unexpected redirects during page refresh
+   - Issues with cluster data loading
+   - Problems with route protection logic
+
+   No additional configuration is needed - the debug logs are automatically available in the browser console.
+
+5. **Network Request Monitoring:**
 
    - Open browser developer tools
    - Go to Network tab
@@ -853,7 +1050,7 @@ For troubleshooting, enable debug logging:
    - Check for failed requests or slow responses
    - Look for 401/403 responses indicating authentication issues
 
-4. **Application State Monitoring:**
+6. **Application State Monitoring:**
    ```javascript
    // Monitor application state
    console.log("Current user:", JSON.parse(localStorage.getItem("user")));

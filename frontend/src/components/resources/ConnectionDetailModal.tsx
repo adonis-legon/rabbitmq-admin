@@ -37,6 +37,7 @@ import { RabbitMQConnection } from "../../types/rabbitmq";
 import { useConnections } from "../../hooks/useConnections";
 import { useDetailRefresh } from "../../hooks/useDetailRefresh";
 import RefreshControls from "./shared/RefreshControls";
+import { useNotification } from "../../contexts/NotificationContext";
 
 interface ConnectionDetailModalProps {
   open: boolean;
@@ -56,6 +57,7 @@ export const ConnectionDetailModal: React.FC<ConnectionDetailModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const { loadConnections } = useConnections();
+  const { success } = useNotification();
 
   const {
     refreshing,
@@ -97,8 +99,7 @@ export const ConnectionDetailModal: React.FC<ConnectionDetailModalProps> = ({
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      // Could show a toast notification here
-      console.log("Copied to clipboard:", text);
+      success("Copied to clipboard");
     });
   };
 

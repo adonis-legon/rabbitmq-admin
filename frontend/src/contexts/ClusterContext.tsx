@@ -35,11 +35,11 @@ interface ClusterProviderProps {
 export const ClusterProvider: React.FC<ClusterProviderProps> = ({
   children,
 }) => {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [state, setState] = useState<ClusterContextState>({
     clusters: [],
     selectedCluster: null,
-    loading: false,
+    loading: true, // Start with loading true to prevent premature redirects
     error: null,
   });
 
@@ -53,6 +53,12 @@ export const ClusterProvider: React.FC<ClusterProviderProps> = ({
 
   const setSelectedCluster = (selectedCluster: ClusterConnection | null) => {
     setState((prev) => ({ ...prev, selectedCluster }));
+    // Persist selected cluster to localStorage
+    if (selectedCluster) {
+      localStorage.setItem("selectedClusterId", selectedCluster.id);
+    } else {
+      localStorage.removeItem("selectedClusterId");
+    }
   };
 
   const refreshClusters = useCallback(async () => {
@@ -72,17 +78,36 @@ export const ClusterProvider: React.FC<ClusterProviderProps> = ({
 
       // Use a callback to get the current state to avoid dependency issues
       setState((prevState) => {
+        let selectedCluster = prevState.selectedCluster;
+
+        // Try to restore selected cluster from localStorage
+        const savedClusterId = localStorage.getItem("selectedClusterId");
+
+        if (savedClusterId && clustersData.length > 0) {
+          const savedCluster = clustersData.find(
+            (c) => c.id === savedClusterId
+          );
+          if (savedCluster) {
+            selectedCluster = savedCluster;
+          }
+        }
+
         // If no cluster is selected and there are clusters, select the first active one
-        if (!prevState.selectedCluster && clustersData.length > 0) {
+        if (!selectedCluster && clustersData.length > 0) {
           const firstActiveCluster =
             clustersData.find((c) => c.active) || clustersData[0];
-          return {
-            ...prevState,
-            selectedCluster: firstActiveCluster,
-            clusters: clustersData,
-          };
+          selectedCluster = firstActiveCluster;
+          // Persist the auto-selected cluster
+          if (firstActiveCluster) {
+            localStorage.setItem("selectedClusterId", firstActiveCluster.id);
+          }
         }
-        return { ...prevState, clusters: clustersData };
+
+        return {
+          ...prevState,
+          selectedCluster,
+          clusters: clustersData,
+        };
       });
     } catch (err: any) {
       console.error("Error loading clusters:", err);
@@ -93,7 +118,7 @@ export const ClusterProvider: React.FC<ClusterProviderProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const selectCluster = useCallback((cluster: ClusterConnection) => {
     setSelectedCluster(cluster);
@@ -105,13 +130,28 @@ export const ClusterProvider: React.FC<ClusterProviderProps> = ({
 
   // Load clusters when user changes
   useEffect(() => {
+    if (authLoading) {
+      // Still loading auth, keep cluster loading state
+      return;
+    }
+
     if (user) {
       refreshClusters();
+    } else {
+      // Clear state when user logs out or auth completes with no user
+      setState({
+        clusters: [],
+        selectedCluster: null,
+        loading: false,
+        error: null,
+      });
     }
-  }, [user?.id]); // Only depend on user ID to avoid infinite loops
+  }, [user?.id, authLoading]); // Depend on both user ID and auth loading state
 
   const contextValue: ClusterContextType = {
     ...state,
+    // Include auth loading in the overall loading state
+    loading: state.loading || authLoading,
     selectCluster,
     refreshClusters,
     clearError,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   IconButton,
   Menu,
@@ -10,21 +10,23 @@ import {
   Divider,
   Box,
   useTheme,
-} from '@mui/material';
+} from "@mui/material";
 import {
   AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
-} from '@mui/icons-material';
-import { useAuth } from '../auth/AuthProvider';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../utils/constants';
+} from "@mui/icons-material";
+import { useAuth } from "../auth/AuthProvider";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../utils/constants";
+import { useNotification } from "../../contexts/NotificationContext";
 
 export const UserMenu: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
+  const { success, error } = useNotification();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -43,10 +45,11 @@ export const UserMenu: React.FC = () => {
     handleMenuClose();
     try {
       await logout();
+      success("Logged out successfully");
       // Navigate to login and clear any previous location state
       navigate(ROUTES.LOGIN, { replace: true, state: null });
-    } catch (error) {
-      console.error('Logout failed:', error);
+    } catch (err) {
+      error("Logout failed. You have been signed out anyway.");
       // Even if logout fails, redirect to login and clear state
       navigate(ROUTES.LOGIN, { replace: true, state: null });
     }
@@ -67,8 +70,8 @@ export const UserMenu: React.FC = () => {
         onClick={handleMenuOpen}
         sx={{
           color: theme.palette.primary.contrastText,
-          '&:hover': {
-            backgroundColor: 'rgba(0, 0, 0, 0.1)', // Changed to dark overlay for better contrast
+          "&:hover": {
+            backgroundColor: "rgba(0, 0, 0, 0.1)", // Changed to dark overlay for better contrast
           },
         }}
       >
@@ -77,8 +80,8 @@ export const UserMenu: React.FC = () => {
             width: 32,
             height: 32,
             backgroundColor: theme.palette.primary.dark,
-            color: '#FFFFFF', // Keep white text in avatar for contrast against dark blue background
-            fontSize: '0.875rem',
+            color: "#FFFFFF", // Keep white text in avatar for contrast against dark blue background
+            fontSize: "0.875rem",
             fontWeight: 600,
           }}
         >
@@ -97,14 +100,14 @@ export const UserMenu: React.FC = () => {
           sx: {
             mt: 1.5,
             minWidth: 200,
-            '& .MuiMenuItem-root': {
+            "& .MuiMenuItem-root": {
               px: 2,
               py: 1,
             },
           },
         }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
         {/* User info header */}
         <Box sx={{ px: 2, py: 1.5 }}>
@@ -115,7 +118,7 @@ export const UserMenu: React.FC = () => {
             variant="caption"
             sx={{
               color: theme.palette.text.secondary,
-              textTransform: 'capitalize',
+              textTransform: "capitalize",
             }}
           >
             {user?.role?.toLowerCase()}
@@ -139,8 +142,8 @@ export const UserMenu: React.FC = () => {
           onClick={handleLogout}
           sx={{
             color: theme.palette.error.main,
-            '&:hover': {
-              backgroundColor: theme.palette.error.light + '20',
+            "&:hover": {
+              backgroundColor: theme.palette.error.light + "20",
             },
           }}
         >

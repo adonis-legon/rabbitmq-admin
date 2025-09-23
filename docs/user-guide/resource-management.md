@@ -12,6 +12,18 @@ The RabbitMQ Resource Management feature provides a comprehensive interface for 
 - Active cluster connection configured by an administrator
 - Web browser with JavaScript enabled
 
+### Cluster Access and User Assignments
+
+Access to RabbitMQ clusters is controlled through user assignments configured by administrators:
+
+- **User Assignment**: Administrators assign specific users to cluster connections
+- **Role-Based Access**: Both USER and ADMINISTRATOR roles can access assigned clusters
+- **Multiple Clusters**: Users can be assigned to multiple cluster connections
+- **Active Clusters Only**: Only active cluster connections are accessible for resource browsing
+- **Assignment Management**: User assignments can be updated when creating or modifying cluster connections
+
+**Note**: If you don't see any clusters available, contact your administrator to verify your cluster assignments.
+
 ### Accessing Resource Management
 
 1. **Login** to the RabbitMQ Admin application
@@ -27,20 +39,54 @@ The RabbitMQ Resource Management feature provides a comprehensive interface for 
 
 ## Navigation and Interface
 
+### Cluster Dashboard Navigation
+
+The cluster dashboard provides access to RabbitMQ resources:
+
+- **View Resources Button**: Navigate to the integrated resource management interface within the application
+
 ### Sidebar Navigation
 
-The Resources section in the sidebar provides quick access to all resource types:
+The sidebar provides organized access to all application features:
 
-- **📡 Connections**: View all active client connections
-- **🔗 Channels**: Browse channels across all connections
-- **🔄 Exchanges**: Explore message routing exchanges
-- **📋 Queues**: Monitor message queues and their status
+**Resources Section** (requires cluster access):
+
+- **Connections**: View all active client connections
+- **Channels**: Browse channels across all connections
+- **Exchanges**: Explore message routing exchanges
+- **Queues**: Monitor message queues and their status
+
+**Management Section** (admin-only):
+
+- **Users**: Manage user accounts and permissions
+- **Clusters**: Configure and manage cluster connections
+
+Each section and resource type is represented by a consistent icon throughout the application for easy identification and navigation.
 
 The navigation automatically:
 
 - Highlights the currently active resource type
 - Disables menu items when no cluster access is available
 - Adapts to different screen sizes for mobile and tablet use
+
+### Breadcrumb Navigation
+
+The application includes breadcrumb navigation at the top of pages to help you understand your current location and navigate back to parent pages:
+
+- **Dashboard**: Always available as the root navigation point with a dashboard icon (automatically included on all pages)
+- **Cluster Management**: Shows when viewing cluster connection management pages
+- **Resources**: Shows when viewing any resource management page
+- **Current Resource**: Displays the specific resource type you're currently viewing
+
+#### Breadcrumb Features
+
+- **Automatic Dashboard Root**: All pages automatically include Dashboard as the first breadcrumb item
+- **Consistent Icons**: Each breadcrumb item includes an appropriate icon for visual context
+- **Clickable Navigation**: All breadcrumb items (except the current page) are clickable for quick navigation
+- **Responsive Design**: Breadcrumbs adapt to different screen sizes and maintain readability
+- **Visual Hierarchy**: Clear visual distinction between clickable and current page items
+
+Breadcrumbs are especially useful when navigating deep into resource details, managing cluster connections, or when accessing pages via direct URLs. The Dashboard breadcrumb provides a consistent way to return to the main application overview from any page.
 
 ### Direct URL Navigation
 
@@ -53,7 +99,33 @@ The application supports direct URL navigation to resource pages, enabling:
   - Main resources page: `/resources`
   - Specific resource types: `/resources/connections`, `/resources/channels`, `/resources/exchanges`, `/resources/queues`
 
-**Note**: Direct URL navigation requires authentication and cluster selection. If accessing a resource URL without a selected cluster, you'll be redirected to the dashboard to choose a cluster first.
+**Note**: Direct URL navigation requires authentication and cluster selection. If accessing a resource URL without a selected cluster, you'll be redirected to the dashboard to choose a cluster first. The application properly handles page refreshes and initial loading states to prevent premature redirects during startup.
+
+### RabbitMQ Management UI Access
+
+While the integrated resource browser provides comprehensive read-only access to RabbitMQ resources, you can also access the native RabbitMQ Management UI directly:
+
+#### Accessing the Management UI
+
+- **Direct URL Access**: Navigate directly to your cluster's management URL (typically `http://your-cluster:15672`)
+- **Separate Authentication**: Use your RabbitMQ cluster credentials to log in
+- **Independent Session**: Management UI sessions are separate from the main application
+
+#### When to Use Each Interface
+
+**Integrated Resource Browser (This Application)**:
+
+- **Read-only monitoring**: View connections, channels, exchanges, and queues
+- **Filtered views**: Use search and filtering capabilities
+- **Consistent UI**: Unified interface across multiple clusters
+- **Mobile-friendly**: Responsive design for mobile and tablet access
+
+**Native RabbitMQ Management UI**:
+
+- **Full administrative access**: Create, modify, and delete resources
+- **Advanced features**: Queue purging, message publishing, policy management
+- **Real-time monitoring**: Live updates and detailed statistics
+- **Plugin management**: Access to RabbitMQ plugins and advanced configuration
 
 ### Resource List Interface
 
@@ -75,9 +147,11 @@ Each resource page provides a consistent interface with:
 
 #### Search and Filtering
 
-- **Name search**: Filter resources by name with optional regex support
+- **Name search**: Filter resources by name with debounced input
 - **State filters**: Filter by resource state (running, idle, flow, etc.)
 - **Type filters**: Filter by resource type where applicable
+- **Consistent behavior**: All list views (resources, clusters, users) use the same filtering interface
+- **Smart empty states**: Distinguishes between "no data available" and "no results match filters"
 - **Clear filters**: Reset all filters with a single click
 
 #### Refresh Controls
@@ -218,9 +292,10 @@ Queues store and deliver messages to consumers.
 #### Name Search
 
 - Enter text in the search box to filter resources by name
-- Use the regex toggle for advanced pattern matching
+- Search is debounced (300ms delay) to improve performance
 - Search is case-insensitive by default
 - Clear search with the "×" button or by emptying the search box
+- Consistent behavior across all list views (resources, clusters, users)
 
 #### State Filtering
 
@@ -235,6 +310,12 @@ Queues store and deliver messages to consumers.
 - Search terms and state filters persist during auto-refresh
 - Filters are reset when switching between resource types
 - Use "Clear Filters" to reset all filtering options
+
+#### Empty State Messaging
+
+- When no data exists: Shows helpful message to create first item
+- When filters don't match: Shows "No items match current filters" message
+- Clear distinction helps users understand whether to adjust filters or create new items
 
 ### Pagination
 
@@ -452,6 +533,7 @@ The application protects sensitive information:
 
 - **Use Bookmarks**: Bookmark frequently accessed resource pages using direct URLs (e.g., `/resources/queues`)
 - **Direct Navigation**: Use direct URLs to quickly access specific resource types
+- **Native Management UI**: Access the RabbitMQ Management UI directly via cluster URLs for full administrative features not available in the integrated interface
 - **Filter Strategically**: Use filters to focus on relevant resources
 - **Batch Operations**: Review multiple resources before taking action
 - **Context Switching**: Keep cluster context in mind when switching resources

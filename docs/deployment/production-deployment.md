@@ -173,6 +173,7 @@ data:
   LOGGING_LEVEL_COM_RABBITMQ_ADMIN: "INFO"
   LOGGING_LEVEL_COM_RABBITMQ_ADMIN_SERVICE_RABBITMQRESOURCESERVICE: "INFO"
   LOGGING_LEVEL_COM_RABBITMQ_ADMIN_CONTROLLER_RABBITMQRESOURCECONTROLLER: "INFO"
+  LOGGING_LEVEL_COM_RABBITMQ_ADMIN_CONTROLLER_CLUSTERCONTROLLER: "INFO"
 ```
 
 ### Secrets
@@ -431,6 +432,7 @@ app.monitoring.health.timeout-seconds=15
 logging.file.name=/var/log/rabbitmq-admin/application.log
 logging.level.com.rabbitmq.admin.service.RabbitMQResourceService=INFO
 logging.level.com.rabbitmq.admin.controller.RabbitMQResourceController=INFO
+logging.level.com.rabbitmq.admin.controller.ClusterController=INFO
 rabbitmq.admin.resources.logging.log-slow-requests=true
 rabbitmq.admin.resources.logging.slow-request-threshold=5000
 rabbitmq.admin.resources.logging.log-errors=true

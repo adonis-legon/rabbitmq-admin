@@ -35,8 +35,9 @@ export const ResourceRoute: React.FC<ResourceRouteProps> = ({ children }) => {
     );
   }
 
-  // If user has no assigned clusters, redirect to dashboard
-  if (clusters.length === 0) {
+  // Only redirect to dashboard if we're done loading AND user has no assigned clusters
+  // This prevents redirect during the initial loading phase on page refresh
+  if (!loading && clusters.length === 0) {
     return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
 
