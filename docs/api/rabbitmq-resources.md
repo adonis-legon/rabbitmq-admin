@@ -8,7 +8,7 @@ The RabbitMQ Resource Management API allows authenticated users to browse and in
 
 **Architecture Note**: The API has been migrated from a reactive (WebFlux/Mono-based) to a synchronous (blocking) architecture for improved simplicity and debugging capabilities while maintaining high performance through optimized connection pooling and caching.
 
-**Frontend Integration**: The resource management interface supports direct URL navigation to specific resource pages (e.g., `/resources/connections`, `/resources/queues`) through client-side routing, enabling bookmarking and direct linking to resource views.
+**Frontend Integration**: The resource management interface supports direct URL navigation to specific resource pages (e.g., `/resources/connections`, `/resources/queues`) through client-side routing, enabling bookmarking and direct linking to resource views. The application includes enhanced loading state management to prevent premature redirects during page refreshes and initial navigation.
 
 ## Base URL
 
@@ -27,6 +27,8 @@ Authorization: Bearer <jwt-token>
 ```
 
 **Token Expiration Handling**: The frontend application automatically handles token expiration with seamless navigation to the login page. After successful login, users are always redirected to the dashboard for a consistent user experience.
+
+**Loading State Management**: The application properly handles page refreshes and initial loading states to prevent premature redirects. Users can safely refresh resource pages or navigate directly to resource URLs without being unexpectedly redirected during the loading process.
 
 ## Common Query Parameters
 
@@ -577,7 +579,7 @@ The resource management features are fully integrated into the application's nav
 - **Collapsible Resource Menu**: The sidebar includes an expandable "Resources" section with dedicated sub-items
 - **Cluster Access Validation**: Menu items are automatically disabled when users don't have access to any clusters
 - **Visual State Management**: Active states are properly highlighted for both parent and child navigation items
-- **Material UI Icons**: Each resource type has a dedicated icon (Cable for Connections, Hub for Channels, SwapHoriz for Exchanges, Queue for Queues)
+- **Material UI Icons**: Each resource type has a dedicated icon (Router for Connections, AccountTree for Channels, Transform for Exchanges, Inbox for Queues)
 - **Responsive Behavior**: Navigation adapts to different screen sizes and provides proper mobile support
 - **External Management UI Access**: Users can access the native RabbitMQ Management UI directly using cluster URLs for full administrative capabilities
 

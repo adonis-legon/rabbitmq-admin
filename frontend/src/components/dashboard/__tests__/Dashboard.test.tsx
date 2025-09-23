@@ -148,6 +148,26 @@ describe("Dashboard", () => {
     });
   });
 
+  it("renders breadcrumb navigation", async () => {
+    mockUseClusterContext.mockReturnValue({
+      clusters: mockClusters,
+      selectedCluster: null,
+      loading: false,
+      error: null,
+      selectCluster: vi.fn(),
+      refreshClusters: vi.fn(),
+      clearError: vi.fn(),
+    });
+
+    renderWithProviders(<Dashboard />);
+
+    await waitFor(() => {
+      // The breadcrumb should show "RabbitMQ Admin" as the root and "Dashboard" as current page
+      expect(screen.getByText("RabbitMQ Admin")).toBeInTheDocument();
+      expect(screen.getAllByText("Dashboard").length).toBeGreaterThan(0);
+    });
+  });
+
   it("shows selected cluster information", async () => {
     mockUseClusterContext.mockReturnValue({
       clusters: mockClusters,

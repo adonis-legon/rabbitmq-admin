@@ -228,7 +228,7 @@ describe("Resource Navigation Integration", () => {
       { wrapper: TestWrapper }
     );
 
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("RabbitMQ Admin")).toBeInTheDocument();
     expect(screen.getByText("Resources")).toBeInTheDocument();
   });
 
@@ -240,8 +240,8 @@ describe("Resource Navigation Integration", () => {
       { wrapper: TestWrapper }
     );
 
-    const dashboardLink = screen.getByText("Dashboard");
-    fireEvent.click(dashboardLink);
+    const appLink = screen.getByText("RabbitMQ Admin");
+    fireEvent.click(appLink);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
@@ -361,10 +361,12 @@ describe("Resource Navigation Integration", () => {
       { wrapper: TestWrapper }
     );
 
-    // Check for responsive container
-    const container = screen
-      .getByText("RabbitMQ Resources")
-      .closest('[class*="MuiContainer"]');
+    // Check for responsive layout - the component uses Box with responsive padding
+    const title = screen.getByText("RabbitMQ Resources");
+    expect(title).toBeInTheDocument();
+
+    // Check that the main container exists (Box component)
+    const container = title.closest('[class*="MuiBox"]');
     expect(container).toBeInTheDocument();
   });
 });

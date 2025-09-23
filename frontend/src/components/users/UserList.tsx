@@ -19,7 +19,6 @@ import {
   DialogContent,
   DialogActions,
   Tooltip,
-  Container,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -34,11 +33,14 @@ import { userApi } from "../../services/api/userApi";
 import { useAuth } from "../auth/AuthProvider";
 import { UserForm, UserDetails } from "./index";
 import { useNotification } from "../../contexts/NotificationContext";
+import { Breadcrumbs, SearchAndFilter } from "../common";
+import { getIcon, IconSizes } from "../../utils/icons";
 
 const UserList: React.FC = () => {
   const { user: currentUser } = useAuth();
   const { success, error: notifyError } = useNotification();
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -47,6 +49,10 @@ const UserList: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string[]>([]);
 
   useEffect(() => {
     loadUsers();
@@ -58,6 +64,7 @@ const UserList: React.FC = () => {
       setError(null);
       const usersData = await userApi.getUsers();
       setUsers(usersData);
+      setFilteredUsers(usersData);
     } catch (err) {
       const errorMessage = "Failed to load users. Please try again.";
       setError(errorMessage);
@@ -66,6 +73,25 @@ const UserList: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Filter users based on search term and role filter
+  useEffect(() => {
+    let filtered = users;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter((user) =>
+        user.username.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply role filter
+    if (roleFilter.length > 0) {
+      filtered = filtered.filter((user) => roleFilter.includes(user.role));
+    }
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, roleFilter]);
 
   const handleCreateUser = () => {
     setSelectedUser(null);
@@ -93,7 +119,8 @@ const UserList: React.FC = () => {
     try {
       setIsDeleting(true);
       await userApi.deleteUser(userToDelete.id);
-      setUsers(users.filter((u) => u.id !== userToDelete.id));
+      const updatedUsers = users.filter((u) => u.id !== userToDelete.id);
+      setUsers(updatedUsers);
       success(`User "${userToDelete.username}" deleted successfully`);
       setDeleteDialogOpen(false);
       setUserToDelete(null);
@@ -121,6 +148,26 @@ const UserList: React.FC = () => {
     setError(null);
   };
 
+  // Filter handlers
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  const handleRoleFilterChange = (roles: string[]) => {
+    setRoleFilter(roles);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setRoleFilter([]);
+  };
+
+  // Role filter options
+  const roleOptions = [
+    { value: UserRole.ADMINISTRATOR, label: "Administrator" },
+    { value: UserRole.USER, label: "User" },
+  ];
+
   const getRoleColor = (role: UserRole): "primary" | "secondary" => {
     return role === UserRole.ADMINISTRATOR ? "primary" : "secondary";
   };
@@ -140,7 +187,25 @@ const UserList: React.FC = () => {
 
   if (!isAdmin) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+        <Breadcrumbs
+          items={[
+            {
+              label: "Management",
+              icon: getIcon("management", {
+                fontSize: IconSizes.breadcrumb,
+                sx: { mr: 0.5 },
+              }),
+            },
+            {
+              label: "Users",
+              icon: getIcon("users", {
+                fontSize: IconSizes.breadcrumb,
+                sx: { mr: 0.5 },
+              }),
+            },
+          ]}
+        />
         <Alert severity="error">
           <Typography variant="h6" gutterBottom>
             Access Denied
@@ -150,23 +215,49 @@ const UserList: React.FC = () => {
             privileges are required.
           </Typography>
         </Alert>
-      </Container>
+      </Box>
     );
   }
 
   if (loading) {
     return (
-      <Container
-        maxWidth="lg"
-        sx={{ mt: 4, display: "flex", justifyContent: "center" }}
+      <Box
+        sx={{
+          mt: { xs: 1, sm: 2 },
+          mb: 4,
+          px: { xs: 1, sm: 3 },
+          display: "flex",
+          justifyContent: "center",
+        }}
       >
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          {
+            label: "Management",
+            icon: getIcon("management", {
+              fontSize: IconSizes.breadcrumb,
+              sx: { mr: 0.5 },
+            }),
+          },
+          {
+            label: "Users",
+            icon: getIcon("users", {
+              fontSize: IconSizes.breadcrumb,
+              sx: { mr: 0.5 },
+            }),
+          },
+        ]}
+      />
+
+      {/* Header */}
       <Box
         sx={{
           display: "flex",
@@ -176,7 +267,7 @@ const UserList: React.FC = () => {
         }}
       >
         <Typography variant="h4" component="h1">
-          User Management
+          Users
         </Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
           <Button
@@ -203,6 +294,19 @@ const UserList: React.FC = () => {
         </Alert>
       )}
 
+      {/* Search and Filter */}
+      <SearchAndFilter
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        filterValue={roleFilter}
+        onFilterChange={handleRoleFilterChange}
+        filterOptions={roleOptions}
+        filterLabel="Role"
+        onClearAll={handleClearFilters}
+        disabled={loading}
+        searchPlaceholder="Search users by username..."
+      />
+
       <Paper>
         <TableContainer>
           <Table>
@@ -216,16 +320,18 @@ const UserList: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
-                      No users found. Click "Add User" to create the first user.
+                      {users.length === 0
+                        ? 'No users found. Click "Add User" to create the first user.'
+                        : "No users match the current filters."}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((user) => (
+                filteredUsers.map((user) => (
                   <TableRow key={user.id} hover>
                     <TableCell>
                       <Typography variant="body2" fontWeight="medium">
@@ -349,7 +455,7 @@ const UserList: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Container>
+    </Box>
   );
 };
 

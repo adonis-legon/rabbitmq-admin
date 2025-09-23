@@ -331,6 +331,61 @@ Before diving into specific issues, run through this quick checklist:
 
 ## Data Loading Issues
 
+### Issue: Unexpected Redirects During Page Refresh
+
+**Symptoms:**
+
+- Being redirected to dashboard when refreshing a resource page
+- Losing current page context after browser refresh
+- Intermittent redirects when navigating directly to resource URLs
+
+**Causes:**
+
+- Application loading state not properly handled during page refresh
+- Race condition between cluster data loading and route protection
+- Browser cache issues affecting initial load sequence
+
+**Resolution Steps:**
+
+1. **Understanding the fix:**
+
+   The application now properly handles loading states to prevent premature redirects during page refresh. The route guard waits for cluster data to fully load before making redirect decisions.
+
+2. **Use debug logging to diagnose issues:**
+
+   Open the browser console to see ResourceRoute debug logs that show:
+
+   ```
+   ResourceRoute render: {
+     loading: false,
+     clustersLength: 2,
+     selectedCluster: "production-cluster",
+     error: null
+   }
+   ```
+
+   If you see `loading: true` for extended periods or `clustersLength: 0` when clusters should be available, this indicates a cluster loading issue.
+
+3. **If still experiencing issues:**
+
+   - Clear browser cache and reload the page
+   - Ensure JavaScript is enabled in your browser
+   - Check browser console for ResourceRoute debug logs and any loading errors
+   - Try logging out and back in to reset session state
+
+4. **Verify proper behavior:**
+
+   - Refresh any resource page - you should stay on the same page
+   - Navigate directly to resource URLs - they should load properly after authentication
+   - Switch between clusters - navigation should remain stable
+
+**Prevention:**
+
+- Keep browser updated to latest version
+- Avoid interrupting page loads during initial startup
+- Allow sufficient time for application initialization
+- Monitor ResourceRoute debug logs during development
+
 ### Issue: Empty or Missing Resource Data
 
 **Symptoms:**
@@ -971,7 +1026,23 @@ For troubleshooting, enable debug logging:
    location.reload();
    ```
 
-4. **Network Request Monitoring:**
+4. **Frontend Component Debug Logging:**
+
+   The ResourceRoute component now includes built-in debug logging to help troubleshoot loading and cluster selection issues. When you open the browser console, you'll see detailed logs including:
+
+   - Component render state (loading, cluster count, selected cluster)
+   - Loading state transitions
+   - Cluster context information
+
+   This is particularly useful for diagnosing:
+
+   - Unexpected redirects during page refresh
+   - Issues with cluster data loading
+   - Problems with route protection logic
+
+   No additional configuration is needed - the debug logs are automatically available in the browser console.
+
+5. **Network Request Monitoring:**
 
    - Open browser developer tools
    - Go to Network tab
@@ -979,7 +1050,7 @@ For troubleshooting, enable debug logging:
    - Check for failed requests or slow responses
    - Look for 401/403 responses indicating authentication issues
 
-5. **Application State Monitoring:**
+6. **Application State Monitoring:**
    ```javascript
    // Monitor application state
    console.log("Current user:", JSON.parse(localStorage.getItem("user")));

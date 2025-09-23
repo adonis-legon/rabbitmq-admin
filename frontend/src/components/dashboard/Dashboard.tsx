@@ -5,16 +5,11 @@ import {
   Grid,
   Alert,
   CircularProgress,
-  Container,
   Button,
 } from "@mui/material";
-import {
-  Refresh as RefreshIcon,
-  Cable as CableIcon,
-  Hub as HubIcon,
-  SwapHoriz as SwapHorizIcon,
-  Queue as QueueIcon,
-} from "@mui/icons-material";
+import { Refresh as RefreshIcon } from "@mui/icons-material";
+import { AppIcons, getIcon, IconSizes } from "../../utils/icons";
+import { Breadcrumbs } from "../common";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { useClusterContext } from "../../contexts/ClusterContext";
@@ -36,18 +31,17 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <Container
-        maxWidth="lg"
-        sx={{ mt: 4, display: "flex", justifyContent: "center" }}
-      >
-        <CircularProgress />
-      </Container>
+      <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
         <Alert
           severity="error"
           sx={{ mb: 2 }}
@@ -64,20 +58,36 @@ const Dashboard: React.FC = () => {
         >
           {error}
         </Alert>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard
-      </Typography>
+    <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          {
+            label: "Dashboard",
+            icon: getIcon("dashboard", {
+              fontSize: IconSizes.breadcrumb,
+              sx: { mr: 0.5 },
+            }),
+          },
+        ]}
+      />
 
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Welcome back, {user?.username}! Select a cluster connection to manage
-        your RabbitMQ resources.
-      </Typography>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Dashboard
+        </Typography>
+
+        <Typography variant="body1" color="text.secondary">
+          Welcome back, {user?.username}! Select a cluster connection to manage
+          your RabbitMQ resources.
+        </Typography>
+      </Box>
 
       {assignedClusters.length === 0 ? (
         <Alert severity="info" sx={{ mt: 2 }}>
@@ -137,7 +147,7 @@ const Dashboard: React.FC = () => {
                   <Button
                     variant="outlined"
                     fullWidth
-                    startIcon={<CableIcon />}
+                    startIcon={AppIcons.connections}
                     onClick={() => navigate(ROUTES.RESOURCES_CONNECTIONS)}
                     sx={{
                       py: 1.5,
@@ -152,7 +162,7 @@ const Dashboard: React.FC = () => {
                   <Button
                     variant="outlined"
                     fullWidth
-                    startIcon={<HubIcon />}
+                    startIcon={AppIcons.channels}
                     onClick={() => navigate(ROUTES.RESOURCES_CHANNELS)}
                     sx={{
                       py: 1.5,
@@ -167,7 +177,7 @@ const Dashboard: React.FC = () => {
                   <Button
                     variant="outlined"
                     fullWidth
-                    startIcon={<SwapHorizIcon />}
+                    startIcon={AppIcons.exchanges}
                     onClick={() => navigate(ROUTES.RESOURCES_EXCHANGES)}
                     sx={{
                       py: 1.5,
@@ -182,7 +192,7 @@ const Dashboard: React.FC = () => {
                   <Button
                     variant="outlined"
                     fullWidth
-                    startIcon={<QueueIcon />}
+                    startIcon={AppIcons.queues}
                     onClick={() => navigate(ROUTES.RESOURCES_QUEUES)}
                     sx={{
                       py: 1.5,
@@ -198,7 +208,7 @@ const Dashboard: React.FC = () => {
           )}
         </Box>
       )}
-    </Container>
+    </Box>
   );
 };
 

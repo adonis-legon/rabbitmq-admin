@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Paper,
@@ -34,6 +34,8 @@ import { useClusters } from "../../hooks/useClusters";
 import ClusterConnectionForm from "./ClusterConnectionForm";
 import ConnectionTest from "./ConnectionTest";
 import { useNotification } from "../../contexts/NotificationContext";
+import { Breadcrumbs, SearchAndFilter } from "../common";
+import { getIcon, IconSizes } from "../../utils/icons";
 
 const ClusterConnectionList: React.FC = () => {
   const { clusters, loading, error, deleteCluster, clearError, loadClusters } =
@@ -47,6 +49,13 @@ const ClusterConnectionList: React.FC = () => {
   const [clusterToDelete, setClusterToDelete] =
     useState<ClusterConnection | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [filteredClusters, setFilteredClusters] = useState<ClusterConnection[]>(
+    []
+  );
 
   const handleCreateCluster = () => {
     setSelectedCluster(null);
@@ -104,13 +113,67 @@ const ClusterConnectionList: React.FC = () => {
     setSelectedCluster(null);
   };
 
+  // Filter clusters based on search term and status filter
+  useEffect(() => {
+    let filtered = clusters;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (cluster) =>
+          cluster.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          cluster.apiUrl.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          cluster.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (cluster.description &&
+            cluster.description
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter.length > 0) {
+      filtered = filtered.filter((cluster) => {
+        const status = cluster.active ? "active" : "inactive";
+        return statusFilter.includes(status);
+      });
+    }
+
+    setFilteredClusters(filtered);
+  }, [clusters, searchTerm, statusFilter]);
+
+  // Filter handlers
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  const handleStatusFilterChange = (statuses: string[]) => {
+    setStatusFilter(statuses);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter([]);
+  };
+
+  // Status filter options
+  const statusOptions = [
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
+  ];
+
   if (loading) {
     return (
       <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
+        sx={{
+          mt: { xs: 1, sm: 2 },
+          mb: 4,
+          px: { xs: 1, sm: 3 },
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "400px",
+        }}
       >
         <CircularProgress />
       </Box>
@@ -118,7 +181,28 @@ const ClusterConnectionList: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          {
+            label: "Management",
+            icon: getIcon("management", {
+              fontSize: IconSizes.breadcrumb,
+              sx: { mr: 0.5 },
+            }),
+          },
+          {
+            label: "Clusters",
+            icon: getIcon("clusters", {
+              fontSize: IconSizes.breadcrumb,
+              sx: { mr: 0.5 },
+            }),
+          },
+        ]}
+      />
+
+      {/* Header */}
       <Box
         display="flex"
         justifyContent="space-between"
@@ -153,6 +237,19 @@ const ClusterConnectionList: React.FC = () => {
         </Alert>
       )}
 
+      {/* Search and Filter */}
+      <SearchAndFilter
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        filterValue={statusFilter}
+        onFilterChange={handleStatusFilterChange}
+        filterOptions={statusOptions}
+        filterLabel="Status"
+        onClearAll={handleClearFilters}
+        disabled={loading}
+        searchPlaceholder="Search clusters by name, URL, username, or description..."
+      />
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -163,21 +260,22 @@ const ClusterConnectionList: React.FC = () => {
               <TableCell>Status</TableCell>
               <TableCell>Assigned Users</TableCell>
               <TableCell>Description</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {clusters.length === 0 ? (
+            {filteredClusters.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                   <Typography variant="body1" color="text.secondary">
-                    No cluster connections found. Create your first connection
-                    to get started.
+                    {clusters.length === 0
+                      ? "No cluster connections found. Create your first connection to get started."
+                      : "No clusters match the current filters."}
                   </Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              clusters.map((cluster) => (
+              filteredClusters.map((cluster) => (
                 <TableRow key={cluster.id} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight="medium">

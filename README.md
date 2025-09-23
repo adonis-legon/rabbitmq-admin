@@ -61,7 +61,7 @@ A comprehensive web application for managing RabbitMQ clusters with authenticati
 - **Authentication & Authorization**: JWT-based authentication with role-based access control and automatic token expiration handling
 - **Multi-Cluster Management**: Connect and manage multiple RabbitMQ clusters with user assignment controls
 - **RabbitMQ Resource Browsing**: View connections, channels, exchanges, and queues with advanced pagination, filtering, detailed tooltips, intelligent client-side caching with configurable TTL, and enhanced error handling with automatic recovery
-- **Intuitive Navigation**: Collapsible resource management menu with cluster-aware access control, visual state indicators, and direct URL access to resource pages
+- **Intuitive Navigation**: Collapsible resource management menu with cluster-aware access control, visual state indicators, breadcrumb navigation, and direct URL access to resource pages
 - **TypeScript Support**: Comprehensive type definitions for all RabbitMQ resources with full IntelliSense support
 - **Modern UI**: React 18+ with Material UI v5 and responsive design
 - **Secure Backend**: Spring Boot 3.x with Spring Security and comprehensive validation
@@ -1144,6 +1144,11 @@ git tag v2.0.0
 
 ## 🏛️ Architecture & Design
 
+For detailed architecture and design documentation, see:
+
+- [Frontend Architecture](docs/architecture/frontend-architecture.md) - React component architecture and patterns
+- [UI Components Architecture](docs/architecture/ui-components.md) - UI component design system and icon management
+
 RabbitMQ Admin is a three-tier web application that provides a comprehensive administrative interface for managing RabbitMQ clusters. The application implements role-based access control with JWT authentication and follows modern web development practices.
 
 ### System Architecture
@@ -1212,9 +1217,18 @@ graph TB
 - **Modern UI**: Responsive React interface with Material UI components and intuitive navigation
 - **Production Ready**: Health checks, monitoring, logging, and security configurations
 
+### Detailed Architecture Documentation
+
+For comprehensive architectural information, see:
+
+- **[Frontend Architecture](docs/architecture/frontend-architecture.md)**: React component structure, TypeScript integration, state management, and performance optimization
+- **[API Documentation](docs/api/)**: Complete REST API reference with examples
+- **[Configuration Guide](docs/configuration/)**: Detailed configuration options and best practices
+
 ### Navigation and User Experience
 
 - **Collapsible Resource Menu**: Expandable "Resources" section with dedicated icons for each resource type
+- **Breadcrumb Navigation**: Clear hierarchical navigation showing current location with clickable parent levels
 - **Cluster-Aware Access**: Menu items automatically disabled when no cluster access is available
 - **Visual State Indicators**: Active state highlighting for both parent and child navigation items
 - **Responsive Design**: Navigation adapts to different screen sizes with proper mobile support

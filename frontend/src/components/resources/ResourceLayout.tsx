@@ -1,27 +1,17 @@
 import React from "react";
 import {
   Box,
-  Container,
   Typography,
   Tabs,
   Tab,
   Alert,
   CircularProgress,
-  Breadcrumbs,
-  Link,
-  useTheme,
 } from "@mui/material";
-import {
-  Home as HomeIcon,
-  Storage as StorageIcon,
-  Cable as CableIcon,
-  Hub as HubIcon,
-  SwapHoriz as SwapHorizIcon,
-  Queue as QueueIcon,
-} from "@mui/icons-material";
+import { AppIcons, getIcon, IconSizes } from "../../utils/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../../utils/constants";
 import { ClusterConnection } from "../../types/cluster";
+import { Breadcrumbs } from "../common";
 
 interface ResourceLayoutProps {
   children: React.ReactNode;
@@ -35,25 +25,25 @@ const resourceTabs = [
     label: "Connections",
     value: "connections",
     path: ROUTES.RESOURCES_CONNECTIONS,
-    icon: <CableIcon />,
+    icon: AppIcons.connections,
   },
   {
     label: "Channels",
     value: "channels",
     path: ROUTES.RESOURCES_CHANNELS,
-    icon: <HubIcon />,
+    icon: AppIcons.channels,
   },
   {
     label: "Exchanges",
     value: "exchanges",
     path: ROUTES.RESOURCES_EXCHANGES,
-    icon: <SwapHorizIcon />,
+    icon: AppIcons.exchanges,
   },
   {
     label: "Queues",
     value: "queues",
     path: ROUTES.RESOURCES_QUEUES,
-    icon: <QueueIcon />,
+    icon: AppIcons.queues,
   },
 ];
 
@@ -65,8 +55,6 @@ export const ResourceLayout: React.FC<ResourceLayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const theme = useTheme();
-
   // Determine current tab based on pathname
   const getCurrentTab = () => {
     const path = location.pathname;
@@ -75,6 +63,55 @@ export const ResourceLayout: React.FC<ResourceLayoutProps> = ({
     if (path.includes("/exchanges")) return "exchanges";
     if (path.includes("/queues")) return "queues";
     return "connections"; // default
+  };
+
+  // Get properly capitalized label for current tab
+  const getCurrentTabLabel = () => {
+    const currentTab = getCurrentTab();
+    switch (currentTab) {
+      case "connections":
+        return "Connections";
+      case "channels":
+        return "Channels";
+      case "exchanges":
+        return "Exchanges";
+      case "queues":
+        return "Queues";
+      default:
+        return "Connections";
+    }
+  };
+
+  // Get icon for current tab
+  const getCurrentTabIcon = () => {
+    const currentTab = getCurrentTab();
+    switch (currentTab) {
+      case "connections":
+        return getIcon("connections", {
+          fontSize: IconSizes.breadcrumb,
+          sx: { mr: 0.5 },
+        });
+      case "channels":
+        return getIcon("channels", {
+          fontSize: IconSizes.breadcrumb,
+          sx: { mr: 0.5 },
+        });
+      case "exchanges":
+        return getIcon("exchanges", {
+          fontSize: IconSizes.breadcrumb,
+          sx: { mr: 0.5 },
+        });
+      case "queues":
+        return getIcon("queues", {
+          fontSize: IconSizes.breadcrumb,
+          sx: { mr: 0.5 },
+        });
+      default:
+        return getIcon("connections", {
+          fontSize: IconSizes.breadcrumb,
+          sx: { mr: 0.5 },
+        });
+    }
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
@@ -87,7 +124,7 @@ export const ResourceLayout: React.FC<ResourceLayoutProps> = ({
   // Show cluster selection required message if no cluster is selected
   if (!selectedCluster && !loading) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ mt: 4, px: 3 }}>
         <Alert severity="warning" sx={{ mb: 2 }}>
           <Typography variant="h6" gutterBottom>
             Cluster Selection Required
@@ -97,92 +134,49 @@ export const ResourceLayout: React.FC<ResourceLayoutProps> = ({
             RabbitMQ resources.
           </Typography>
         </Alert>
-      </Container>
+      </Box>
     );
   }
 
   // Show loading state
   if (loading) {
     return (
-      <Container
-        maxWidth="lg"
-        sx={{ mt: 4, display: "flex", justifyContent: "center" }}
-      >
+      <Box sx={{ mt: 4, display: "flex", justifyContent: "center", px: 3 }}>
         <CircularProgress />
-      </Container>
+      </Box>
     );
   }
 
   // Show error state
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ mt: 4, px: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
-      </Container>
+      </Box>
     );
   }
 
   return (
-    <Container
-      maxWidth="lg"
-      sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}
-    >
+    <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
       {/* Breadcrumbs */}
-      <Breadcrumbs sx={{ mb: 2 }}>
-        <Link
-          component="button"
-          variant="body2"
-          onClick={() => navigate(ROUTES.DASHBOARD)}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            textDecoration: "none",
-            color: theme.palette.text.secondary,
-            border: "none",
-            background: "none",
-            cursor: "pointer",
-            "&:hover": {
-              color: theme.palette.primary.main,
-            },
-          }}
-        >
-          <HomeIcon sx={{ mr: 0.5, fontSize: 16 }} />
-          Dashboard
-        </Link>
-        <Link
-          component="button"
-          variant="body2"
-          onClick={() => navigate(ROUTES.RESOURCES)}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            textDecoration: "none",
-            color: theme.palette.text.secondary,
-            border: "none",
-            background: "none",
-            cursor: "pointer",
-            "&:hover": {
-              color: theme.palette.primary.main,
-            },
-          }}
-        >
-          <StorageIcon sx={{ mr: 0.5, fontSize: 16 }} />
-          Resources
-        </Link>
-        <Typography
-          variant="body2"
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            color: theme.palette.text.primary,
-            textTransform: "capitalize",
-          }}
-        >
-          {getCurrentTab()}
-        </Typography>
-      </Breadcrumbs>
+      <Breadcrumbs
+        items={[
+          {
+            label: "Resources",
+            path: ROUTES.RESOURCES,
+            icon: getIcon("resources", {
+              fontSize: IconSizes.breadcrumb,
+              sx: { mr: 0.5 },
+            }),
+          },
+          {
+            label: getCurrentTabLabel(),
+            icon: getCurrentTabIcon(),
+          },
+        ]}
+      />
 
       {/* Header */}
       <Box sx={{ mb: 3 }}>
@@ -241,7 +235,7 @@ export const ResourceLayout: React.FC<ResourceLayoutProps> = ({
 
       {/* Content */}
       <Box>{children}</Box>
-    </Container>
+    </Box>
   );
 };
 

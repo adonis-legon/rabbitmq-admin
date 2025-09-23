@@ -47,18 +47,46 @@ The cluster dashboard provides access to RabbitMQ resources:
 
 ### Sidebar Navigation
 
-The Resources section in the sidebar provides quick access to all resource types:
+The sidebar provides organized access to all application features:
 
-- **📡 Connections**: View all active client connections
-- **🔗 Channels**: Browse channels across all connections
-- **🔄 Exchanges**: Explore message routing exchanges
-- **📋 Queues**: Monitor message queues and their status
+**Resources Section** (requires cluster access):
+
+- **Connections**: View all active client connections
+- **Channels**: Browse channels across all connections
+- **Exchanges**: Explore message routing exchanges
+- **Queues**: Monitor message queues and their status
+
+**Management Section** (admin-only):
+
+- **Users**: Manage user accounts and permissions
+- **Clusters**: Configure and manage cluster connections
+
+Each section and resource type is represented by a consistent icon throughout the application for easy identification and navigation.
 
 The navigation automatically:
 
 - Highlights the currently active resource type
 - Disables menu items when no cluster access is available
 - Adapts to different screen sizes for mobile and tablet use
+
+### Breadcrumb Navigation
+
+The application includes breadcrumb navigation at the top of pages to help you understand your current location and navigate back to parent pages:
+
+- **Dashboard**: Always available as the root navigation point with a dashboard icon (automatically included on all pages)
+- **Cluster Management**: Shows when viewing cluster connection management pages
+- **Resources**: Shows when viewing any resource management page
+- **Current Resource**: Displays the specific resource type you're currently viewing
+
+#### Breadcrumb Features
+
+- **Automatic Dashboard Root**: All pages automatically include Dashboard as the first breadcrumb item
+- **Consistent Icons**: Each breadcrumb item includes an appropriate icon for visual context
+- **Clickable Navigation**: All breadcrumb items (except the current page) are clickable for quick navigation
+- **Responsive Design**: Breadcrumbs adapt to different screen sizes and maintain readability
+- **Visual Hierarchy**: Clear visual distinction between clickable and current page items
+
+Breadcrumbs are especially useful when navigating deep into resource details, managing cluster connections, or when accessing pages via direct URLs. The Dashboard breadcrumb provides a consistent way to return to the main application overview from any page.
 
 ### Direct URL Navigation
 
@@ -71,7 +99,7 @@ The application supports direct URL navigation to resource pages, enabling:
   - Main resources page: `/resources`
   - Specific resource types: `/resources/connections`, `/resources/channels`, `/resources/exchanges`, `/resources/queues`
 
-**Note**: Direct URL navigation requires authentication and cluster selection. If accessing a resource URL without a selected cluster, you'll be redirected to the dashboard to choose a cluster first.
+**Note**: Direct URL navigation requires authentication and cluster selection. If accessing a resource URL without a selected cluster, you'll be redirected to the dashboard to choose a cluster first. The application properly handles page refreshes and initial loading states to prevent premature redirects during startup.
 
 ### RabbitMQ Management UI Access
 
@@ -119,9 +147,11 @@ Each resource page provides a consistent interface with:
 
 #### Search and Filtering
 
-- **Name search**: Filter resources by name with optional regex support
+- **Name search**: Filter resources by name with debounced input
 - **State filters**: Filter by resource state (running, idle, flow, etc.)
 - **Type filters**: Filter by resource type where applicable
+- **Consistent behavior**: All list views (resources, clusters, users) use the same filtering interface
+- **Smart empty states**: Distinguishes between "no data available" and "no results match filters"
 - **Clear filters**: Reset all filters with a single click
 
 #### Refresh Controls
@@ -262,9 +292,10 @@ Queues store and deliver messages to consumers.
 #### Name Search
 
 - Enter text in the search box to filter resources by name
-- Use the regex toggle for advanced pattern matching
+- Search is debounced (300ms delay) to improve performance
 - Search is case-insensitive by default
 - Clear search with the "×" button or by emptying the search box
+- Consistent behavior across all list views (resources, clusters, users)
 
 #### State Filtering
 
@@ -279,6 +310,12 @@ Queues store and deliver messages to consumers.
 - Search terms and state filters persist during auto-refresh
 - Filters are reset when switching between resource types
 - Use "Clear Filters" to reset all filtering options
+
+#### Empty State Messaging
+
+- When no data exists: Shows helpful message to create first item
+- When filters don't match: Shows "No items match current filters" message
+- Clear distinction helps users understand whether to adjust filters or create new items
 
 ### Pagination
 
