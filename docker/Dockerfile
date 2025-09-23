@@ -47,8 +47,17 @@ COPY frontend/src frontend/src
 COPY frontend/public frontend/public
 COPY frontend/index.html frontend/
 
+# Install Node.js and pnpm for frontend build
+RUN apt-get update && \
+  apt-get install -y curl && \
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+  apt-get install -y nodejs && \
+  npm install -g pnpm@8.15.1 && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
+
 # Build the complete application with frontend assets included
-RUN mvn clean package -DskipTests -pl backend -am
+RUN mvn clean package -DskipTests -pl backend -am -DbuildFrontend=true
 
 # Runtime stage - using distroless for security
 FROM gcr.io/distroless/java21-debian12:nonroot

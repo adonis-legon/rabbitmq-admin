@@ -1,8 +1,10 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { ApiError } from '../../types/error';
+import { tokenService } from '../auth/tokenService';
+import { tokenExpirationHandler } from '../tokenExpirationHandler';
 
 // API base URL - will be configured based on environment
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -35,15 +37,30 @@ class ApiClient {
       }
     );
 
-    // Response interceptor to handle errors (simplified - no automatic token refresh)
+    // Response interceptor to handle errors
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
         return response;
       },
-      (error: AxiosError) => {
-        // Handle 401 Unauthorized - just clear tokens and let AuthProvider handle it
+      async (error: AxiosError) => {
+        // Handle 401 Unauthorized - use token expiration handler
         if (error.response?.status === 401) {
-          this.clearTokens();
+          const canRetry = await tokenExpirationHandler.handleAuthError(error, {
+            operation: 'api_request',
+          });
+
+          // If token was refreshed successfully, retry the original request
+          if (canRetry && error.config) {
+            // Update the authorization header with the new token
+            const newToken = this.getToken();
+            if (newToken) {
+              error.config.headers.Authorization = `Bearer ${newToken}`;
+              return this.client.request(error.config);
+            }
+          }
+
+          // If we reach here, either refresh failed or token is truly expired
+          // The tokenExpirationHandler will handle the redirect to login
         }
         return Promise.reject(this.handleError(error));
       }
@@ -120,12 +137,7 @@ class ApiClient {
   }
 
   private getToken(): string | null {
-    return localStorage.getItem('accessToken');
-  }
-
-  private clearTokens(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    return tokenService.getAccessToken();
   }
 
   // HTTP methods

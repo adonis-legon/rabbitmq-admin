@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Box,
   List,
@@ -10,17 +10,25 @@ import {
   Divider,
   Typography,
   useTheme,
-} from '@mui/material';
+  Collapse,
+} from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
   Storage as StorageIcon,
-  Settings as SettingsIcon,
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../auth/AuthProvider';
-import { UserRole } from '../../types/auth';
-import { ROUTES } from '../../utils/constants';
+  ViewList as ViewListIcon,
+  Cable as CableIcon,
+  Hub as HubIcon,
+  SwapHoriz as SwapHorizIcon,
+  Queue as QueueIcon,
+  ExpandLess,
+  ExpandMore,
+} from "@mui/icons-material";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
+import { UserRole } from "../../types/auth";
+import { ROUTES } from "../../utils/constants";
+import { useClusterContext } from "../../contexts/ClusterContext";
 
 interface SidebarProps {
   onItemClick?: () => void;
@@ -31,30 +39,59 @@ interface NavigationItem {
   icon: React.ReactElement;
   path: string;
   adminOnly?: boolean;
+  requiresCluster?: boolean;
+  children?: NavigationItem[];
 }
 
 const navigationItems: NavigationItem[] = [
   {
-    text: 'Dashboard',
+    text: "Dashboard",
     icon: <DashboardIcon />,
     path: ROUTES.DASHBOARD,
   },
   {
-    text: 'User Management',
+    text: "Resources",
+    icon: <ViewListIcon />,
+    path: ROUTES.RESOURCES,
+    requiresCluster: true,
+    children: [
+      {
+        text: "Connections",
+        icon: <CableIcon />,
+        path: ROUTES.RESOURCES_CONNECTIONS,
+        requiresCluster: true,
+      },
+      {
+        text: "Channels",
+        icon: <HubIcon />,
+        path: ROUTES.RESOURCES_CHANNELS,
+        requiresCluster: true,
+      },
+      {
+        text: "Exchanges",
+        icon: <SwapHorizIcon />,
+        path: ROUTES.RESOURCES_EXCHANGES,
+        requiresCluster: true,
+      },
+      {
+        text: "Queues",
+        icon: <QueueIcon />,
+        path: ROUTES.RESOURCES_QUEUES,
+        requiresCluster: true,
+      },
+    ],
+  },
+  {
+    text: "User Management",
     icon: <PeopleIcon />,
     path: ROUTES.USERS,
     adminOnly: true,
   },
   {
-    text: 'Cluster Management',
+    text: "Cluster Management",
     icon: <StorageIcon />,
     path: ROUTES.CLUSTERS,
     adminOnly: true,
-  },
-  {
-    text: 'RabbitMQ',
-    icon: <SettingsIcon />,
-    path: ROUTES.RABBITMQ,
   },
 ];
 
@@ -63,24 +100,52 @@ export const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
   const location = useLocation();
   const { user } = useAuth();
   const theme = useTheme();
+  const { clusters } = useClusterContext();
+  const [expandedItems, setExpandedItems] = React.useState<string[]>([
+    "Resources",
+  ]);
 
   const isAdmin = user?.role === UserRole.ADMINISTRATOR;
+  const hasClusterAccess = clusters.length > 0;
 
   const handleNavigation = (path: string) => {
     navigate(path);
     onItemClick?.();
   };
 
-  const filteredItems = navigationItems.filter(
-    (item) => !item.adminOnly || isAdmin
-  );
+  const handleExpandToggle = (itemText: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(itemText)
+        ? prev.filter((item) => item !== itemText)
+        : [...prev, itemText]
+    );
+  };
+
+  const isItemActive = (item: NavigationItem): boolean => {
+    if (item.children) {
+      return item.children.some((child) => location.pathname === child.path);
+    }
+    return location.pathname === item.path;
+  };
+
+  const isChildActive = (path: string): boolean => {
+    return location.pathname === path;
+  };
+
+  const filteredItems = navigationItems.filter((item) => {
+    // Filter by admin role
+    if (item.adminOnly && !isAdmin) return false;
+
+    // Filter by cluster access - show but disable if no cluster access
+    return true;
+  });
 
   return (
     <Box
       sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
         backgroundColor: theme.palette.background.paper,
       }}
     >
@@ -91,8 +156,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
           sx={{
             color: theme.palette.text.secondary,
             fontWeight: 500,
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
           }}
         >
           Navigation
@@ -102,54 +167,152 @@ export const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
       <Divider />
 
       {/* Navigation items */}
-      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <Box sx={{ flexGrow: 1, overflow: "auto" }}>
         <List sx={{ pt: 1 }}>
           {filteredItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            
+            const isActive = isItemActive(item);
+            const isExpanded = expandedItems.includes(item.text);
+            const isDisabled = item.requiresCluster && !hasClusterAccess;
+
             return (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton
-                  onClick={() => handleNavigation(item.path)}
-                  sx={{
-                    mx: 1,
-                    mb: 0.5,
-                    borderRadius: 1,
-                    backgroundColor: isActive 
-                      ? theme.palette.primary.light 
-                      : 'transparent',
-                    color: isActive 
-                      ? theme.palette.primary.contrastText 
-                      : theme.palette.text.primary,
-                    '&:hover': {
-                      backgroundColor: isActive 
-                        ? theme.palette.primary.main 
-                        : theme.palette.action.hover,
-                    },
-                    transition: theme.transitions.create(['background-color'], {
-                      duration: theme.transitions.duration.short,
-                    }),
-                  }}
-                >
-                  <ListItemIcon
+              <React.Fragment key={item.text}>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      if (item.children) {
+                        handleExpandToggle(item.text);
+                        // If has children and cluster access, navigate to first child
+                        if (hasClusterAccess && item.children.length > 0) {
+                          handleNavigation(item.children[0].path);
+                        }
+                      } else {
+                        handleNavigation(item.path);
+                      }
+                    }}
+                    disabled={isDisabled}
                     sx={{
-                      color: isActive 
-                        ? theme.palette.primary.contrastText 
-                        : theme.palette.text.secondary,
-                      minWidth: 40,
+                      mx: 1,
+                      mb: 0.5,
+                      borderRadius: 1,
+                      backgroundColor: isActive
+                        ? theme.palette.primary.light
+                        : "transparent",
+                      color: isDisabled
+                        ? theme.palette.text.disabled
+                        : isActive
+                        ? theme.palette.primary.contrastText
+                        : theme.palette.text.primary,
+                      "&:hover": {
+                        backgroundColor: isDisabled
+                          ? "transparent"
+                          : isActive
+                          ? theme.palette.primary.main
+                          : theme.palette.action.hover,
+                      },
+                      transition: theme.transitions.create(
+                        ["background-color"],
+                        {
+                          duration: theme.transitions.duration.short,
+                        }
+                      ),
                     }}
                   >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.text}
-                    primaryTypographyProps={{
-                      fontSize: '0.875rem',
-                      fontWeight: isActive ? 600 : 400,
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
+                    <ListItemIcon
+                      sx={{
+                        color: isDisabled
+                          ? theme.palette.text.disabled
+                          : isActive
+                          ? theme.palette.primary.contrastText
+                          : theme.palette.text.secondary,
+                        minWidth: 40,
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{
+                        fontSize: "0.875rem",
+                        fontWeight: isActive ? 600 : 400,
+                      }}
+                    />
+                    {item.children && (
+                      <Box sx={{ ml: 1 }}>
+                        {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                      </Box>
+                    )}
+                  </ListItemButton>
+                </ListItem>
+
+                {/* Render children if expanded */}
+                {item.children && (
+                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      {item.children.map((child) => {
+                        const isChildActiveState = isChildActive(child.path);
+                        const isChildDisabled =
+                          child.requiresCluster && !hasClusterAccess;
+
+                        return (
+                          <ListItem key={child.text} disablePadding>
+                            <ListItemButton
+                              onClick={() => handleNavigation(child.path)}
+                              disabled={isChildDisabled}
+                              sx={{
+                                mx: 1,
+                                mb: 0.5,
+                                ml: 3, // Indent child items
+                                borderRadius: 1,
+                                backgroundColor: isChildActiveState
+                                  ? theme.palette.primary.light
+                                  : "transparent",
+                                color: isChildDisabled
+                                  ? theme.palette.text.disabled
+                                  : isChildActiveState
+                                  ? theme.palette.primary.contrastText
+                                  : theme.palette.text.primary,
+                                "&:hover": {
+                                  backgroundColor: isChildDisabled
+                                    ? "transparent"
+                                    : isChildActiveState
+                                    ? theme.palette.primary.main
+                                    : theme.palette.action.hover,
+                                },
+                                transition: theme.transitions.create(
+                                  ["background-color"],
+                                  {
+                                    duration: theme.transitions.duration.short,
+                                  }
+                                ),
+                              }}
+                            >
+                              <ListItemIcon
+                                sx={{
+                                  color: isChildDisabled
+                                    ? theme.palette.text.disabled
+                                    : isChildActiveState
+                                    ? theme.palette.primary.contrastText
+                                    : theme.palette.text.secondary,
+                                  minWidth: 32,
+                                }}
+                              >
+                                {child.icon}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={child.text}
+                                primaryTypographyProps={{
+                                  fontSize: "0.8125rem",
+                                  fontWeight: isChildActiveState ? 600 : 400,
+                                }}
+                              />
+                            </ListItemButton>
+                          </ListItem>
+                        );
+                      })}
+                    </List>
+                  </Collapse>
+                )}
+              </React.Fragment>
             );
           })}
         </List>
@@ -161,7 +324,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
           variant="caption"
           sx={{
             color: theme.palette.text.secondary,
-            display: 'block',
+            display: "block",
             mb: 0.5,
           }}
         >
@@ -180,7 +343,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onItemClick }) => {
           variant="caption"
           sx={{
             color: theme.palette.text.secondary,
-            textTransform: 'capitalize',
+            textTransform: "capitalize",
           }}
         >
           {user?.role?.toLowerCase()}

@@ -14,3 +14,4 @@ export {
     formatErrorForLogging
 } from './errorUtils';
 export * from './validation';
+export * from './resourceCache';

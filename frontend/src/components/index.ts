@@ -5,6 +5,7 @@ export * from './common';
 export * from './dashboard';
 export * from './users';
 export * from './clusters';
+export * from './resources';
 
 // Version display component
 export { default as VersionDisplay } from './VersionDisplay';

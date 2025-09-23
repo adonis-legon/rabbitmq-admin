@@ -57,13 +57,16 @@ A comprehensive web application for managing RabbitMQ clusters with authenticati
 
 ## 🚀 Features
 
-- **Authentication & Authorization**: JWT-based authentication with role-based access control
+- **Authentication & Authorization**: JWT-based authentication with role-based access control and seamless token expiration handling
 - **Multi-Cluster Management**: Connect and manage multiple RabbitMQ clusters simultaneously
+- **RabbitMQ Resource Browsing**: View connections, channels, exchanges, and queues with advanced pagination, filtering, detailed tooltips, intelligent client-side caching with configurable TTL, and enhanced error handling with automatic recovery
+- **Intuitive Navigation**: Collapsible resource management menu with cluster-aware access control, visual state indicators, and direct URL access to resource pages
+- **TypeScript Support**: Comprehensive type definitions for all RabbitMQ resources with full IntelliSense support
 - **Modern UI**: React 18+ with Material UI v5 and responsive design
 - **Secure Backend**: Spring Boot 3.x with Spring Security and comprehensive validation
 - **Database Management**: PostgreSQL with Flyway migrations and connection pooling
 - **Containerization**: Full Docker support with production-ready configurations
-- **Comprehensive Testing**: Unit, integration, and end-to-end tests
+- **Comprehensive Testing**: Unit, integration, and end-to-end tests (E2E for local development only)
 - **Production Ready**: Health checks, monitoring, logging, and security configurations
 
 ## 📋 Prerequisites
@@ -94,6 +97,8 @@ docker run -d \
   -e SPRING_DATASOURCE_USERNAME=your_user \
   -e SPRING_DATASOURCE_PASSWORD=your_password \
   -e JWT_SECRET_KEY=your-secret-key \
+  -e RABBITMQ_ADMIN_RESOURCES_CACHE_ENABLED=true \
+  -e RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE=60 \
   username/rabbitmq-admin:latest
 ```
 
@@ -125,6 +130,8 @@ export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/rabbitmq_admin
 export SPRING_DATASOURCE_USERNAME=your_user
 export SPRING_DATASOURCE_PASSWORD=your_password
 export JWT_SECRET_KEY=your-secret-key
+export RABBITMQ_ADMIN_RESOURCES_CACHE_ENABLED=true
+export RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE=60
 
 java -jar rabbitmq-admin-backend-*.jar
 ```
@@ -157,6 +164,7 @@ The project is organized into several key directories, each serving a specific p
 | `└── src/test/` | Backend unit and integration tests |
 | `frontend/` | React TypeScript application |
 | `├── src/` | Frontend source code and components |
+| `├── src/types/` | TypeScript interfaces and type definitions |
 | `├── public/` | Static assets and HTML template |
 | `└── build/` | Built frontend assets (generated) |
 
@@ -285,6 +293,8 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 
 ### Environment Variables
 
+#### Core Application Configuration
+
 | Variable                 | Description       | Default          | Required |
 | ------------------------ | ----------------- | ---------------- | -------- |
 | `POSTGRES_DB`            | Database name     | `rabbitmq_admin` | No       |
@@ -294,6 +304,36 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 | `SPRING_PROFILES_ACTIVE` | Spring profiles   | `docker`         | No       |
 | `JAVA_OPTS`              | JVM options       | _optimized_      | No       |
 
+#### Resource Management Configuration
+
+**Configuration Properties Class**: All resource management features are configured using the type-safe `RabbitMQResourceProperties` class with the prefix `rabbitmq.admin.resources`. This provides structured configuration with nested classes for different functional areas.
+
+| Variable                                                      | Description                   | Default  | Required |
+| ------------------------------------------------------------- | ----------------------------- | -------- | -------- |
+| `RABBITMQ_ADMIN_RESOURCES_REFRESH_DEFAULT_INTERVAL`           | Default refresh interval (ms) | `30000`  | No       |
+| `RABBITMQ_ADMIN_RESOURCES_REFRESH_MIN_INTERVAL`               | Minimum refresh interval (ms) | `15000`  | No       |
+| `RABBITMQ_ADMIN_RESOURCES_REFRESH_MAX_INTERVAL`               | Maximum refresh interval (ms) | `300000` | No       |
+| `RABBITMQ_ADMIN_RESOURCES_PAGINATION_DEFAULT_PAGE_SIZE`       | Default page size             | `50`     | No       |
+| `RABBITMQ_ADMIN_RESOURCES_PAGINATION_MAX_PAGE_SIZE`           | Maximum page size             | `500`    | No       |
+| `RABBITMQ_ADMIN_RESOURCES_CACHE_ENABLED`                      | Enable resource caching       | `true`   | No       |
+| `RABBITMQ_ADMIN_RESOURCES_CACHE_DEFAULT_TTL`                  | Default cache TTL (ms)        | `30000`  | No       |
+| `RABBITMQ_ADMIN_RESOURCES_CACHE_MAX_SIZE`                     | Maximum cache entries         | `1000`   | No       |
+| `RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE`     | Rate limit per user/minute    | `120`    | No       |
+| `RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_BURST_SIZE`              | Rate limit burst size         | `10`     | No       |
+| `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_TOTAL`          | Max HTTP connections          | `20`     | No       |
+| `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_PER_ROUTE`      | Max connections per route     | `10`     | No       |
+| `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_CONNECTION_TIMEOUT` | Connection timeout (ms)       | `10000`  | No       |
+| `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_SOCKET_TIMEOUT`     | Socket timeout (ms)           | `30000`  | No       |
+
+#### Application Monitoring Configuration
+
+| Variable                                           | Description                       | Default | Required |
+| -------------------------------------------------- | --------------------------------- | ------- | -------- |
+| `APP_MONITORING_PERFORMANCE_SLOW_THRESHOLD_MS`     | Slow operation threshold (ms)     | `2000`  | No       |
+| `APP_MONITORING_PERFORMANCE_CRITICAL_THRESHOLD_MS` | Critical operation threshold (ms) | `5000`  | No       |
+| `APP_MONITORING_HEALTH_CHECK_INTERVAL_MINUTES`     | Health check interval (minutes)   | `2`     | No       |
+| `APP_MONITORING_HEALTH_TIMEOUT_SECONDS`            | Health check timeout (seconds)    | `10`    | No       |
+
 ### Security Configuration
 
 ⚠️ **Important**: Change these values in production:
@@ -301,6 +341,43 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 1. **JWT Secret Key**: Generate a secure 256-bit key
 2. **Database Password**: Use a strong, unique password
 3. **Admin Credentials**: Change default admin password
+4. **Resource Access**: Configure role-based permissions for resource management
+5. **Rate Limiting**: Adjust rate limits based on your usage patterns
+6. **Data Protection**: Enable sensitive data filtering and masking
+
+#### Authentication Debug Logging
+
+For troubleshooting authentication issues, enable detailed JWT authentication logging:
+
+```yaml
+# In application.yml
+logging:
+  level:
+    com.rabbitmq.admin.security.JwtAuthenticationFilter: DEBUG
+```
+
+Or using environment variables:
+
+```bash
+LOGGING_LEVEL_COM_RABBITMQ_ADMIN_SECURITY_JWTAUTHENTICATIONFILTER=DEBUG
+```
+
+This provides detailed logs for request processing, token validation, user authentication, and security context setup without exposing sensitive information.
+
+#### Resource Management Security
+
+The application includes comprehensive security features for resource management:
+
+- **Role-Based Access Control**: Configure minimum roles and resource-specific permissions
+- **Audit Logging**: Track resource access, authentication failures, and authorization issues
+- **Rate Limiting**: Prevent abuse with configurable per-user and per-cluster limits
+- **Data Protection**: Automatically filter and mask sensitive connection properties
+- **Secure Defaults**: Production-ready security settings out of the box
+
+For detailed security and resource management configuration, see:
+
+- [Resource Management Configuration Guide](docs/configuration/resource-management-config.md)
+- [Complete Application Configuration Reference](docs/configuration/application-configuration-reference.md)
 
 ## 🔐 Default Credentials
 
@@ -372,7 +449,7 @@ This utility generates a BCrypt hash for the default password and verifies it ma
 ### Run Tests
 
 ```bash
-# All tests
+# All tests (unit + integration)
 ./radmin-cli build test
 
 # Backend only
@@ -380,15 +457,47 @@ mvn test -pl backend
 
 # Frontend only
 cd frontend && npm test
+
+# Live tests with running RabbitMQ (immediate feedback)
+mvn test -pl backend -Dtest=WebClientLiveTest
+
+# Debug tests for WebClient vs curl comparison (development debugging)
+mvn test -pl backend -Dtest=WebClientDebugTest
+
+# URL encoding tests for vhost and special character issues
+mvn test -pl backend -Dtest=WebClientEncodingTest
+
+# Run all debug tests by tag (includes WebClientDebugTest, WebClientEncodingTest, WebClientBindingsTest)
+mvn test -pl backend -Dgroups=debug
+
+# Fix verification tests for WebClient URL encoding issues
+mvn test -pl backend -Dtest=RabbitMQClientServiceFixTest
+
+# Integration tests with real RabbitMQ (optional)
+mvn test -pl backend -Dtest=WebClientBindingsIntegrationTest -Drabbitmq.available=true
+
+# End-to-End testing (local development only - not part of CI/CD)
+# This comprehensive test validates resource management features but is too slow for CI/CD
+./scripts/e2e-test.sh
 ```
 
 ### Test Coverage
 
 - **Backend**: JUnit 5, Mockito, TestContainers with optimized Surefire configuration
-- **Frontend**: Vitest, React Testing Library
+- **Frontend**: Vitest, React Testing Library with comprehensive component testing including advanced MUI DataGrid mocking, theme provider integration, and detailed interaction testing for resource management components (note: some timer-based auto-refresh tests are currently skipped due to CI reliability)
 - **Integration**: Docker Compose with real services
 - **Test Isolation**: Enhanced configuration for reliable CI/CD execution
+- **Test Organization**: Uses JUnit 5 `@Tag` annotations for test categorization (e.g., `@Tag("debug")` for WebClient debugging tests)
 - **Testing Framework**: Uses modern `@MockitoBean` annotation (migrated from deprecated `@MockBean` in Spring Boot 3.4.0+)
+- **Resource Management**: Comprehensive controller tests for all RabbitMQ resource endpoints including pagination, filtering, authentication, and enhanced error handling with automatic recovery
+- **WebClient Integration Testing**: Enhanced `WebClientBindingsTest.java` with comprehensive debugging capabilities for RabbitMQ Management API connectivity, including multiple test approaches, proper type safety, StepVerifier-based error handling for CI/CD environments, and configuration alignment with production services. Includes `WebClientLiveTest.java` for immediate feedback testing with running RabbitMQ instances, `WebClientDebugTest.java` for detailed WebClient vs curl debugging and URL variation testing, `WebClientEncodingTest.java` for URL encoding issue identification and resolution (especially vhost `/` encoding), and `WebClientBindingsIntegrationTest.java` for automated integration testing when available
+- **UI Component Testing**: Advanced MUI DataGrid mocking, theme provider integration, comprehensive interaction testing for resource management components, and extensive test coverage for ExchangesList with modal behaviors, accessibility, and performance testing
+- **Performance Optimization**: Browser-based caching with configurable TTL, cache invalidation, resource-specific optimization, and cache-first loading strategy (implemented for connections, in progress for other resources)
+
+For detailed testing documentation and best practices, see:
+
+- [Frontend Testing Guide](docs/testing/frontend-testing-guide.md)
+- [Backend Testing Guide](docs/testing/backend-testing-guide.md)
 
 ## 📊 Monitoring & Health Checks
 
@@ -439,33 +548,476 @@ docker logs rabbitmq-admin-db
 
 ## 🚀 Production Deployment
 
-### Pre-deployment Checklist
+This section covers deploying RabbitMQ Admin to production using either the **Docker image from Docker Hub** or the **JAR file from GitHub releases**.
 
-- [ ] Change default passwords
-- [ ] Set secure JWT secret key
-- [ ] Configure proper resource limits
-- [ ] Set up log rotation
-- [ ] Configure monitoring
-- [ ] Test backup and restore procedures
-- [ ] Verify security settings
-- [ ] Test health checks
-- [ ] Configure reverse proxy (if needed)
-- [ ] Set up SSL/TLS certificates
+### 📦 Deployment Options
 
-### Production Environment
+#### Option 1: Docker Image (Recommended)
+
+**Using Docker Hub image:**
 
 ```bash
-# 1. Prepare environment
-cp docker/.env.example docker/.env.prod
-# Edit .env.prod with production values
+# Pull the latest image
+docker pull username/rabbitmq-admin:latest
 
-# 2. Deploy
-./deploy.sh production --env-file .env.prod
+# Run with production configuration
+docker run -d \
+  --name rabbitmq-admin-prod \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=production \
+  -e DATABASE_URL=jdbc:postgresql://your-db-host:5432/rabbitmq_admin \
+  -e DATABASE_USERNAME=rabbitmq_admin \
+  -e DATABASE_PASSWORD=your-secure-password \
+  -e JWT_SECRET_KEY=your-secure-256-bit-jwt-secret \
+  -e RABBITMQ_ADMIN_RESOURCES_CACHE_ENABLED=true \
+  -e RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE=60 \
+  -e RABBITMQ_ADMIN_RESOURCES_REFRESH_DEFAULT_INTERVAL=60000 \
+  --memory=2g \
+  --cpus=1.0 \
+  --security-opt no-new-privileges:true \
+  --read-only \
+  --tmpfs /tmp:noexec,nosuid,size=100m \
+  -v /var/log/rabbitmq-admin:/app/logs \
+  username/rabbitmq-admin:latest
+```
 
-# 3. Verify deployment
-./deploy.sh status
+**Using Docker Compose (Production):**
+
+```bash
+# 1. Download production compose file
+curl -O https://raw.githubusercontent.com/your-repo/rabbitmq-admin/main/docker/docker-compose.prod.yml
+curl -O https://raw.githubusercontent.com/your-repo/rabbitmq-admin/main/docker/.env.production.example
+
+# 2. Configure environment
+cp .env.production.example .env.production
+# Edit .env.production with your production values
+
+# 3. Deploy
+docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+
+# 4. Verify deployment
+docker-compose -f docker-compose.prod.yml ps
 curl -f http://localhost:8080/actuator/health
 ```
+
+#### Option 2: Standalone JAR
+
+**Download from GitHub Releases:**
+
+```bash
+# 1. Download the latest JAR
+wget https://github.com/your-repo/rabbitmq-admin/releases/latest/download/rabbitmq-admin-VERSION.jar
+
+# 2. Create application user and directories
+sudo useradd -r -s /bin/false rabbitmq-admin
+sudo mkdir -p /opt/rabbitmq-admin /var/log/rabbitmq-admin /etc/rabbitmq-admin
+sudo chown rabbitmq-admin:rabbitmq-admin /opt/rabbitmq-admin /var/log/rabbitmq-admin /etc/rabbitmq-admin
+
+# 3. Install JAR
+sudo cp rabbitmq-admin-VERSION.jar /opt/rabbitmq-admin/
+
+# 4. Create configuration
+sudo tee /etc/rabbitmq-admin/application.properties << EOF
+spring.profiles.active=production
+spring.datasource.url=jdbc:postgresql://your-db-host:5432/rabbitmq_admin
+spring.datasource.username=rabbitmq_admin
+spring.datasource.password=your-secure-password
+app.jwt.secret-key=your-secure-256-bit-jwt-secret
+rabbitmq.admin.resources.cache.enabled=true
+rabbitmq.admin.resources.rate-limit.per-user.requests-per-minute=60
+rabbitmq.admin.resources.refresh.default-interval=60000
+logging.file.name=/var/log/rabbitmq-admin/application.log
+EOF
+
+# 5. Create systemd service
+sudo tee /etc/systemd/system/rabbitmq-admin.service << EOF
+[Unit]
+Description=RabbitMQ Admin Application
+After=network.target
+
+[Service]
+Type=simple
+User=rabbitmq-admin
+Group=rabbitmq-admin
+ExecStart=/usr/bin/java -Xms512m -Xmx2g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -jar /opt/rabbitmq-admin/rabbitmq-admin-VERSION.jar --spring.config.location=/etc/rabbitmq-admin/application.properties
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rabbitmq-admin
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/rabbitmq-admin
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# 6. Start service
+sudo systemctl daemon-reload
+sudo systemctl enable rabbitmq-admin
+sudo systemctl start rabbitmq-admin
+sudo systemctl status rabbitmq-admin
+```
+
+### 🔧 Production Configuration
+
+#### Required Environment Variables
+
+| Variable            | Description                  | Example                                    |
+| ------------------- | ---------------------------- | ------------------------------------------ |
+| `DATABASE_URL`      | PostgreSQL connection URL    | `jdbc:postgresql://db:5432/rabbitmq_admin` |
+| `DATABASE_USERNAME` | Database username            | `rabbitmq_admin`                           |
+| `DATABASE_PASSWORD` | Database password            | `your-secure-password`                     |
+| `JWT_SECRET_KEY`    | JWT signing secret (256-bit) | `your-secure-256-bit-jwt-secret`           |
+
+#### Resource Management Configuration (Production Optimized)
+
+| Variable                                                  | Description              | Production Value | Development Value |
+| --------------------------------------------------------- | ------------------------ | ---------------- | ----------------- |
+| `RABBITMQ_ADMIN_RESOURCES_REFRESH_DEFAULT_INTERVAL`       | Default refresh interval | `60000` (1 min)  | `30000` (30s)     |
+| `RABBITMQ_ADMIN_RESOURCES_PAGINATION_DEFAULT_PAGE_SIZE`   | Default page size        | `25`             | `50`              |
+| `RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE` | Rate limit per user      | `60`             | `120`             |
+| `RABBITMQ_ADMIN_RESOURCES_CACHE_DEFAULT_TTL`              | Cache TTL                | `60000` (1 min)  | `30000` (30s)     |
+| `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_TOTAL`      | Max HTTP connections     | `50`             | `20`              |
+
+#### Security Configuration
+
+```bash
+# Generate secure JWT secret (256-bit)
+JWT_SECRET_KEY=$(openssl rand -base64 32)
+
+# Generate secure database password
+DB_PASSWORD=$(openssl rand -base64 24)
+
+# Set secure file permissions
+chmod 600 /etc/rabbitmq-admin/application.properties
+chown rabbitmq-admin:rabbitmq-admin /etc/rabbitmq-admin/application.properties
+```
+
+### 🗄️ Database Setup
+
+#### PostgreSQL Configuration
+
+```sql
+-- Create database and user
+CREATE DATABASE rabbitmq_admin;
+CREATE USER rabbitmq_admin WITH PASSWORD 'your-secure-password';
+GRANT ALL PRIVILEGES ON DATABASE rabbitmq_admin TO rabbitmq_admin;
+
+-- Connect to database and grant schema permissions
+\c rabbitmq_admin;
+GRANT ALL ON SCHEMA public TO rabbitmq_admin;
+
+-- Production optimizations
+ALTER SYSTEM SET shared_buffers = '256MB';
+ALTER SYSTEM SET effective_cache_size = '1GB';
+ALTER SYSTEM SET maintenance_work_mem = '64MB';
+SELECT pg_reload_conf();
+```
+
+#### Connection Pooling (Recommended)
+
+For production, use PgBouncer for connection pooling:
+
+```bash
+# Install PgBouncer
+sudo apt install pgbouncer
+
+# Configure PgBouncer
+sudo tee /etc/pgbouncer/pgbouncer.ini << EOF
+[databases]
+rabbitmq_admin = host=localhost port=5432 dbname=rabbitmq_admin
+
+[pgbouncer]
+listen_port = 6432
+listen_addr = 127.0.0.1
+auth_type = md5
+pool_mode = transaction
+max_client_conn = 100
+default_pool_size = 20
+EOF
+
+# Update application to use PgBouncer
+DATABASE_URL=jdbc:postgresql://localhost:6432/rabbitmq_admin
+```
+
+### 🔒 Security Hardening
+
+#### SSL/TLS Configuration
+
+```bash
+# Generate or obtain SSL certificates
+sudo certbot certonly --webroot -w /var/www/html -d rabbitmq-admin.yourdomain.com
+
+# Configure application for HTTPS (application.properties)
+server.port=8443
+server.ssl.enabled=true
+server.ssl.key-store=/path/to/keystore.p12
+server.ssl.key-store-password=your-keystore-password
+server.ssl.key-store-type=PKCS12
+```
+
+#### Firewall Configuration
+
+```bash
+# Allow only necessary ports
+sudo ufw allow 22/tcp    # SSH
+sudo ufw allow 80/tcp    # HTTP (redirect to HTTPS)
+sudo ufw allow 443/tcp   # HTTPS
+sudo ufw allow 8080/tcp  # Application (if not behind load balancer)
+
+# Restrict database access
+sudo ufw allow from 10.0.1.0/24 to any port 5432
+
+sudo ufw enable
+```
+
+### 🔄 Load Balancer Configuration
+
+#### Nginx Configuration
+
+```nginx
+upstream rabbitmq_admin {
+    least_conn;
+    server 10.0.1.10:8080 max_fails=3 fail_timeout=30s;
+    server 10.0.1.11:8080 max_fails=3 fail_timeout=30s;
+    server 10.0.1.12:8080 max_fails=3 fail_timeout=30s;
+}
+
+server {
+    listen 80;
+    server_name rabbitmq-admin.yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name rabbitmq-admin.yourdomain.com;
+
+    ssl_certificate /path/to/certificate.crt;
+    ssl_certificate_key /path/to/private.key;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=63072000" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    location / {
+        proxy_pass http://rabbitmq_admin;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /actuator/health {
+        proxy_pass http://rabbitmq_admin;
+        access_log off;
+    }
+}
+```
+
+### 📊 Monitoring and Observability
+
+#### Health Checks
+
+```bash
+# Application health
+curl -f http://localhost:8080/actuator/health
+
+# Detailed health with authentication
+curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8080/actuator/health
+
+# Metrics (if enabled)
+curl http://localhost:8080/actuator/metrics
+```
+
+#### Prometheus Configuration
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: "rabbitmq-admin"
+    static_configs:
+      - targets: ["rabbitmq-admin:8080"]
+    metrics_path: "/actuator/prometheus"
+    scrape_interval: 30s
+```
+
+### 💾 Backup and Recovery
+
+#### Database Backup
+
+```bash
+#!/bin/bash
+# backup-database.sh
+BACKUP_DIR="/var/backups/rabbitmq-admin"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="rabbitmq_admin_backup_${DATE}.sql"
+
+mkdir -p $BACKUP_DIR
+pg_dump -h localhost -U rabbitmq_admin -d rabbitmq_admin > $BACKUP_DIR/$BACKUP_FILE
+gzip $BACKUP_DIR/$BACKUP_FILE
+
+# Remove backups older than 30 days
+find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
+```
+
+#### Application Configuration Backup
+
+```bash
+#!/bin/bash
+# backup-config.sh
+BACKUP_DIR="/var/backups/rabbitmq-admin/config"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+tar -czf $BACKUP_DIR/config_backup_${DATE}.tar.gz \
+  /etc/rabbitmq-admin/ \
+  /etc/systemd/system/rabbitmq-admin.service
+```
+
+### 🚀 Deployment Automation
+
+#### Using Docker Compose
+
+```bash
+# Create deployment script
+cat > deploy-prod.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "Deploying RabbitMQ Admin to production..."
+
+# Pull latest image
+docker-compose -f docker-compose.prod.yml pull
+
+# Deploy with zero downtime
+docker-compose -f docker-compose.prod.yml up -d
+
+# Wait for health check
+echo "Waiting for application to be healthy..."
+timeout 120 bash -c 'until curl -f http://localhost:8080/actuator/health; do sleep 5; done'
+
+echo "Deployment completed successfully!"
+EOF
+
+chmod +x deploy-prod.sh
+```
+
+#### Using Kubernetes
+
+```yaml
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-admin
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rabbitmq-admin
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-admin
+    spec:
+      containers:
+        - name: rabbitmq-admin
+          image: username/rabbitmq-admin:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "production"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-secrets
+                  key: database-url
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-secrets
+                  key: jwt-secret
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+```
+
+### ✅ Pre-deployment Checklist
+
+- [ ] **Security**: Change default passwords and set secure JWT secret key
+- [ ] **Database**: Set up external PostgreSQL database with proper credentials
+- [ ] **Configuration**: Configure resource management settings for production load
+- [ ] **SSL/TLS**: Set up SSL certificates and HTTPS configuration
+- [ ] **Monitoring**: Configure health checks, metrics, and log aggregation
+- [ ] **Backup**: Set up automated database and configuration backups
+- [ ] **Firewall**: Configure network security and access controls
+- [ ] **Load Balancer**: Set up reverse proxy with SSL termination (if needed)
+- [ ] **Resource Limits**: Configure appropriate CPU and memory limits
+- [ ] **Log Rotation**: Set up log rotation to prevent disk space issues
+
+### 🔍 Troubleshooting Production Issues
+
+#### Common Issues
+
+1. **Application won't start**
+
+   ```bash
+   # Check logs
+   sudo journalctl -u rabbitmq-admin -f
+   # Or for Docker
+   docker logs rabbitmq-admin-prod
+   ```
+
+2. **Database connection issues**
+
+   ```bash
+   # Test database connectivity
+   psql -h your-db-host -U rabbitmq_admin -d rabbitmq_admin -c "SELECT 1;"
+   ```
+
+3. **Performance issues**
+
+   ```bash
+   # Monitor resource usage
+   docker stats rabbitmq-admin-prod
+   # Check JVM metrics
+   curl http://localhost:8080/actuator/metrics/jvm.memory.used
+   ```
+
+4. **Resource management errors**
+   ```bash
+   # Check resource management configuration
+   curl -H "Authorization: Bearer $JWT_TOKEN" \
+     http://localhost:8080/actuator/configprops | jq '.rabbitmq'
+   ```
+
+For comprehensive deployment documentation, see [Production Deployment Guide](docs/deployment/production-deployment.md).
 
 ## 📝 API Documentation
 
@@ -494,6 +1046,38 @@ curl -f http://localhost:8080/actuator/health
 ### RabbitMQ Proxy
 
 - `GET /api/rabbitmq/{clusterId}/*` - Proxy to RabbitMQ Management API
+
+### RabbitMQ Resource Management
+
+- `GET /api/rabbitmq/{clusterId}/resources/connections` - List RabbitMQ connections with pagination
+- `GET /api/rabbitmq/{clusterId}/resources/channels` - List RabbitMQ channels with pagination
+- `GET /api/rabbitmq/{clusterId}/resources/exchanges` - List RabbitMQ exchanges with pagination
+- `GET /api/rabbitmq/{clusterId}/resources/queues` - List RabbitMQ queues with pagination
+- `GET /api/rabbitmq/{clusterId}/resources/exchanges/{exchangeName}/bindings` - Get bindings for a specific exchange
+- `GET /api/rabbitmq/{clusterId}/resources/queues/{queueName}/bindings` - Get bindings for a specific queue
+
+**Query Parameters (for paginated endpoints):**
+
+- `page` - Page number (0-based, default: 0)
+- `pageSize` - Items per page (default: 50, max: 500)
+- `name` - Optional name filter
+- `useRegex` - Use regex for name filtering (default: false)
+
+For detailed API documentation including request/response examples and comprehensive TypeScript interfaces, see [RabbitMQ Resources API Documentation](docs/api/rabbitmq-resources.md).
+
+### TypeScript Support
+
+The application includes comprehensive TypeScript interfaces for all RabbitMQ resource types:
+
+- **RabbitMQConnection**: Connection details with client properties and network statistics
+- **RabbitMQChannel**: Channel information with consumer counts and message statistics
+- **RabbitMQExchange**: Exchange configuration with type definitions and message rates
+- **RabbitMQQueue**: Queue details with message counts, consumer information, and state
+- **RabbitMQBinding**: Binding relationships between exchanges and queues
+- **PagedResponse<T>**: Generic pagination wrapper for all resource endpoints
+- **ResourceFilters**: Filter configuration for resource browsing and search
+
+These types provide full IntelliSense support and compile-time type checking for frontend development.
 
 ### Debug Endpoints (Development Only)
 
@@ -585,6 +1169,7 @@ graph TB
 - TypeScript for type safety
 - Vite for fast development and building
 - React Router for client-side routing
+- Collapsible navigation with cluster-aware resource access
 
 **Backend:**
 
@@ -610,9 +1195,18 @@ graph TB
 
 - **Multi-Cluster Support**: Dynamic client pool for multiple RabbitMQ clusters
 - **Role-Based Security**: Admin and User roles with resource-level access control
+- **Intelligent Navigation**: Collapsible resource menu with cluster access validation and visual state indicators
 - **Stateless Design**: JWT-based authentication for horizontal scaling
-- **Modern UI**: Responsive React interface with Material UI components
+- **Modern UI**: Responsive React interface with Material UI components and intuitive navigation
 - **Production Ready**: Health checks, monitoring, logging, and security configurations
+
+### Navigation and User Experience
+
+- **Collapsible Resource Menu**: Expandable "Resources" section with dedicated icons for each resource type
+- **Cluster-Aware Access**: Menu items automatically disabled when no cluster access is available
+- **Visual State Indicators**: Active state highlighting for both parent and child navigation items
+- **Responsive Design**: Navigation adapts to different screen sizes with proper mobile support
+- **Accessibility**: Full keyboard navigation and screen reader support
 
 ### Security Architecture
 

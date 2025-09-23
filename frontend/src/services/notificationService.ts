@@ -1,36 +1,62 @@
-// Simple notification service using browser alerts for now
-// In a production app, this would integrate with a proper notification system
-// like Material UI Snackbar or a toast library
+// Notification service that integrates with the NotificationContext
+// This service provides a way to show notifications from anywhere in the app
+// Components should use the useNotification hook directly when possible
 
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 interface NotificationService {
-  success: (message: string) => void;
-  error: (message: string) => void;
-  info: (message: string) => void;
-  warning: (message: string) => void;
+  success: (message: string, autoHideDuration?: number) => void;
+  error: (message: string, autoHideDuration?: number) => void;
+  info: (message: string, autoHideDuration?: number) => void;
+  warning: (message: string, autoHideDuration?: number) => void;
 }
 
-// Simple implementation - in a real app you'd want to integrate with a proper notification system
+// Global notification service instance
+// This will be initialized by the NotificationProvider
+let globalNotificationService: NotificationService | null = null;
+
+export const setGlobalNotificationService = (service: NotificationService) => {
+  globalNotificationService = service;
+};
+
+// Fallback implementation for when the service is not initialized
+const fallbackService: NotificationService = {
+  success: (message: string) => console.log('SUCCESS:', message),
+  error: (message: string) => console.error('ERROR:', message),
+  info: (message: string) => console.info('INFO:', message),
+  warning: (message: string) => console.warn('WARNING:', message),
+};
+
 export const notificationService: NotificationService = {
-  success: (message: string) => {
-    console.log('SUCCESS:', message);
-    // For now, we'll handle notifications in the components directly
-    // This service can be extended later to integrate with a proper notification system
+  success: (message: string, autoHideDuration?: number) => {
+    if (globalNotificationService) {
+      globalNotificationService.success(message, autoHideDuration);
+    } else {
+      fallbackService.success(message);
+    }
   },
 
-  error: (message: string) => {
-    console.error('ERROR:', message);
-    // For now, we'll handle notifications in the components directly
+  error: (message: string, autoHideDuration?: number) => {
+    if (globalNotificationService) {
+      globalNotificationService.error(message, autoHideDuration);
+    } else {
+      fallbackService.error(message);
+    }
   },
 
-  info: (message: string) => {
-    console.info('INFO:', message);
-    // For now, we'll handle notifications in the components directly
+  info: (message: string, autoHideDuration?: number) => {
+    if (globalNotificationService) {
+      globalNotificationService.info(message, autoHideDuration);
+    } else {
+      fallbackService.info(message);
+    }
   },
 
-  warning: (message: string) => {
-    console.warn('WARNING:', message);
-    // For now, we'll handle notifications in the components directly
+  warning: (message: string, autoHideDuration?: number) => {
+    if (globalNotificationService) {
+      globalNotificationService.warning(message, autoHideDuration);
+    } else {
+      fallbackService.warning(message);
+    }
   },
 };
