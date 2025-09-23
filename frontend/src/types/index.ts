@@ -3,6 +3,7 @@ export * from './auth';
 export * from './user';
 export * from './cluster';
 export * from './api';
+export * from './rabbitmq';
 export type {
     ApiError as ErrorApiError,
     ValidationError as ErrorValidationError,

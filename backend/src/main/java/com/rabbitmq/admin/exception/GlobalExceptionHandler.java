@@ -1,5 +1,8 @@
 package com.rabbitmq.admin.exception;
 
+import com.rabbitmq.admin.service.RabbitMQResourceService;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -52,6 +55,48 @@ public class GlobalExceptionHandler {
 
         logger.warn("Validation error: {}", errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle constraint violation errors (e.g., @Min, @Max validation on controller
+     * parameters)
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolationException(
+            ConstraintViolationException ex, WebRequest request) {
+
+        Map<String, Object> response = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
+
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            String propertyPath = violation.getPropertyPath().toString();
+            String message = violation.getMessage();
+            errors.put(propertyPath, message);
+        }
+
+        response.put("timestamp", Instant.now().toString());
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("error", "Validation Failed");
+        response.put("message", "Parameter validation failed");
+        response.put("path", request.getDescription(false).replace("uri=", ""));
+        response.put("details", errors);
+
+        logger.warn("Constraint violation error: {}", errors);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handle RabbitMQ resource exceptions
+     */
+    @ExceptionHandler(RabbitMQResourceService.RabbitMQResourceException.class)
+    public ResponseEntity<Map<String, Object>> handleRabbitMQResourceException(
+            RabbitMQResourceService.RabbitMQResourceException ex, WebRequest request) {
+
+        Map<String, Object> response = createErrorResponse(
+                HttpStatus.BAD_GATEWAY, "RabbitMQ Resource Error", ex.getMessage(), request);
+
+        logger.warn("RabbitMQ resource error: {}", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.BAD_GATEWAY);
     }
 
     /**

@@ -27,6 +27,195 @@ app:
   jwt:
     secret-key: ${JWT_SECRET_KEY:your-256-bit-secret-key-here-change-in-production}
     expiration: 86400000 # 24 hours in milliseconds
+  monitoring:
+    performance:
+      slow-threshold-ms: 2000
+      critical-threshold-ms: 5000
+    health:
+      check-interval-minutes: 2
+      timeout-seconds: 10
+
+# RabbitMQ Resource Management Configuration
+rabbitmq:
+  admin:
+    resources:
+      # Auto-refresh configuration
+      refresh:
+        default-interval: ${RABBITMQ_ADMIN_RESOURCES_REFRESH_DEFAULT_INTERVAL:30000}
+        min-interval: ${RABBITMQ_ADMIN_RESOURCES_REFRESH_MIN_INTERVAL:15000}
+        max-interval: ${RABBITMQ_ADMIN_RESOURCES_REFRESH_MAX_INTERVAL:300000}
+
+      # Pagination configuration
+      pagination:
+        default-page-size: ${RABBITMQ_ADMIN_RESOURCES_PAGINATION_DEFAULT_PAGE_SIZE:50}
+        max-page-size: ${RABBITMQ_ADMIN_RESOURCES_PAGINATION_MAX_PAGE_SIZE:500}
+        min-page-size: 10
+
+        # Resource-specific defaults
+        connections:
+          default-page-size: 25
+          max-page-size: 200
+        channels:
+          default-page-size: 50
+          max-page-size: 300
+        exchanges:
+          default-page-size: 100
+          max-page-size: 500
+        queues:
+          default-page-size: 50
+          max-page-size: 300
+
+      # Cache configuration
+      cache:
+        enabled: ${RABBITMQ_ADMIN_RESOURCES_CACHE_ENABLED:true}
+        default-ttl: ${RABBITMQ_ADMIN_RESOURCES_CACHE_DEFAULT_TTL:30000}
+        max-size: ${RABBITMQ_ADMIN_RESOURCES_CACHE_MAX_SIZE:1000}
+        cleanup-interval: 60000
+
+        # Resource-specific cache settings
+        connections:
+          ttl: 30000
+          max-size: 200
+        channels:
+          ttl: 30000
+          max-size: 500
+        exchanges:
+          ttl: 300000
+          max-size: 100
+        queues:
+          ttl: 60000
+          max-size: 300
+
+      # Rate limiting configuration
+      rate-limit:
+        # Global rate limits
+        global:
+          requests-per-minute: 1000
+          burst-size: 50
+
+        # Per-user rate limits
+        per-user:
+          requests-per-minute: ${RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE:120}
+          burst-size: ${RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_BURST_SIZE:10}
+
+        # Per-cluster rate limits
+        per-cluster:
+          requests-per-minute: 500
+          burst-size: 25
+
+      # Connection pool configuration for RabbitMQ API calls
+      connection-pool:
+        max-total: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_TOTAL:20}
+        max-per-route: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_PER_ROUTE:10}
+        connection-timeout: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_CONNECTION_TIMEOUT:10000}
+        socket-timeout: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_SOCKET_TIMEOUT:30000}
+        connection-request-timeout: 5000
+
+      # Thread pool for async operations
+      thread-pool:
+        core-size: 5
+        max-size: 20
+        queue-capacity: 100
+        keep-alive: 60000
+
+      # Security configuration
+      security:
+        # Minimum role required
+        min-role: USER
+
+        # Resource-specific permissions
+        permissions:
+          connections:
+            roles: [USER, ADMIN]
+            clusters: all
+          channels:
+            roles: [USER, ADMIN]
+            clusters: all
+          exchanges:
+            roles: [USER, ADMIN]
+            clusters: assigned
+          queues:
+            roles: [USER, ADMIN]
+            clusters: assigned
+
+      # Audit configuration
+      audit:
+        enabled: true
+        log-level: INFO
+        include-request-body: false
+        include-response-body: false
+
+        # Events to audit
+        events:
+          - resource-access
+          - authentication-failure
+          - authorization-failure
+          - rate-limit-exceeded
+
+      # Data protection
+      data-protection:
+        # Filter sensitive connection properties
+        filter-sensitive-properties: true
+
+        # Sensitive property patterns
+        sensitive-patterns:
+          - "password"
+          - "secret"
+          - "key"
+          - "token"
+          - "credential"
+
+        # Mask sensitive values
+        mask-sensitive-values: true
+        mask-character: "*"
+
+      # Health checks
+      health:
+        enabled: true
+
+        # Health check intervals
+        check-interval: 30000
+
+        # Health indicators
+        indicators:
+          - cluster-connectivity
+          - api-availability
+          - cache-health
+          - memory-usage
+
+      # Metrics collection
+      metrics:
+        enabled: true
+
+        # Metrics to collect
+        collect:
+          - request-count
+          - response-time
+          - error-rate
+          - cache-hit-rate
+          - memory-usage
+
+        # Export configuration
+        export:
+          prometheus:
+            enabled: true
+            path: /metrics
+          jmx:
+            enabled: true
+
+      # Logging configuration
+      logging:
+        # Request/response logging
+        log-requests: false
+        log-responses: false
+
+        # Performance logging
+        log-slow-requests: true
+        slow-request-threshold: 5000 # milliseconds
+
+        # Error logging
+        log-errors: true
+        include-stack-traces: true
 
 server:
   port: 8080
@@ -37,14 +226,26 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
+      base-path: /actuator
   endpoint:
     health:
       show-details: when-authorized
+      show-components: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: rabbitmq-admin
+      environment: development
 
 logging:
   level:
-    "[com.rabbitmq.admin]": INFO
+    "[com.rabbitmq.admin]": DEBUG
+    "[com.rabbitmq.admin.security]": DEBUG
     "[org.springframework.security]": DEBUG
+    "[AUDIT.com.rabbitmq.admin.service.ResourceAuditService]": INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

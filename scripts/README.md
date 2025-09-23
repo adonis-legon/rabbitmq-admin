@@ -28,6 +28,14 @@ This directory contains the core automation scripts for the RabbitMQ Admin proje
   - `deploy.sh logs` - View container logs
   - `deploy.sh status` - Check container status
 
+### Testing
+
+- **`e2e-test.sh`** - End-to-end testing for local development only
+  - Comprehensive resource management validation
+  - Real RabbitMQ cluster integration testing
+  - **NOT part of CI/CD pipeline** (too slow and potentially flaky)
+  - Use for: local development, manual validation, pre-release verification
+
 ### Version Management
 
 - **`sync-versions.sh`** - Synchronize versions across all components from main pom.xml

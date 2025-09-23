@@ -117,8 +117,13 @@ public class RabbitMQClientService {
     public <T> Mono<T> get(ClusterConnection clusterConnection, String path, Class<T> responseType) {
         WebClient client = getClient(clusterConnection);
 
+        logger.info("Making WebClient GET request to cluster {} with path: {}",
+                clusterConnection.getId(), path);
+        logger.info("WebClient base URL: {}, constructing full URL with path: {}",
+                clusterConnection.getApiUrl(), path);
+
         return client.get()
-                .uri(path)
+                .uri(uriBuilder -> buildUri(uriBuilder, path))
                 .retrieve()
                 .bodyToMono(responseType)
                 .doOnError(error -> logger.error("GET request failed for cluster {} path {}: {}",
@@ -138,7 +143,7 @@ public class RabbitMQClientService {
         WebClient client = getClient(clusterConnection);
 
         return client.post()
-                .uri(path)
+                .uri(uriBuilder -> buildUri(uriBuilder, path))
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(responseType)
@@ -159,7 +164,7 @@ public class RabbitMQClientService {
         WebClient client = getClient(clusterConnection);
 
         return client.put()
-                .uri(path)
+                .uri(uriBuilder -> buildUri(uriBuilder, path))
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(responseType)
@@ -178,7 +183,7 @@ public class RabbitMQClientService {
         WebClient client = getClient(clusterConnection);
 
         return client.delete()
-                .uri(path)
+                .uri(uriBuilder -> buildUri(uriBuilder, path))
                 .retrieve()
                 .bodyToMono(Void.class)
                 .doOnError(error -> logger.error("DELETE request failed for cluster {} path {}: {}",
@@ -203,6 +208,28 @@ public class RabbitMQClientService {
     }
 
     /**
+     * Builds a URI with proper encoding handling for RabbitMQ API paths.
+     * Handles vhost encoding issues by using URI templates for paths containing
+     * %2F.
+     * 
+     * @param uriBuilder the Spring UriBuilder
+     * @param path       the API path
+     * @return properly encoded URI
+     */
+    private java.net.URI buildUri(org.springframework.web.util.UriBuilder uriBuilder, String path) {
+        // Check if path contains encoded vhost (%2F) which needs special handling
+        if (path.contains("%2F")) {
+            // Replace %2F with {vhost} and use URI template to avoid double encoding
+            String templatePath = path.replace("%2F", "{vhost}");
+            logger.debug("Converting path with encoded vhost: {} -> {}", path, templatePath);
+            return uriBuilder.path(templatePath).build("/");
+        } else {
+            // For paths without vhost encoding, use normal path building
+            return uriBuilder.path(path).build();
+        }
+    }
+
+    /**
      * Creates a new WebClient configured for the given cluster connection.
      * 
      * @param clusterConnection the cluster connection configuration
@@ -223,14 +250,18 @@ public class RabbitMQClientService {
         String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
         String authHeader = "Basic " + encodedCredentials;
 
+        logger.info("Creating WebClient with username: {}, password length: {}",
+                clusterConnection.getUsername(),
+                clusterConnection.getPassword() != null ? clusterConnection.getPassword().length() : 0);
+
         logger.debug("Creating WebClient for cluster {} with base URL: {}",
                 clusterConnection.getId(), baseUrl);
 
         return WebClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, authHeader)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader(HttpHeaders.USER_AGENT, "RabbitMQ-Admin-Client/1.0")
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_IN_MEMORY_SIZE))
                 .build();
     }

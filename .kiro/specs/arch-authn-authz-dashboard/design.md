@@ -80,6 +80,49 @@ graph TB
 
 ## Components and Interfaces
 
+### State Management Patterns
+
+The application uses React Context for global state management with optimized patterns:
+
+#### ClusterContext State Management
+
+The `ClusterContext` implements an optimized state management pattern:
+
+```typescript
+// Individual state setters for better performance
+const setLoading = (loading: boolean) => {
+  setState((prev) => ({ ...prev, loading }));
+};
+
+const setError = (error: string | null) => {
+  setState((prev) => ({ ...prev, error }));
+};
+
+const setClusters = (clusters: ClusterConnection[]) => {
+  setState((prev) => ({ ...prev, clusters }));
+};
+
+const setSelectedCluster = (selectedCluster: ClusterConnection | null) => {
+  setState((prev) => ({ ...prev, selectedCluster }));
+};
+```
+
+**Benefits of this pattern:**
+
+- **Performance**: Individual setters prevent unnecessary re-renders
+- **Maintainability**: Clear separation of concerns for different state updates
+- **Debugging**: Easier to track specific state changes
+- **Type Safety**: Better TypeScript inference for state updates
+
+**Dependency Management**: The `refreshClusters` function includes proper dependencies to prevent infinite loops while ensuring state consistency:
+
+```typescript
+const refreshClusters = useCallback(async () => {
+  // Implementation uses individual setters
+  // Dependency array includes state.selectedCluster for proper updates
+}, [user, state.selectedCluster]);
+```
+
 ### Frontend Components
 
 #### Core Layout Components
@@ -89,11 +132,29 @@ graph TB
 - **TopBar**: Application header with logo and user menu
 - **UserMenu**: Sign-out functionality in bottom-left position
 
+#### Authentication Infrastructure Components
+
+- **AuthNavigationSetup**: Navigation configuration component that integrates React Router with token expiration handling
+  - Must be rendered inside Router context
+  - Sets up navigation callback for `tokenExpirationHandler.setNavigateToLogin()`
+  - Handles return URL preservation for post-login redirects
+  - Automatically cleans up navigation callback on component unmount
+  - Uses `replace: true` for login navigation to prevent back button issues
+
 #### Authentication Components
 
 - **LoginForm**: Username/password authentication with validation
 - **ProtectedRoute**: Route wrapper for authenticated access
 - **AuthProvider**: Context provider for authentication state
+- **AuthNavigationSetup**: Utility component that configures React Router navigation for token expiration handling
+
+#### Context Management Components
+
+- **ClusterProvider**: Context provider for cluster state management with optimized state updates
+  - Individual state setter functions for better performance and maintainability
+  - Automatic cluster selection for first active cluster
+  - Role-based cluster data fetching (admin vs user endpoints)
+  - Proper dependency management to prevent infinite re-renders
 
 #### Dashboard Components
 
@@ -117,7 +178,7 @@ graph TB
 
 #### Security Layer
 
-- **JwtAuthenticationFilter**: Validates JWT tokens on all protected endpoints
+- **JwtAuthenticationFilter**: Validates JWT tokens on all protected endpoints with comprehensive debug logging for troubleshooting authentication issues
 - **JwtTokenProvider**: Generates and validates JWT tokens
 - **SecurityConfig**: Spring Security configuration with role-based access
 - **AuthenticationController**: Login/logout endpoints
@@ -341,6 +402,8 @@ public class ClusterConnection {
 - **Password Hashing**: BCrypt with configurable strength
 - **JWT Security**: RS256 signing, short expiration times, refresh token strategy
 - **Session Management**: Stateless authentication with secure token storage
+- **Debug Logging**: Comprehensive authentication logging for troubleshooting without exposing sensitive data
+- **Token Expiration Handling**: Integrated navigation system for seamless login redirects with return URL preservation
 
 ### Authorization Security
 
@@ -361,3 +424,72 @@ public class ClusterConnection {
 - **Database Security**: Connection encryption, credential management
 - **API Security**: Rate limiting, request size limits
 - **Logging Security**: Sensitive data exclusion from logs
+
+### Authentication Troubleshooting
+
+The JWT authentication system includes comprehensive debug logging capabilities for troubleshooting authentication issues:
+
+#### Debug Logging Configuration
+
+Enable detailed authentication logging by setting the log level:
+
+```yaml
+logging:
+  level:
+    com.rabbitmq.admin.security.JwtAuthenticationFilter: DEBUG
+```
+
+#### Logged Information
+
+When debug logging is enabled, the system logs:
+
+1. **Request Processing**: HTTP method and path for each request
+2. **Token Presence**: Whether JWT token is present in Authorization header
+3. **Token Validation**: Result of JWT token validation
+4. **User Authentication**: User ID extraction and user details loading
+5. **Security Context**: Authentication setup in Spring Security context
+6. **Error Handling**: Enhanced error messages with request context
+
+#### Security Considerations
+
+- **No Sensitive Data**: JWT tokens and passwords are never logged
+- **Debug Level Only**: Detailed information only at DEBUG level
+- **Production Safe**: Safe to enable in production for troubleshooting
+- **Minimal Performance Impact**: Negligible overhead when disabled
+
+This enhanced logging enables rapid diagnosis of authentication issues while maintaining security best practices.
+
+### Token Expiration and Navigation Integration
+
+The application implements a sophisticated token expiration handling system that integrates seamlessly with React Router navigation:
+
+#### Architecture Pattern
+
+```typescript
+// Token expiration handler with navigation integration
+tokenExpirationHandler.setNavigateToLogin((returnUrl) => {
+  navigate(ROUTES.LOGIN, {
+    state: { from: returnUrl || location.pathname + location.search },
+    replace: true,
+  });
+});
+```
+
+#### Component Integration
+
+The `AuthNavigationSetup` component establishes the bridge between the token expiration handler and React Router:
+
+1. **Router Context Dependency**: Must be rendered inside Router context to access navigation hooks
+2. **Navigation Callback Setup**: Configures the token expiration handler with React Router navigation
+3. **Return URL Preservation**: Captures current location for post-login redirect
+4. **Cleanup Management**: Removes navigation callback when component unmounts
+5. **Replace Navigation**: Uses `replace: true` to prevent back button navigation to expired sessions
+
+#### Integration Points
+
+- **API Client**: The `apiClient` uses the token expiration handler for 401 error responses
+- **Automatic Refresh**: Token refresh attempts before redirecting to login
+- **Seamless UX**: Users are redirected to login with their intended destination preserved
+- **Security**: Expired tokens are immediately cleared and navigation is forced
+
+This pattern ensures that token expiration is handled consistently across the application while maintaining a smooth user experience and proper security practices.

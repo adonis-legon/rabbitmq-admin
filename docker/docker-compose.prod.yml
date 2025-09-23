@@ -1,0 +1,107 @@
+version: "3.8"
+
+# Production deployment configuration
+# This assumes external database and uses published Docker image
+
+services:
+  # RabbitMQ Admin Application (production)
+  app:
+    image: rabbitmq-admin:latest # Use published image
+    container_name: rabbitmq-admin-prod
+    restart: unless-stopped
+
+    environment:
+      # Database connection (external database)
+      - SPRING_DATASOURCE_URL=${DATABASE_URL}
+      - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
+
+      # Production profile
+      - SPRING_PROFILES_ACTIVE=production
+
+      # JWT configuration (required in production)
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+
+      # Resource Management Configuration
+      - RABBITMQ_ADMIN_RESOURCES_REFRESH_DEFAULT_INTERVAL=${RESOURCE_REFRESH_DEFAULT_INTERVAL:-60000}
+      - RABBITMQ_ADMIN_RESOURCES_REFRESH_MIN_INTERVAL=${RESOURCE_REFRESH_MIN_INTERVAL:-30000}
+      - RABBITMQ_ADMIN_RESOURCES_REFRESH_MAX_INTERVAL=${RESOURCE_REFRESH_MAX_INTERVAL:-600000}
+      - RABBITMQ_ADMIN_RESOURCES_PAGINATION_DEFAULT_PAGE_SIZE=${RESOURCE_DEFAULT_PAGE_SIZE:-25}
+      - RABBITMQ_ADMIN_RESOURCES_PAGINATION_MAX_PAGE_SIZE=${RESOURCE_MAX_PAGE_SIZE:-200}
+      - RABBITMQ_ADMIN_RESOURCES_CACHE_ENABLED=${RESOURCE_CACHE_ENABLED:-true}
+      - RABBITMQ_ADMIN_RESOURCES_CACHE_DEFAULT_TTL=${RESOURCE_CACHE_DEFAULT_TTL:-60000}
+      - RABBITMQ_ADMIN_RESOURCES_CACHE_MAX_SIZE=${RESOURCE_CACHE_MAX_SIZE:-2000}
+      - RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE=${RESOURCE_RATE_LIMIT_RPM:-60}
+      - RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_BURST_SIZE=${RESOURCE_RATE_LIMIT_BURST:-5}
+
+      # Connection Pool Configuration (production optimized)
+      - RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_TOTAL=${RESOURCE_POOL_MAX_TOTAL:-50}
+      - RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_PER_ROUTE=${RESOURCE_POOL_MAX_PER_ROUTE:-25}
+      - RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_CONNECTION_TIMEOUT=${RESOURCE_POOL_CONNECTION_TIMEOUT:-15000}
+      - RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_SOCKET_TIMEOUT=${RESOURCE_POOL_SOCKET_TIMEOUT:-45000}
+
+      # JVM Configuration for production
+      - JAVA_OPTS=-Xms512m -Xmx2g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0
+
+      # Logging configuration
+      - LOGGING_LEVEL_COM_RABBITMQ_ADMIN=INFO
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=WARN
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=WARN
+
+      # Application monitoring configuration
+      - APP_MONITORING_PERFORMANCE_SLOW_THRESHOLD_MS=${APP_MONITORING_PERFORMANCE_SLOW_THRESHOLD_MS:-5000}
+      - APP_MONITORING_PERFORMANCE_CRITICAL_THRESHOLD_MS=${APP_MONITORING_PERFORMANCE_CRITICAL_THRESHOLD_MS:-10000}
+      - APP_MONITORING_HEALTH_CHECK_INTERVAL_MINUTES=${APP_MONITORING_HEALTH_CHECK_INTERVAL_MINUTES:-5}
+      - APP_MONITORING_HEALTH_TIMEOUT_SECONDS=${APP_MONITORING_HEALTH_TIMEOUT_SECONDS:-15}
+
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+    # Health check for production
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only root filesystem (except for logs and temp)
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    volumes:
+      - app-logs:/app/logs
+
+volumes:
+  app-logs:
+    driver: local
+
+networks:
+  default:
+    name: rabbitmq-admin-network
+    driver: bridge

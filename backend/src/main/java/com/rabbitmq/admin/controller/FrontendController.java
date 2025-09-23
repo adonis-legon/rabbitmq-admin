@@ -25,7 +25,9 @@ public class FrontendController {
             "/profile",
             "/profile/**",
             "/login",
-            "/login/**"
+            "/login/**",
+            "/resources",
+            "/resources/**"
     })
     public String forward() {
         return "forward:/index.html";

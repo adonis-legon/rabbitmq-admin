@@ -1,9 +1,357 @@
 {
   "properties": [
     {
+      "name": "rabbitmq.admin.resources.refresh.default-interval",
+      "type": "java.lang.Long",
+      "description": "Default refresh interval for resource data in milliseconds.",
+      "defaultValue": 30000
+    },
+    {
+      "name": "rabbitmq.admin.resources.refresh.min-interval",
+      "type": "java.lang.Long",
+      "description": "Minimum allowed refresh interval in milliseconds.",
+      "defaultValue": 15000
+    },
+    {
+      "name": "rabbitmq.admin.resources.refresh.max-interval",
+      "type": "java.lang.Long",
+      "description": "Maximum allowed refresh interval in milliseconds.",
+      "defaultValue": 300000
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.default-page-size",
+      "type": "java.lang.Integer",
+      "description": "Default page size for resource pagination.",
+      "defaultValue": 50
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.max-page-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum allowed page size for resource pagination.",
+      "defaultValue": 500
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.min-page-size",
+      "type": "java.lang.Integer",
+      "description": "Minimum allowed page size for resource pagination.",
+      "defaultValue": 10
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.connections.default-page-size",
+      "type": "java.lang.Integer",
+      "description": "Default page size for connections pagination.",
+      "defaultValue": 25
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.connections.max-page-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum page size for connections pagination.",
+      "defaultValue": 200
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.channels.default-page-size",
+      "type": "java.lang.Integer",
+      "description": "Default page size for channels pagination.",
+      "defaultValue": 50
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.channels.max-page-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum page size for channels pagination.",
+      "defaultValue": 300
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.exchanges.default-page-size",
+      "type": "java.lang.Integer",
+      "description": "Default page size for exchanges pagination.",
+      "defaultValue": 100
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.exchanges.max-page-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum page size for exchanges pagination.",
+      "defaultValue": 500
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.queues.default-page-size",
+      "type": "java.lang.Integer",
+      "description": "Default page size for queues pagination.",
+      "defaultValue": 50
+    },
+    {
+      "name": "rabbitmq.admin.resources.pagination.queues.max-page-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum page size for queues pagination.",
+      "defaultValue": 300
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable or disable resource caching.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.default-ttl",
+      "type": "java.lang.Long",
+      "description": "Default cache TTL (time-to-live) in milliseconds.",
+      "defaultValue": 30000
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.max-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of entries in the cache.",
+      "defaultValue": 1000
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.cleanup-interval",
+      "type": "java.lang.Long",
+      "description": "Cache cleanup interval in milliseconds.",
+      "defaultValue": 60000
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.connections.ttl",
+      "type": "java.lang.Long",
+      "description": "Cache TTL for connections in milliseconds.",
+      "defaultValue": 30000
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.connections.max-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum cache size for connections.",
+      "defaultValue": 200
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.channels.ttl",
+      "type": "java.lang.Long",
+      "description": "Cache TTL for channels in milliseconds.",
+      "defaultValue": 30000
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.channels.max-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum cache size for channels.",
+      "defaultValue": 500
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.exchanges.ttl",
+      "type": "java.lang.Long",
+      "description": "Cache TTL for exchanges in milliseconds.",
+      "defaultValue": 300000
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.exchanges.max-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum cache size for exchanges.",
+      "defaultValue": 100
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.queues.ttl",
+      "type": "java.lang.Long",
+      "description": "Cache TTL for queues in milliseconds.",
+      "defaultValue": 60000
+    },
+    {
+      "name": "rabbitmq.admin.resources.cache.queues.max-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum cache size for queues.",
+      "defaultValue": 300
+    },
+    {
+      "name": "rabbitmq.admin.resources.rate-limit.global.requests-per-minute",
+      "type": "java.lang.Integer",
+      "description": "Global rate limit: requests per minute.",
+      "defaultValue": 1000
+    },
+    {
+      "name": "rabbitmq.admin.resources.rate-limit.global.burst-size",
+      "type": "java.lang.Integer",
+      "description": "Global rate limit: burst size.",
+      "defaultValue": 50
+    },
+    {
+      "name": "rabbitmq.admin.resources.rate-limit.per-user.requests-per-minute",
+      "type": "java.lang.Integer",
+      "description": "Per-user rate limit: requests per minute.",
+      "defaultValue": 120
+    },
+    {
+      "name": "rabbitmq.admin.resources.rate-limit.per-user.burst-size",
+      "type": "java.lang.Integer",
+      "description": "Per-user rate limit: burst size.",
+      "defaultValue": 10
+    },
+    {
+      "name": "rabbitmq.admin.resources.rate-limit.per-cluster.requests-per-minute",
+      "type": "java.lang.Integer",
+      "description": "Per-cluster rate limit: requests per minute.",
+      "defaultValue": 500
+    },
+    {
+      "name": "rabbitmq.admin.resources.rate-limit.per-cluster.burst-size",
+      "type": "java.lang.Integer",
+      "description": "Per-cluster rate limit: burst size.",
+      "defaultValue": 25
+    },
+    {
+      "name": "rabbitmq.admin.resources.connection-pool.max-total",
+      "type": "java.lang.Integer",
+      "description": "Maximum total connections in the HTTP connection pool.",
+      "defaultValue": 20
+    },
+    {
+      "name": "rabbitmq.admin.resources.connection-pool.max-per-route",
+      "type": "java.lang.Integer",
+      "description": "Maximum connections per route in the HTTP connection pool.",
+      "defaultValue": 10
+    },
+    {
+      "name": "rabbitmq.admin.resources.connection-pool.connection-timeout",
+      "type": "java.lang.Integer",
+      "description": "HTTP connection timeout in milliseconds.",
+      "defaultValue": 10000
+    },
+    {
+      "name": "rabbitmq.admin.resources.connection-pool.socket-timeout",
+      "type": "java.lang.Integer",
+      "description": "HTTP socket timeout in milliseconds.",
+      "defaultValue": 30000
+    },
+    {
+      "name": "rabbitmq.admin.resources.connection-pool.connection-request-timeout",
+      "type": "java.lang.Integer",
+      "description": "HTTP connection request timeout in milliseconds.",
+      "defaultValue": 5000
+    },
+    {
+      "name": "rabbitmq.admin.resources.thread-pool.core-size",
+      "type": "java.lang.Integer",
+      "description": "Core thread pool size for async operations.",
+      "defaultValue": 5
+    },
+    {
+      "name": "rabbitmq.admin.resources.thread-pool.max-size",
+      "type": "java.lang.Integer",
+      "description": "Maximum thread pool size for async operations.",
+      "defaultValue": 20
+    },
+    {
+      "name": "rabbitmq.admin.resources.thread-pool.queue-capacity",
+      "type": "java.lang.Integer",
+      "description": "Thread pool queue capacity.",
+      "defaultValue": 100
+    },
+    {
+      "name": "rabbitmq.admin.resources.thread-pool.keep-alive",
+      "type": "java.lang.Long",
+      "description": "Thread pool keep-alive time in milliseconds.",
+      "defaultValue": 60000
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.min-role",
+      "type": "java.lang.String",
+      "description": "Minimum role required to access resource management features.",
+      "defaultValue": "USER"
+    },
+    {
+      "name": "rabbitmq.admin.resources.audit.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable audit logging for resource access.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.audit.log-level",
+      "type": "java.lang.String",
+      "description": "Log level for audit events.",
+      "defaultValue": "INFO"
+    },
+    {
+      "name": "rabbitmq.admin.resources.audit.include-request-body",
+      "type": "java.lang.Boolean",
+      "description": "Include request body in audit logs.",
+      "defaultValue": false
+    },
+    {
+      "name": "rabbitmq.admin.resources.audit.include-response-body",
+      "type": "java.lang.Boolean",
+      "description": "Include response body in audit logs.",
+      "defaultValue": false
+    },
+    {
+      "name": "rabbitmq.admin.resources.data-protection.filter-sensitive-properties",
+      "type": "java.lang.Boolean",
+      "description": "Filter sensitive properties from connection data.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.data-protection.mask-sensitive-values",
+      "type": "java.lang.Boolean",
+      "description": "Mask sensitive values in responses.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.data-protection.mask-character",
+      "type": "java.lang.String",
+      "description": "Character used for masking sensitive values.",
+      "defaultValue": "*"
+    },
+    {
+      "name": "rabbitmq.admin.resources.health.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable health checks for resource management.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.health.check-interval",
+      "type": "java.lang.Long",
+      "description": "Health check interval in milliseconds.",
+      "defaultValue": 30000
+    },
+    {
+      "name": "rabbitmq.admin.resources.metrics.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable metrics collection for resource management.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.logging.log-requests",
+      "type": "java.lang.Boolean",
+      "description": "Log resource management requests.",
+      "defaultValue": false
+    },
+    {
+      "name": "rabbitmq.admin.resources.logging.log-responses",
+      "type": "java.lang.Boolean",
+      "description": "Log resource management responses.",
+      "defaultValue": false
+    },
+    {
+      "name": "rabbitmq.admin.resources.logging.log-slow-requests",
+      "type": "java.lang.Boolean",
+      "description": "Log slow resource management requests.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.logging.slow-request-threshold",
+      "type": "java.lang.Long",
+      "description": "Threshold for considering a request slow (milliseconds).",
+      "defaultValue": 5000
+    },
+    {
+      "name": "rabbitmq.admin.resources.logging.log-errors",
+      "type": "java.lang.Boolean",
+      "description": "Log resource management errors.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.logging.include-stack-traces",
+      "type": "java.lang.Boolean",
+      "description": "Include stack traces in error logs.",
+      "defaultValue": true
+    },
+    {
       "name": "app.jwt.secret-key",
       "type": "java.lang.String",
-      "description": "Secret key used for JWT token signing and verification. Should be at least 256 bits for HS256 algorithm.",
+      "description": "Secret key used for JWT token signing and verification. Must be at least 256 bits for security.",
       "defaultValue": "your-256-bit-secret-key-here-change-in-production"
     },
     {
@@ -11,18 +359,136 @@
       "type": "java.lang.Long",
       "description": "JWT token expiration time in milliseconds.",
       "defaultValue": 86400000
-    }
-  ],
-  "groups": [
-    {
-      "name": "app",
-      "type": "com.rabbitmq.admin.config.AppProperties",
-      "description": "Custom application configuration properties."
     },
     {
-      "name": "app.jwt",
-      "type": "com.rabbitmq.admin.config.AppProperties$Jwt",
-      "description": "JWT authentication configuration properties."
+      "name": "app.monitoring.performance.slow-threshold-ms",
+      "type": "java.lang.Long",
+      "description": "Threshold in milliseconds for considering an operation as slow.",
+      "defaultValue": 2000
+    },
+    {
+      "name": "app.monitoring.performance.critical-threshold-ms",
+      "type": "java.lang.Long",
+      "description": "Threshold in milliseconds for considering an operation as critically slow.",
+      "defaultValue": 5000
+    },
+    {
+      "name": "app.monitoring.health.check-interval-minutes",
+      "type": "java.lang.Integer",
+      "description": "Interval in minutes for health checks.",
+      "defaultValue": 2
+    },
+    {
+      "name": "app.monitoring.health.timeout-seconds",
+      "type": "java.lang.Integer",
+      "description": "Timeout in seconds for health check operations.",
+      "defaultValue": 10
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.connections.roles",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of roles allowed to access connections resource.",
+      "defaultValue": ["USER", "ADMIN"]
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.connections.clusters",
+      "type": "java.lang.String",
+      "description": "Cluster access level for connections (all, assigned).",
+      "defaultValue": "all"
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.channels.roles",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of roles allowed to access channels resource.",
+      "defaultValue": ["USER", "ADMIN"]
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.channels.clusters",
+      "type": "java.lang.String",
+      "description": "Cluster access level for channels (all, assigned).",
+      "defaultValue": "all"
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.exchanges.roles",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of roles allowed to access exchanges resource.",
+      "defaultValue": ["USER", "ADMIN"]
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.exchanges.clusters",
+      "type": "java.lang.String",
+      "description": "Cluster access level for exchanges (all, assigned).",
+      "defaultValue": "assigned"
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.queues.roles",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of roles allowed to access queues resource.",
+      "defaultValue": ["USER", "ADMIN"]
+    },
+    {
+      "name": "rabbitmq.admin.resources.security.permissions.queues.clusters",
+      "type": "java.lang.String",
+      "description": "Cluster access level for queues (all, assigned).",
+      "defaultValue": "assigned"
+    },
+    {
+      "name": "rabbitmq.admin.resources.audit.events",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of events to audit.",
+      "defaultValue": [
+        "resource-access",
+        "authentication-failure",
+        "authorization-failure",
+        "rate-limit-exceeded"
+      ]
+    },
+    {
+      "name": "rabbitmq.admin.resources.data-protection.sensitive-patterns",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of patterns to identify sensitive properties.",
+      "defaultValue": ["password", "secret", "key", "token", "credential"]
+    },
+    {
+      "name": "rabbitmq.admin.resources.health.indicators",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of health indicators to monitor.",
+      "defaultValue": [
+        "cluster-connectivity",
+        "api-availability",
+        "cache-health",
+        "memory-usage"
+      ]
+    },
+    {
+      "name": "rabbitmq.admin.resources.metrics.collect",
+      "type": "java.util.List<java.lang.String>",
+      "description": "List of metrics to collect.",
+      "defaultValue": [
+        "request-count",
+        "response-time",
+        "error-rate",
+        "cache-hit-rate",
+        "memory-usage"
+      ]
+    },
+    {
+      "name": "rabbitmq.admin.resources.metrics.export.prometheus.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable Prometheus metrics export.",
+      "defaultValue": true
+    },
+    {
+      "name": "rabbitmq.admin.resources.metrics.export.prometheus.path",
+      "type": "java.lang.String",
+      "description": "Path for Prometheus metrics endpoint.",
+      "defaultValue": "/metrics"
+    },
+    {
+      "name": "rabbitmq.admin.resources.metrics.export.jmx.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable JMX metrics export.",
+      "defaultValue": true
     }
   ]
 }

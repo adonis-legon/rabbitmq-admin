@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Card,
   CardContent,
@@ -8,17 +8,18 @@ import {
   Box,
   Chip,
   IconButton,
-  Tooltip
-} from '@mui/material';
+  Tooltip,
+} from "@mui/material";
 import {
   Storage as StorageIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Launch as LaunchIcon
-} from '@mui/icons-material';
-import { ClusterConnection } from '../../types/cluster';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../../utils/constants';
+  Launch as LaunchIcon,
+  ViewList as ViewListIcon,
+} from "@mui/icons-material";
+import { ClusterConnection } from "../../types/cluster";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../utils/constants";
 
 interface ClusterConnectionCardProps {
   cluster: ClusterConnection;
@@ -29,7 +30,7 @@ interface ClusterConnectionCardProps {
 const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
   cluster,
   isSelected,
-  onSelect
+  onSelect,
 }) => {
   const navigate = useNavigate();
 
@@ -40,7 +41,7 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
   };
 
   const getStatusColor = () => {
-    return cluster.active ? 'success' : 'error';
+    return cluster.active ? "success" : "error";
   };
 
   const getStatusIcon = () => {
@@ -48,24 +49,24 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
   };
 
   return (
-    <Card 
-      sx={{ 
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
+    <Card
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
         border: isSelected ? 2 : 1,
-        borderColor: isSelected ? 'primary.main' : 'divider',
+        borderColor: isSelected ? "primary.main" : "divider",
         boxShadow: isSelected ? 3 : 1,
-        transition: 'all 0.2s ease-in-out',
-        '&:hover': {
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
           boxShadow: 3,
-          transform: 'translateY(-2px)'
-        }
+          transform: "translateY(-2px)",
+        },
       }}
     >
       <CardContent sx={{ flexGrow: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-          <StorageIcon sx={{ mr: 1, mt: 0.5, color: 'primary.main' }} />
+        <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
+          <StorageIcon sx={{ mr: 1, mt: 0.5, color: "primary.main" }} />
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" component="h3" gutterBottom>
               {cluster.name}
@@ -74,10 +75,10 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
               {cluster.apiUrl}
             </Typography>
           </Box>
-          <Tooltip title={cluster.active ? 'Active' : 'Inactive'}>
+          <Tooltip title={cluster.active ? "Active" : "Inactive"}>
             <Chip
               icon={getStatusIcon()}
-              label={cluster.active ? 'Active' : 'Inactive'}
+              label={cluster.active ? "Active" : "Inactive"}
               color={getStatusColor()}
               size="small"
             />
@@ -90,7 +91,13 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
           </Typography>
         )}
 
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <Typography variant="caption" color="text.secondary">
             User: {cluster.username}
           </Typography>
@@ -105,26 +112,41 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
         </Box>
       </CardContent>
 
-      <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
+      <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2 }}>
         <Button
           variant={isSelected ? "contained" : "outlined"}
           color="primary"
           onClick={onSelect}
           size="small"
         >
-          {isSelected ? 'Selected' : 'Select'}
+          {isSelected ? "Selected" : "Select"}
         </Button>
-        
-        <Tooltip title="Open RabbitMQ Management">
-          <IconButton
-            color="primary"
-            onClick={handleNavigateToRabbitMQ}
-            disabled={!cluster.active}
-            size="small"
-          >
-            <LaunchIcon />
-          </IconButton>
-        </Tooltip>
+
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {isSelected && (
+            <Tooltip title="View Resources">
+              <IconButton
+                color="primary"
+                onClick={() => navigate(ROUTES.RESOURCES_CONNECTIONS)}
+                disabled={!cluster.active}
+                size="small"
+              >
+                <ViewListIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Tooltip title="Open RabbitMQ Management">
+            <IconButton
+              color="primary"
+              onClick={handleNavigateToRabbitMQ}
+              disabled={!cluster.active}
+              size="small"
+            >
+              <LaunchIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </CardActions>
     </Card>
   );

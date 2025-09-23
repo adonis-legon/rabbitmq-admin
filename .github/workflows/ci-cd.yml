@@ -52,28 +52,58 @@ jobs:
           cd frontend
           pnpm test -- --run --reporter=verbose
 
+      - name: Run frontend resource management tests
+        run: |
+          cd frontend
+          # Run specific resource management component tests
+          pnpm test -- --run --reporter=verbose src/components/resources/
+          pnpm test -- --run --reporter=verbose src/hooks/useConnections.test.ts
+          pnpm test -- --run --reporter=verbose src/hooks/useChannels.test.ts
+          pnpm test -- --run --reporter=verbose src/hooks/useExchanges.test.ts
+          pnpm test -- --run --reporter=verbose src/hooks/useQueues.test.ts
+          pnpm test -- --run --reporter=verbose src/utils/resourceCache.test.ts
+
       - name: Start services for TestContainers
         run: |
           # Start Docker daemon
           sudo systemctl start docker
           sudo chmod 666 /var/run/docker.sock
-          
+
           # Verify Docker is working
           docker info
           docker ps
-          
+
           # Pre-pull required images to avoid timeouts
           docker pull postgres:15-alpine
 
-      - name: Run tests (excluding integration tests)
+      - name: Run backend unit tests
         env:
           # JWT configuration for tests
           JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
           # JVM options for tests
           MAVEN_OPTS: "-Xmx3072m -XX:+UseG1GC"
         run: |
-          # Use CI profile to exclude integration tests
+          # Run unit tests (excluding integration tests)
           mvn test -pl backend -Pci -Dspring.profiles.active=test
+
+      - name: Run resource management integration tests
+        env:
+          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
+          MAVEN_OPTS: "-Xmx3072m -XX:+UseG1GC"
+          # Enable TestContainers for integration tests
+          TESTCONTAINERS_RYUK_DISABLED: false
+        run: |
+          # Run resource management specific integration tests
+          mvn test -pl backend -Dtest="**/RabbitMQResourceControllerTest,**/RabbitMQResourceServiceTest,**/ResourceAuditServiceTest,**/ResourceMetricsServiceTest" -Dspring.profiles.active=integration-test
+
+      - name: Run comprehensive integration tests
+        env:
+          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
+          MAVEN_OPTS: "-Xmx4096m -XX:+UseG1GC"
+          TESTCONTAINERS_RYUK_DISABLED: false
+        run: |
+          # Run all integration tests with TestContainers
+          mvn verify -pl backend -Pfailsafe -Dspring.profiles.active=integration-test
 
   # Build JAR
   build-jar:

@@ -1,11 +1,16 @@
 package com.rabbitmq.admin.config;
 
+import org.apache.catalina.connector.Connector;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Web MVC configuration to handle static resources and API routing.
@@ -27,5 +32,28 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/")
                 .resourceChain(false);
+    }
+
+    @Override
+    public void configurePathMatch(@NonNull PathMatchConfigurer configurer) {
+        UrlPathHelper urlPathHelper = new UrlPathHelper();
+        // Allow encoded slashes in path variables (needed for vhost names like "/")
+        urlPathHelper.setUrlDecode(false);
+        configurer.setUrlPathHelper(urlPathHelper);
+    }
+
+    /**
+     * Configure Tomcat to allow encoded slashes in URLs
+     */
+    @Bean
+    public ServletWebServerFactory servletContainer() {
+        TomcatServletWebServerFactory tomcat = new TomcatServletWebServerFactory();
+        tomcat.addConnectorCustomizers((Connector connector) -> {
+            connector.setProperty("relaxedPathChars", "[]|");
+            connector.setProperty("relaxedQueryChars", "[]|{}^&#x5c;&#x60;&quot;&lt;&gt;");
+            // Allow encoded slashes
+            connector.setProperty("allowBackslash", "true");
+        });
+        return tomcat;
     }
 }

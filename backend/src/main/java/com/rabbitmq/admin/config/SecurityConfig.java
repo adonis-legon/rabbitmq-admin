@@ -112,7 +112,7 @@ public class SecurityConfig {
 
                         // Frontend routes (let React Router handle authentication)
                         .requestMatchers("/dashboard", "/dashboard/**", "/users", "/users/**", "/clusters",
-                                "/clusters/**", "/login", "/login/**")
+                                "/clusters/**", "/login", "/login/**", "/resources", "/resources/**")
                         .permitAll()
 
                         // Admin-only endpoints
@@ -133,8 +133,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/me").authenticated()
                         .requestMatchers("/api/auth/logout").authenticated()
 
-                        // User endpoints (both roles)
-                        .requestMatchers("/api/rabbitmq/**").hasAnyRole("USER", "ADMINISTRATOR")
+                        // RabbitMQ resource endpoints (both roles)
+                        .requestMatchers("/api/rabbitmq/**").authenticated()
 
                         // All other requests require authentication
                         .anyRequest().authenticated());

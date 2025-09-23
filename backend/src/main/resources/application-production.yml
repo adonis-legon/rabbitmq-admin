@@ -53,12 +53,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:
       show-details: never
       show-components: never
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: rabbitmq-admin
+      environment: production
 
 # Production logging configuration
 logging:
@@ -69,6 +77,7 @@ logging:
     "[org.hibernate]": WARN
     "[org.flywaydb]": INFO
     "[org.springframework.boot.actuate]": WARN
+    "[AUDIT.com.rabbitmq.admin.service.ResourceAuditService]": INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
@@ -85,3 +94,91 @@ app:
   jwt:
     secret-key: ${JWT_SECRET_KEY}
     expiration: 3600000 # 1 hour in production for better security
+  monitoring:
+    performance:
+      slow-threshold-ms: 1000
+      critical-threshold-ms: 3000
+    health:
+      check-interval-minutes: 5
+      timeout-seconds: 15
+
+# Production RabbitMQ Resource Management Configuration
+# Custom configuration properties handled by RabbitMQResourceProperties class
+rabbitmq:
+  admin:
+    resources:
+      # Production auto-refresh settings (more conservative)
+      refresh:
+        default-interval: ${RABBITMQ_ADMIN_RESOURCES_REFRESH_DEFAULT_INTERVAL:60000} # 1 minute default
+        min-interval: ${RABBITMQ_ADMIN_RESOURCES_REFRESH_MIN_INTERVAL:30000} # 30 seconds minimum
+        max-interval: ${RABBITMQ_ADMIN_RESOURCES_REFRESH_MAX_INTERVAL:600000} # 10 minutes maximum
+
+      # Production pagination (optimized for performance)
+      pagination:
+        default-page-size: ${RABBITMQ_ADMIN_RESOURCES_PAGINATION_DEFAULT_PAGE_SIZE:25} # Smaller default
+        max-page-size: ${RABBITMQ_ADMIN_RESOURCES_PAGINATION_MAX_PAGE_SIZE:200} # Lower maximum
+
+      # Production cache settings (longer TTL)
+      cache:
+        enabled: ${RABBITMQ_ADMIN_RESOURCES_CACHE_ENABLED:true}
+        default-ttl: ${RABBITMQ_ADMIN_RESOURCES_CACHE_DEFAULT_TTL:60000} # 1 minute default
+        max-size: ${RABBITMQ_ADMIN_RESOURCES_CACHE_MAX_SIZE:2000} # Larger cache
+
+        # Production resource-specific cache settings
+        connections:
+          ttl: 60000 # 1 minute
+          max-size: 500
+        channels:
+          ttl: 60000 # 1 minute
+          max-size: 1000
+        exchanges:
+          ttl: 600000 # 10 minutes
+          max-size: 200
+        queues:
+          ttl: 120000 # 2 minutes
+          max-size: 600
+
+      # Production rate limiting (stricter)
+      rate-limit:
+        global:
+          requests-per-minute: 500
+          burst-size: 25
+        per-user:
+          requests-per-minute: ${RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_REQUESTS_PER_MINUTE:60} # Lower limit
+          burst-size: ${RABBITMQ_ADMIN_RESOURCES_RATE_LIMIT_BURST_SIZE:5} # Smaller burst
+        per-cluster:
+          requests-per-minute: 300
+          burst-size: 15
+
+      # Production connection pool (larger pool)
+      connection-pool:
+        max-total: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_TOTAL:50}
+        max-per-route: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_PER_ROUTE:25}
+        connection-timeout: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_CONNECTION_TIMEOUT:15000}
+        socket-timeout: ${RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_SOCKET_TIMEOUT:45000}
+
+      # Production thread pool
+      thread-pool:
+        core-size: 10
+        max-size: 50
+        queue-capacity: 200
+
+      # Production audit (comprehensive)
+      audit:
+        enabled: true
+        log-level: INFO
+        include-request-body: false
+        include-response-body: false
+
+      # Production health checks (less frequent)
+      health:
+        check-interval: 60000 # 1 minute
+
+      # Production logging (minimal)
+      logging:
+        log-requests: false
+        log-responses: false
+        log-slow-requests: true
+        slow-request-threshold: 3000 # 3 seconds
+        log-errors: true
+        include-stack-traces: false # Don't expose stack traces in production
