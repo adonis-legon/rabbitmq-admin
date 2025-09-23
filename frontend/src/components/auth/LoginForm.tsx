@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Card,
@@ -10,64 +10,35 @@ import {
   Alert,
   InputAdornment,
   IconButton,
-  CircularProgress
-} from '@mui/material';
-import { Visibility, VisibilityOff, Person, Lock } from '@mui/icons-material';
-import { useAuth } from './AuthProvider';
-import { getErrorMessage } from '../../utils/helpers';
-import { ROUTES } from '../../utils/constants';
-import { UserRole } from '../../types/auth';
-import VersionDisplay from '../VersionDisplay';
+  CircularProgress,
+} from "@mui/material";
+import { Visibility, VisibilityOff, Person, Lock } from "@mui/icons-material";
+import { useAuth } from "./AuthProvider";
+import { getErrorMessage } from "../../utils/helpers";
+import { ROUTES } from "../../utils/constants";
+
+import VersionDisplay from "../VersionDisplay";
 
 const LoginForm: React.FC = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Get the intended destination or default to dashboard
-  const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
-
-  // Admin-only routes that require ADMINISTRATOR role
-  const adminOnlyRoutes = [ROUTES.USERS, ROUTES.CLUSTERS];
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
-      const loggedInUser = await login({ username, password });
+      await login({ username, password });
 
-      // Determine where to redirect after login
-      let redirectTo = ROUTES.DASHBOARD; // Default destination
-
-      // Only redirect to the "from" location if it's a legitimate intended destination
-      // and not just the result of a logout or token expiration
-      if (from && from !== ROUTES.LOGIN && from !== '/') {
-        const isAdminOnlyRoute = adminOnlyRoutes.some(route => from.startsWith(route));
-        const isUserAdmin = loggedInUser.role === UserRole.ADMINISTRATOR;
-
-        if (isAdminOnlyRoute && !isUserAdmin) {
-          // Redirect to dashboard if user tries to access admin-only route without permissions
-          redirectTo = ROUTES.DASHBOARD;
-        } else {
-          // Only redirect to non-profile routes, or profile if it's an admin
-          // For regular users, always go to dashboard on fresh login
-          if (from === ROUTES.PROFILE) {
-            redirectTo = ROUTES.DASHBOARD; // Always redirect to dashboard after login
-          } else {
-            redirectTo = from;
-          }
-        }
-      }
-
-      navigate(redirectTo, { replace: true });
+      // Always redirect to dashboard after successful login
+      navigate(ROUTES.DASHBOARD, { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -91,8 +62,8 @@ const LoginForm: React.FC = () => {
       <Card
         sx={{
           maxWidth: 400,
-          width: '100%',
-          boxShadow: 3
+          width: "100%",
+          boxShadow: 3,
         }}
       >
         <CardContent sx={{ p: 4 }}>
@@ -134,7 +105,7 @@ const LoginForm: React.FC = () => {
             <TextField
               fullWidth
               label="Password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               margin="normal"
@@ -173,7 +144,7 @@ const LoginForm: React.FC = () => {
               {isLoading ? (
                 <CircularProgress size={24} color="inherit" />
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </Button>
           </Box>

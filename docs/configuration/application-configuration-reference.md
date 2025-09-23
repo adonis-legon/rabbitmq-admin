@@ -41,6 +41,8 @@ spring:
     baseline-on-migrate: true
 ```
 
+**Database Schema**: The application uses a PostgreSQL database with tables for users, cluster connections, and user-cluster assignments. For detailed schema documentation including table structures, relationships, and indexes, see [Database Schema Documentation](database-schema.md).
+
 ### JWT Configuration
 
 ```yaml
@@ -424,6 +426,7 @@ logging:
     com.rabbitmq.admin: INFO
     com.rabbitmq.admin.service.RabbitMQResourceService: INFO
     com.rabbitmq.admin.controller.RabbitMQResourceController: INFO
+    com.rabbitmq.admin.controller.ClusterController: INFO
     com.rabbitmq.admin.aspect.PerformanceMonitoringAspect: INFO
 
   pattern:
@@ -435,6 +438,20 @@ logging:
     max-size: 100MB
     max-history: 30
 ```
+
+**Cluster Management Logging:**
+
+The `ClusterController` provides informational logging for cluster user assignment operations:
+
+- User assignment updates during cluster modifications
+- Number of users assigned to clusters after updates
+- Cluster configuration changes and their impact
+
+This logging is particularly useful for:
+
+- Auditing user access changes
+- Troubleshooting cluster assignment issues
+- Monitoring administrative operations
 
 ### Resource Management Logging
 

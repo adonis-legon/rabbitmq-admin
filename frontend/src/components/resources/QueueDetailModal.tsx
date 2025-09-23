@@ -49,6 +49,7 @@ import { RabbitMQQueue } from "../../types/rabbitmq";
 import { useQueueBindings } from "../../hooks/useQueueBindings";
 import { useDetailRefresh } from "../../hooks/useDetailRefresh";
 import RefreshControls from "./shared/RefreshControls";
+import { useNotification } from "../../contexts/NotificationContext";
 
 interface QueueDetailModalProps {
   open: boolean;
@@ -67,6 +68,7 @@ export const QueueDetailModal: React.FC<QueueDetailModalProps> = ({
   const [currentQueue, setCurrentQueue] = useState<RabbitMQQueue | null>(queue);
 
   const { bindings, loading, error, loadBindings } = useQueueBindings();
+  const { success } = useNotification();
 
   const {
     refreshing,
@@ -96,7 +98,7 @@ export const QueueDetailModal: React.FC<QueueDetailModalProps> = ({
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      console.log("Copied to clipboard:", text);
+      success("Copied to clipboard");
     });
   };
 

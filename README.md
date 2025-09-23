@@ -40,6 +40,7 @@ A comprehensive web application for managing RabbitMQ clusters with authenticati
   - [Authentication Endpoints](#authentication-endpoints)
   - [User Management](#user-management-admin-only)
   - [Cluster Management](#cluster-management-admin-only)
+  - [RabbitMQ Resource Management](#rabbitmq-resource-management)
   - [RabbitMQ Proxy](#rabbitmq-proxy)
 - [📦 Versioning](#-versioning)
   - [Version Management](#version-management)
@@ -57,8 +58,8 @@ A comprehensive web application for managing RabbitMQ clusters with authenticati
 
 ## 🚀 Features
 
-- **Authentication & Authorization**: JWT-based authentication with role-based access control and seamless token expiration handling
-- **Multi-Cluster Management**: Connect and manage multiple RabbitMQ clusters simultaneously
+- **Authentication & Authorization**: JWT-based authentication with role-based access control and automatic token expiration handling
+- **Multi-Cluster Management**: Connect and manage multiple RabbitMQ clusters with user assignment controls
 - **RabbitMQ Resource Browsing**: View connections, channels, exchanges, and queues with advanced pagination, filtering, detailed tooltips, intelligent client-side caching with configurable TTL, and enhanced error handling with automatic recovery
 - **Intuitive Navigation**: Collapsible resource management menu with cluster-aware access control, visual state indicators, and direct URL access to resource pages
 - **TypeScript Support**: Comprehensive type definitions for all RabbitMQ resources with full IntelliSense support
@@ -172,12 +173,17 @@ The project is organized into several key directories, each serving a specific p
 
 | Directory | Description |
 |-----------|-------------|
-| `design/` | Architecture and design documentation |
-| `├── architecture/` | System architecture diagrams and documentation |
-| `├── api/` | API design specifications and examples |
-| `├── database/` | Database schema and migration documentation |
-| `├── security/` | Security design and implementation details |
-| `└── testing/` | Testing strategy and coverage documentation |
+| `docs/` | Comprehensive application documentation |
+| `├── api/` | API documentation and examples |
+| `│   ├── cluster-management.md` | Cluster management API with user assignments |
+| `│   └── rabbitmq-resources.md` | RabbitMQ resource management API |
+| `├── configuration/` | Configuration guides and references |
+| `│   ├── application-configuration-reference.md` | Complete configuration reference |
+| `│   ├── database-schema.md` | Database schema and relationships |
+| `│   └── resource-management-config.md` | Resource management configuration |
+| `├── deployment/` | Deployment and production guides |
+| `├── troubleshooting/` | Common issues and solutions |
+| `└── user-guide/` | End-user documentation and guides |
 
 ### 🐳 Infrastructure & Deployment
 
@@ -1037,11 +1043,17 @@ For comprehensive deployment documentation, see [Production Deployment Guide](do
 ### Cluster Management (Admin Only)
 
 - `GET /api/clusters` - List cluster connections
-- `POST /api/clusters` - Create cluster connection
-- `PUT /api/clusters/{id}` - Update cluster connection
+- `POST /api/clusters` - Create cluster connection with user assignments
+- `PUT /api/clusters/{id}` - Update cluster connection and user assignments
 - `DELETE /api/clusters/{id}` - Delete cluster connection
 - `POST /api/clusters/test` - Test new connection (before creating)
 - `POST /api/clusters/{id}/test` - Test existing cluster connection
+- `GET /api/clusters/my` - Get current user's accessible clusters
+- `POST /api/clusters/{clusterId}/users/{userId}` - Assign user to cluster
+- `DELETE /api/clusters/{clusterId}/users/{userId}` - Remove user from cluster
+- `GET /api/clusters/{clusterId}/users` - Get users assigned to cluster
+
+For comprehensive cluster management API documentation including user assignment features, request/response examples, and TypeScript interfaces, see [Cluster Management API Documentation](docs/api/cluster-management.md).
 
 ### RabbitMQ Proxy
 

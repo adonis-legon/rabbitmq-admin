@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -155,7 +156,10 @@ public class UserService {
         User user = getUserById(userId);
 
         // Remove user from all cluster assignments before deletion
-        user.getAssignedClusters().clear();
+        Set<ClusterConnection> currentClusters = new HashSet<>(user.getAssignedClusters());
+        for (ClusterConnection cluster : currentClusters) {
+            user.removeClusterConnection(cluster);
+        }
         userRepository.save(user);
 
         userRepository.delete(user);
@@ -205,8 +209,11 @@ public class UserService {
     public void updateUserClusterAssignments(UUID userId, Set<UUID> clusterConnectionIds) {
         User user = getUserById(userId);
 
-        // Clear existing assignments
-        user.getAssignedClusters().clear();
+        // Clear existing assignments properly maintaining bidirectional relationship
+        Set<ClusterConnection> currentClusters = new HashSet<>(user.getAssignedClusters());
+        for (ClusterConnection cluster : currentClusters) {
+            user.removeClusterConnection(cluster);
+        }
 
         // Add new assignments
         if (clusterConnectionIds != null && !clusterConnectionIds.isEmpty()) {

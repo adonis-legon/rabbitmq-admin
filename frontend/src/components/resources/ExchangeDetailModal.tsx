@@ -44,6 +44,7 @@ import { RabbitMQExchange } from "../../types/rabbitmq";
 import { useExchangeBindings } from "../../hooks/useExchangeBindings";
 import { useDetailRefresh } from "../../hooks/useDetailRefresh";
 import RefreshControls from "./shared/RefreshControls";
+import { useNotification } from "../../contexts/NotificationContext";
 
 interface ExchangeDetailModalProps {
   open: boolean;
@@ -64,6 +65,7 @@ export const ExchangeDetailModal: React.FC<ExchangeDetailModalProps> = ({
 
   const { bindings, loading, error, loadBindings, clearError } =
     useExchangeBindings();
+  const { success } = useNotification();
 
   const {
     refreshing,
@@ -97,7 +99,7 @@ export const ExchangeDetailModal: React.FC<ExchangeDetailModalProps> = ({
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
-      console.log("Copied to clipboard:", text);
+      success("Copied to clipboard");
     });
   };
 

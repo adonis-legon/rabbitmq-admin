@@ -26,7 +26,7 @@ All endpoints require JWT authentication. Include the JWT token in the Authoriza
 Authorization: Bearer <jwt-token>
 ```
 
-**Token Expiration Handling**: The frontend application automatically handles token expiration with seamless navigation to the login page while preserving the user's intended destination for post-login redirect.
+**Token Expiration Handling**: The frontend application automatically handles token expiration with seamless navigation to the login page. After successful login, users are always redirected to the dashboard for a consistent user experience.
 
 ## Common Query Parameters
 
@@ -579,6 +579,7 @@ The resource management features are fully integrated into the application's nav
 - **Visual State Management**: Active states are properly highlighted for both parent and child navigation items
 - **Material UI Icons**: Each resource type has a dedicated icon (Cable for Connections, Hub for Channels, SwapHoriz for Exchanges, Queue for Queues)
 - **Responsive Behavior**: Navigation adapts to different screen sizes and provides proper mobile support
+- **External Management UI Access**: Users can access the native RabbitMQ Management UI directly using cluster URLs for full administrative capabilities
 
 ### Error Handling and Recovery
 

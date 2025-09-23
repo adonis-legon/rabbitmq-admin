@@ -108,30 +108,4 @@ describe("ClusterConnectionCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Select" }));
     expect(mockOnSelect).toHaveBeenCalledTimes(1);
   });
-
-  it("disables RabbitMQ launch button for inactive clusters", () => {
-    renderWithProviders(
-      <ClusterConnectionCard
-        cluster={mockInactiveCluster}
-        isSelected={false}
-        onSelect={mockOnSelect}
-      />
-    );
-
-    const launchButton = screen.getByLabelText("Open RabbitMQ Management");
-    expect(launchButton).toBeDisabled();
-  });
-
-  it("enables RabbitMQ launch button for active clusters", () => {
-    renderWithProviders(
-      <ClusterConnectionCard
-        cluster={mockCluster}
-        isSelected={false}
-        onSelect={mockOnSelect}
-      />
-    );
-
-    const launchButton = screen.getByLabelText("Open RabbitMQ Management");
-    expect(launchButton).not.toBeDisabled();
-  });
 });

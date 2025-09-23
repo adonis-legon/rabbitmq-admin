@@ -12,6 +12,18 @@ The RabbitMQ Resource Management feature provides a comprehensive interface for 
 - Active cluster connection configured by an administrator
 - Web browser with JavaScript enabled
 
+### Cluster Access and User Assignments
+
+Access to RabbitMQ clusters is controlled through user assignments configured by administrators:
+
+- **User Assignment**: Administrators assign specific users to cluster connections
+- **Role-Based Access**: Both USER and ADMINISTRATOR roles can access assigned clusters
+- **Multiple Clusters**: Users can be assigned to multiple cluster connections
+- **Active Clusters Only**: Only active cluster connections are accessible for resource browsing
+- **Assignment Management**: User assignments can be updated when creating or modifying cluster connections
+
+**Note**: If you don't see any clusters available, contact your administrator to verify your cluster assignments.
+
 ### Accessing Resource Management
 
 1. **Login** to the RabbitMQ Admin application
@@ -26,6 +38,12 @@ The RabbitMQ Resource Management feature provides a comprehensive interface for 
    - **Queues**: Message storage and delivery queues (`/resources/queues`)
 
 ## Navigation and Interface
+
+### Cluster Dashboard Navigation
+
+The cluster dashboard provides access to RabbitMQ resources:
+
+- **View Resources Button**: Navigate to the integrated resource management interface within the application
 
 ### Sidebar Navigation
 
@@ -54,6 +72,32 @@ The application supports direct URL navigation to resource pages, enabling:
   - Specific resource types: `/resources/connections`, `/resources/channels`, `/resources/exchanges`, `/resources/queues`
 
 **Note**: Direct URL navigation requires authentication and cluster selection. If accessing a resource URL without a selected cluster, you'll be redirected to the dashboard to choose a cluster first.
+
+### RabbitMQ Management UI Access
+
+While the integrated resource browser provides comprehensive read-only access to RabbitMQ resources, you can also access the native RabbitMQ Management UI directly:
+
+#### Accessing the Management UI
+
+- **Direct URL Access**: Navigate directly to your cluster's management URL (typically `http://your-cluster:15672`)
+- **Separate Authentication**: Use your RabbitMQ cluster credentials to log in
+- **Independent Session**: Management UI sessions are separate from the main application
+
+#### When to Use Each Interface
+
+**Integrated Resource Browser (This Application)**:
+
+- **Read-only monitoring**: View connections, channels, exchanges, and queues
+- **Filtered views**: Use search and filtering capabilities
+- **Consistent UI**: Unified interface across multiple clusters
+- **Mobile-friendly**: Responsive design for mobile and tablet access
+
+**Native RabbitMQ Management UI**:
+
+- **Full administrative access**: Create, modify, and delete resources
+- **Advanced features**: Queue purging, message publishing, policy management
+- **Real-time monitoring**: Live updates and detailed statistics
+- **Plugin management**: Access to RabbitMQ plugins and advanced configuration
 
 ### Resource List Interface
 
@@ -452,6 +496,7 @@ The application protects sensitive information:
 
 - **Use Bookmarks**: Bookmark frequently accessed resource pages using direct URLs (e.g., `/resources/queues`)
 - **Direct Navigation**: Use direct URLs to quickly access specific resource types
+- **Native Management UI**: Access the RabbitMQ Management UI directly via cluster URLs for full administrative features not available in the integrated interface
 - **Filter Strategically**: Use filters to focus on relevant resources
 - **Batch Operations**: Review multiple resources before taking action
 - **Context Switching**: Keep cluster context in mind when switching resources

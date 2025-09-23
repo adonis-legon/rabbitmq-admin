@@ -469,7 +469,6 @@ The application implements a sophisticated token expiration handling system that
 // Token expiration handler with navigation integration
 tokenExpirationHandler.setNavigateToLogin((returnUrl) => {
   navigate(ROUTES.LOGIN, {
-    state: { from: returnUrl || location.pathname + location.search },
     replace: true,
   });
 });
@@ -481,7 +480,7 @@ The `AuthNavigationSetup` component establishes the bridge between the token exp
 
 1. **Router Context Dependency**: Must be rendered inside Router context to access navigation hooks
 2. **Navigation Callback Setup**: Configures the token expiration handler with React Router navigation
-3. **Return URL Preservation**: Captures current location for post-login redirect
+3. **Simplified Redirect**: Always redirects to dashboard after successful login
 4. **Cleanup Management**: Removes navigation callback when component unmounts
 5. **Replace Navigation**: Uses `replace: true` to prevent back button navigation to expired sessions
 
@@ -489,7 +488,7 @@ The `AuthNavigationSetup` component establishes the bridge between the token exp
 
 - **API Client**: The `apiClient` uses the token expiration handler for 401 error responses
 - **Automatic Refresh**: Token refresh attempts before redirecting to login
-- **Seamless UX**: Users are redirected to login with their intended destination preserved
+- **Consistent UX**: Users are always redirected to dashboard after login for a predictable experience
 - **Security**: Expired tokens are immediately cleared and navigation is forced
 
 This pattern ensures that token expiration is handled consistently across the application while maintaining a smooth user experience and proper security practices.

@@ -14,7 +14,6 @@ import {
   Storage as StorageIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  Launch as LaunchIcon,
   ViewList as ViewListIcon,
 } from "@mui/icons-material";
 import { ClusterConnection } from "../../types/cluster";
@@ -33,12 +32,6 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
   onSelect,
 }) => {
   const navigate = useNavigate();
-
-  const handleNavigateToRabbitMQ = () => {
-    // Navigate to RabbitMQ management with cluster ID as query parameter
-    // This allows the RabbitMQ page to know which cluster to work with
-    navigate(`${ROUTES.RABBITMQ}?clusterId=${cluster.id}`);
-  };
 
   const getStatusColor = () => {
     return cluster.active ? "success" : "error";
@@ -135,17 +128,6 @@ const ClusterConnectionCard: React.FC<ClusterConnectionCardProps> = ({
               </IconButton>
             </Tooltip>
           )}
-
-          <Tooltip title="Open RabbitMQ Management">
-            <IconButton
-              color="primary"
-              onClick={handleNavigateToRabbitMQ}
-              disabled={!cluster.active}
-              size="small"
-            >
-              <LaunchIcon />
-            </IconButton>
-          </Tooltip>
         </Box>
       </CardActions>
     </Card>
