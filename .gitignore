@@ -4,6 +4,9 @@
 # Log file
 *.log
 
+# Backend logs directory
+backend/logs/
+
 # BlueJ files
 *.ctxt
 

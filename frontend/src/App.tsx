@@ -34,10 +34,10 @@ import { ROUTES } from "./utils/constants";
 const theme = createTheme({
   palette: {
     primary: {
-      main: "#87CEEB", // Sky blue
-      dark: "#4682B4", // Steel blue
-      light: "#B0E0E6", // Powder blue
-      contrastText: "#000000", // Changed from white to black for better visibility
+      main: "#2E86AB", // Darker blue for better readability
+      dark: "#1B4F72", // Much darker blue
+      light: "#5DADE2", // Medium blue instead of very light
+      contrastText: "#FFFFFF", // White text on dark blue backgrounds
     },
     secondary: {
       main: "#2E8B57", // Sea green for accents
@@ -48,7 +48,7 @@ const theme = createTheme({
     },
     text: {
       primary: "#2C3E50",
-      secondary: "#7F8C8D",
+      secondary: "#5D6D7E", // Slightly darker secondary text
     },
   },
   typography: {
@@ -64,8 +64,8 @@ const theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: "#87CEEB",
-          color: "#000000", // Ensure black text color
+          backgroundColor: "#2E86AB", // Use the new darker primary color
+          color: "#FFFFFF", // White text on dark background
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         },
       },
@@ -84,7 +84,46 @@ const theme = createTheme({
           borderRadius: "8px",
           margin: "2px 8px",
           "&:hover": {
-            backgroundColor: "rgba(135, 206, 235, 0.1)",
+            backgroundColor: "rgba(46, 134, 171, 0.1)", // Use new primary color with opacity
+          },
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          "&.MuiButton-containedPrimary": {
+            backgroundColor: "#2E86AB",
+            color: "#FFFFFF",
+            "&:hover": {
+              backgroundColor: "#1B4F72",
+            },
+          },
+          "&.MuiButton-textPrimary": {
+            color: "#2E86AB",
+            "&:hover": {
+              backgroundColor: "rgba(46, 134, 171, 0.1)",
+            },
+          },
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          color: "#2E86AB", // Darker blue for better readability
+          "&.Mui-selected": {
+            color: "#1B4F72", // Even darker when selected
+          },
+        },
+      },
+    },
+    MuiLink: {
+      styleOverrides: {
+        root: {
+          color: "#2E86AB", // Darker blue for links
+          "&:hover": {
+            color: "#1B4F72",
           },
         },
       },
