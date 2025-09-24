@@ -260,7 +260,7 @@ const ClusterConnectionList: React.FC = () => {
               <TableCell>Status</TableCell>
               <TableCell>Assigned Users</TableCell>
               <TableCell>Description</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -315,12 +315,17 @@ const ClusterConnectionList: React.FC = () => {
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    <Box display="flex" gap={1}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 0.5,
+                        justifyContent: "flex-end",
+                      }}
+                    >
                       <Tooltip title="Test Connection">
                         <IconButton
                           size="small"
                           onClick={() => handleTestConnection(cluster)}
-                          color="info"
                         >
                           <TestIcon />
                         </IconButton>
@@ -329,7 +334,6 @@ const ClusterConnectionList: React.FC = () => {
                         <IconButton
                           size="small"
                           onClick={() => handleEditCluster(cluster)}
-                          color="primary"
                         >
                           <EditIcon />
                         </IconButton>
@@ -338,7 +342,6 @@ const ClusterConnectionList: React.FC = () => {
                         <IconButton
                           size="small"
                           onClick={() => handleDeleteClick(cluster)}
-                          color="error"
                         >
                           <DeleteIcon />
                         </IconButton>
