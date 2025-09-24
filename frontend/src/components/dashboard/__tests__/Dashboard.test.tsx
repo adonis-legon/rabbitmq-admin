@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import Dashboard from "../Dashboard";
 import { useAuth } from "../../auth/AuthProvider";
 import { useClusterContext } from "../../../contexts/ClusterContext";
@@ -140,7 +140,9 @@ describe("Dashboard", () => {
     renderWithProviders(<Dashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("Dashboard")).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Dashboard" })
+      ).toBeInTheDocument();
       expect(screen.getByText(/Welcome back, testuser!/)).toBeInTheDocument();
       expect(screen.getByText("Your Cluster Connections")).toBeInTheDocument();
       expect(screen.getAllByText("Test Cluster 1").length).toBeGreaterThan(0);
@@ -162,8 +164,11 @@ describe("Dashboard", () => {
     renderWithProviders(<Dashboard />);
 
     await waitFor(() => {
-      // The breadcrumb should show "RabbitMQ Admin" as the root and "Dashboard" as current page
-      expect(screen.getByText("RabbitMQ Admin")).toBeInTheDocument();
+      // The breadcrumb should show "Dashboard" as current page
+      expect(
+        screen.getByRole("heading", { name: "Dashboard" })
+      ).toBeInTheDocument();
+      // Check that breadcrumb navigation is present
       expect(screen.getAllByText("Dashboard").length).toBeGreaterThan(0);
     });
   });

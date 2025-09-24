@@ -5,7 +5,6 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { getIcon, IconSizes } from "../../utils/icons";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../utils/constants";
 
@@ -28,10 +27,6 @@ export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items }) => {
     {
       label: "RabbitMQ Admin",
       path: ROUTES.DASHBOARD,
-      icon: getIcon("app", {
-        fontSize: IconSizes.breadcrumb,
-        sx: { mr: 0.5 },
-      }),
     },
     ...items,
   ];
