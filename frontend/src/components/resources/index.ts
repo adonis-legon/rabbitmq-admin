@@ -12,6 +12,12 @@ export { ExchangeDetailModal } from './ExchangeDetailModal';
 export { QueuesPage } from './QueuesPage';
 export { QueuesList } from './QueuesList';
 export { QueueDetailModal } from './QueueDetailModal';
+export { default as CreateExchangeDialog } from './CreateExchangeDialog';
+export { default as CreateQueueDialog } from './CreateQueueDialog';
+export { default as CreateBindingDialog } from './CreateBindingDialog';
+export { default as PublishMessageDialog } from './PublishMessageDialog';
+export { default as GetMessagesDialog } from './GetMessagesDialog';
+export { default as MessageDisplayDialog } from './MessageDisplayDialog';
 
 // Shared components
 export * from './shared';
