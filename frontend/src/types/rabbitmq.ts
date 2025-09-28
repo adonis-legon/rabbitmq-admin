@@ -166,6 +166,71 @@ export interface ResourceFilters {
   typeFilter: string[];
 }
 
+// Virtual Host Types
+export interface VirtualHost {
+  name: string;
+  description?: string;
+  tags?: string;
+  defaultQueueType?: string;
+  tracing?: boolean;
+  messageStats?: Record<string, any>;
+}
+
+// Write Operation Request Types
+export interface CreateExchangeRequest {
+  name: string;
+  type: 'direct' | 'fanout' | 'topic' | 'headers';
+  vhost: string;
+  durable?: boolean;
+  autoDelete?: boolean;
+  internal?: boolean;
+  arguments?: Record<string, any>;
+}
+
+export interface CreateQueueRequest {
+  name: string;
+  vhost: string;
+  durable?: boolean;
+  autoDelete?: boolean;
+  exclusive?: boolean;
+  arguments?: Record<string, any>;
+  node?: string;
+}
+
+export interface CreateBindingRequest {
+  routingKey?: string;
+  arguments?: Record<string, any>;
+}
+
+export interface PublishMessageRequest {
+  routingKey?: string;
+  properties?: Record<string, any>;
+  payload: string;
+  payloadEncoding?: 'string' | 'base64';
+}
+
+export interface GetMessagesRequest {
+  count?: number;
+  ackmode?: 'ack_requeue_true' | 'ack_requeue_false' | 'reject_requeue_true' | 'reject_requeue_false';
+  encoding?: 'auto' | 'base64';
+  truncate?: number;
+}
+
+// Write Operation Response Types
+export interface PublishResponse {
+  routed: boolean;
+}
+
+export interface Message {
+  payloadEncoding: string;
+  payload: string;
+  properties?: Record<string, any>;
+  routingKey?: string;
+  redelivered?: boolean;
+  exchange?: string;
+  messageCount?: number;
+}
+
 // Error Types
 export interface ResourceError {
   type: 'network' | 'authentication' | 'authorization' | 'cluster_unavailable' | 'api_error';
