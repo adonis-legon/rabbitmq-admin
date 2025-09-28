@@ -1,11 +1,28 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Typography, Chip, Tooltip, Alert, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Chip,
+  Tooltip,
+  Alert,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+} from "@mui/material";
 import {
   SwapHoriz as DirectIcon,
   Radio as FanoutIcon,
   AccountTree as TopicIcon,
   ViewList as HeadersIcon,
   Info as InfoIcon,
+  Add as AddIcon,
+  MoreVert as MoreVertIcon,
+  Link as LinkIcon,
+  Send as SendIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import {
@@ -13,10 +30,18 @@ import {
   ResourceFilters as ResourceFiltersType,
 } from "../../types/rabbitmq";
 import { useExchanges } from "../../hooks/useExchanges";
+import { useWriteOperationNotifications } from "../../hooks/useWriteOperationNotifications";
+import { rabbitmqResourcesApi } from "../../services/api/rabbitmqResourcesApi";
 import ResourceTable from "./shared/ResourceTable";
 import ResourceFilters from "./shared/ResourceFilters";
 import RefreshControls from "./shared/RefreshControls";
 import ExchangeDetailModal from "./ExchangeDetailModal";
+import CreateExchangeDialog from "./CreateExchangeDialog";
+import CreateBindingDialog from "./CreateBindingDialog";
+import PublishMessageDialog from "./PublishMessageDialog";
+import DeleteConfirmationDialog, {
+  DeleteOptions,
+} from "../common/DeleteConfirmationDialog";
 
 interface ExchangesListProps {
   clusterId: string;
@@ -48,10 +73,32 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     useState<RabbitMQExchange | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
+  // Dialog states
+  const [createExchangeDialogOpen, setCreateExchangeDialogOpen] =
+    useState(false);
+  const [createBindingDialogOpen, setCreateBindingDialogOpen] = useState(false);
+  const [publishMessageDialogOpen, setPublishMessageDialogOpen] =
+    useState(false);
+  const [deleteConfirmationDialogOpen, setDeleteConfirmationDialogOpen] =
+    useState(false);
+
+  // Action menu state
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
+  const [actionMenuExchange, setActionMenuExchange] =
+    useState<RabbitMQExchange | null>(null);
+
+  // Loading states for write operations
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const { notifyExchangeDeleted, notifyOperationError } =
+    useWriteOperationNotifications();
+
   const {
     data,
     loading,
-    error,
+    error: exchangesError,
     lastUpdated,
     loadExchanges,
     refreshExchanges,
@@ -60,6 +107,10 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     autoRefresh,
     refreshInterval: refreshInterval * 1000,
   });
+
+  const handleRefresh = useCallback(() => {
+    refreshExchanges();
+  }, [refreshExchanges]);
 
   // Load exchanges when clusterId or filters change
   useEffect(() => {
@@ -123,9 +174,113 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     setSelectedExchange(null);
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    refreshExchanges();
-  }, [refreshExchanges]);
+  // Action menu handlers
+  const handleActionMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLElement>, exchange: RabbitMQExchange) => {
+      event.stopPropagation();
+      // Close any open dialogs first
+      setCreateBindingDialogOpen(false);
+      setPublishMessageDialogOpen(false);
+      setDeleteConfirmationDialogOpen(false);
+
+      setActionMenuAnchor(event.currentTarget);
+      setActionMenuExchange(exchange);
+    },
+    []
+  );
+
+  const handleActionMenuClose = useCallback(() => {
+    setActionMenuAnchor(null);
+    // Don't clear actionMenuExchange here as dialogs need it
+  }, []);
+
+  // Dialog handlers
+  const handleCreateExchangeOpen = useCallback(() => {
+    setCreateExchangeDialogOpen(true);
+  }, []);
+
+  const handleCreateExchangeClose = useCallback(() => {
+    setCreateExchangeDialogOpen(false);
+  }, []);
+
+  const handleCreateExchangeSuccess = useCallback(() => {
+    handleRefresh();
+  }, [handleRefresh]);
+
+  const handleCreateBindingOpen = useCallback(() => {
+    setCreateBindingDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handleCreateBindingClose = useCallback(() => {
+    setCreateBindingDialogOpen(false);
+    setActionMenuExchange(null);
+  }, []);
+
+  const handleCreateBindingSuccess = useCallback(() => {
+    // Refresh exchanges to update binding counts if needed
+    handleRefresh();
+  }, [handleRefresh]);
+
+  const handlePublishMessageOpen = useCallback(() => {
+    setPublishMessageDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handlePublishMessageClose = useCallback(() => {
+    setPublishMessageDialogOpen(false);
+    setActionMenuExchange(null);
+  }, []);
+
+  const handlePublishMessageSuccess = useCallback(() => {
+    // No need to refresh for message publishing
+  }, []);
+
+  const handleDeleteExchangeOpen = useCallback(() => {
+    setDeleteConfirmationDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handleDeleteExchangeClose = useCallback(() => {
+    setDeleteConfirmationDialogOpen(false);
+    setActionMenuExchange(null);
+  }, []);
+
+  const handleDeleteExchangeConfirm = useCallback(
+    async (options: DeleteOptions) => {
+      if (!actionMenuExchange) return;
+
+      try {
+        setDeleteLoading(true);
+        await rabbitmqResourcesApi.deleteExchange(
+          clusterId,
+          actionMenuExchange.vhost,
+          actionMenuExchange.name,
+          options.ifUnused
+        );
+        notifyExchangeDeleted(actionMenuExchange.name, options.ifUnused);
+        handleRefresh();
+      } catch (err: any) {
+        console.error("Error deleting exchange:", err);
+        notifyOperationError(
+          "delete",
+          "Exchange",
+          actionMenuExchange.name,
+          err
+        );
+        throw err; // Re-throw to prevent dialog from closing
+      } finally {
+        setDeleteLoading(false);
+      }
+    },
+    [
+      actionMenuExchange,
+      clusterId,
+      notifyExchangeDeleted,
+      notifyOperationError,
+      handleRefresh,
+    ]
+  );
 
   const handleRetry = useCallback(() => {
     clearError();
@@ -302,14 +457,35 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         <Typography variant="body2">{params.value.toFixed(2)} msg/s</Typography>
       ),
     },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 80,
+      align: "center",
+      headerAlign: "center",
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          onClick={(event) =>
+            handleActionMenuOpen(event, params.row as RabbitMQExchange)
+          }
+          aria-label={`Actions for exchange ${params.row.name}`}
+        >
+          <MoreVertIcon />
+        </IconButton>
+      ),
+    },
   ];
 
   // Filter exchanges by type if type filter is applied
   const filteredExchanges = data?.items
     ? filters.typeFilter.length > 0
       ? data.items.filter((exchange) =>
-        filters.typeFilter.includes(exchange.type)
-      )
+          filters.typeFilter.includes(exchange.type)
+        )
       : data.items
     : [];
 
@@ -329,6 +505,14 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           Exchanges
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateExchangeOpen}
+            disabled={loading}
+          >
+            Create Exchange
+          </Button>
           <RefreshControls
             onRefresh={handleRefresh}
             autoRefresh={autoRefresh}
@@ -341,12 +525,12 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         </Box>
       </Box>
 
-      {error && (
+      {exchangesError && (
         <Alert
           severity="error"
           sx={{ mb: 2 }}
           action={
-            error.retryable && (
+            exchangesError.retryable && (
               <Button color="inherit" size="small" onClick={handleRetry}>
                 Retry
               </Button>
@@ -354,11 +538,11 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           }
         >
           <Typography variant="body2" fontWeight="medium">
-            {error.message}
+            {exchangesError.message}
           </Typography>
-          {error.details && (
+          {exchangesError.details && (
             <Typography variant="caption" display="block">
-              {error.details}
+              {exchangesError.details}
             </Typography>
           )}
         </Alert>
@@ -379,7 +563,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         data={formattedExchanges}
         columns={columns}
         loading={loading}
-        error={error?.message || null}
+        error={exchangesError?.message || null}
         totalRows={data?.totalItems}
         page={filters.page}
         pageSize={filters.pageSize}
@@ -398,6 +582,93 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         exchange={selectedExchange}
         clusterId={clusterId}
       />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={actionMenuAnchor}
+        open={Boolean(actionMenuAnchor)}
+        onClose={handleActionMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <MenuItem onClick={handleCreateBindingOpen}>
+          <ListItemIcon>
+            <LinkIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Create Binding</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handlePublishMessageOpen}>
+          <ListItemIcon>
+            <SendIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Publish Message</ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={handleDeleteExchangeOpen}
+          sx={{ color: "error.main" }}
+        >
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Delete Exchange</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Create Exchange Dialog */}
+      <CreateExchangeDialog
+        open={createExchangeDialogOpen}
+        clusterId={clusterId}
+        onClose={handleCreateExchangeClose}
+        onSuccess={handleCreateExchangeSuccess}
+      />
+
+      {/* Create Binding Dialog */}
+      {actionMenuExchange && (
+        <CreateBindingDialog
+          open={createBindingDialogOpen}
+          clusterId={clusterId}
+          context="exchange"
+          sourceResource={{
+            name: actionMenuExchange.name,
+            vhost: actionMenuExchange.vhost,
+          }}
+          onClose={handleCreateBindingClose}
+          onSuccess={handleCreateBindingSuccess}
+        />
+      )}
+
+      {/* Publish Message Dialog */}
+      {actionMenuExchange && (
+        <PublishMessageDialog
+          open={publishMessageDialogOpen}
+          clusterId={clusterId}
+          context="exchange"
+          targetResource={{
+            name: actionMenuExchange.name,
+            vhost: actionMenuExchange.vhost,
+          }}
+          onClose={handlePublishMessageClose}
+          onSuccess={handlePublishMessageSuccess}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {actionMenuExchange && (
+        <DeleteConfirmationDialog
+          open={deleteConfirmationDialogOpen}
+          onClose={handleDeleteExchangeClose}
+          onConfirm={handleDeleteExchangeConfirm}
+          deleteType="exchange"
+          resourceName={actionMenuExchange.name}
+          loading={deleteLoading}
+        />
+      )}
     </Box>
   );
 };
