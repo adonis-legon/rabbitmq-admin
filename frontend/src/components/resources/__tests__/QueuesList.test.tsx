@@ -9,10 +9,27 @@ import { useQueues } from "../../../hooks/useQueues";
 // Mock the useQueues hook
 vi.mock("../../../hooks/useQueues");
 
-// Create a test wrapper with theme
+// Mock the NotificationProvider and useNotification hook
+vi.mock("../../../contexts/NotificationContext", () => ({
+  NotificationProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  useNotification: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+// Create a test wrapper with theme and notification provider
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   const theme = createTheme();
-  return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
+  return (
+    <ThemeProvider theme={theme}>
+      <div>
+        {children}
+      </div>
+    </ThemeProvider>
+  );
 };
 
 const mockQueues: RabbitMQQueue[] = [

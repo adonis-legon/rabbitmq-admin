@@ -64,6 +64,82 @@ vi.mock("../../../services/api/rabbitmqResourcesApi", () => ({
   },
 }));
 
+// Mock notification context
+vi.mock("../../../contexts/NotificationContext", () => ({
+  useNotification: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  }),
+}));
+
+// Mock dialog components
+vi.mock("../CreateExchangeDialog", () => ({
+  default: ({ open, onClose, onSuccess }: any) =>
+    open ? (
+      <div data-testid="create-exchange-dialog">
+        <h2>Create Exchange</h2>
+        <button onClick={onClose}>Cancel</button>
+        <button
+          onClick={() => {
+            onSuccess();
+            onClose();
+          }}
+        >
+          Create
+        </button>
+      </div>
+    ) : null,
+}));
+
+vi.mock("../CreateBindingDialog", () => ({
+  default: ({ open, onClose, onSuccess, sourceResource }: any) =>
+    open ? (
+      <div data-testid="create-binding-dialog">
+        <h2>Create Binding from {sourceResource?.name}</h2>
+        <button onClick={onClose}>Cancel</button>
+        <button
+          onClick={() => {
+            onSuccess();
+            onClose();
+          }}
+        >
+          Create Binding
+        </button>
+      </div>
+    ) : null,
+}));
+
+vi.mock("../PublishMessageDialog", () => ({
+  default: ({ open, onClose, onSuccess, targetResource }: any) =>
+    open ? (
+      <div data-testid="publish-message-dialog">
+        <h2>Publish Message to {targetResource?.name}</h2>
+        <button onClick={onClose}>Cancel</button>
+        <button
+          onClick={() => {
+            onSuccess();
+            onClose();
+          }}
+        >
+          Publish
+        </button>
+      </div>
+    ) : null,
+}));
+
+vi.mock("../../common/DeleteConfirmationDialog", () => ({
+  default: ({ open, onClose, onConfirm, resourceName }: any) =>
+    open ? (
+      <div data-testid="delete-confirmation-dialog">
+        <h2>Delete {resourceName}</h2>
+        <button onClick={onClose}>Cancel</button>
+        <button onClick={() => onConfirm({})}>Delete</button>
+      </div>
+    ) : null,
+}));
+
 // Mock shared components
 vi.mock("../shared/ResourceTable", () => ({
   default: ({ data, columns, onRowClick }: any) => (
@@ -512,5 +588,410 @@ describe("ExchangesList", () => {
 
     expect(screen.getByText("Exchanges")).toBeInTheDocument();
     // Error should be displayed by error handling components
+  });
+
+  describe("Write Operations", () => {
+    it("displays Create Exchange button", () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      const createButton = screen.getByRole("button", {
+        name: /create exchange/i,
+      });
+      expect(createButton).toBeInTheDocument();
+    });
+
+    it("opens Create Exchange dialog when button is clicked", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      const createButton = screen.getByRole("button", {
+        name: /create exchange/i,
+      });
+      fireEvent.click(createButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("create-exchange-dialog")
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("closes Create Exchange dialog when cancelled", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      const createButton = screen.getByRole("button", {
+        name: /create exchange/i,
+      });
+      fireEvent.click(createButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("create-exchange-dialog")
+        ).toBeInTheDocument();
+      });
+
+      const cancelButton = screen.getByText("Cancel");
+      fireEvent.click(cancelButton);
+
+      await waitFor(() => {
+        expect(
+          screen.queryByTestId("create-exchange-dialog")
+        ).not.toBeInTheDocument();
+      });
+    });
+
+    it("displays action menu button for each exchange", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      // Should have action buttons for each exchange
+      const actionButtons = screen.getAllByLabelText(/actions for exchange/i);
+      expect(actionButtons.length).toBe(mockExchanges.length);
+    });
+
+    it("opens action menu when action button is clicked", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      const actionButton = screen.getByLabelText(
+        "Actions for exchange direct-exchange"
+      );
+      fireEvent.click(actionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create Binding")).toBeInTheDocument();
+        expect(screen.getByText("Publish Message")).toBeInTheDocument();
+        expect(screen.getByText("Delete Exchange")).toBeInTheDocument();
+      });
+    });
+
+    it("opens Create Binding dialog from action menu", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      // Open action menu
+      const actionButton = screen.getByLabelText(
+        "Actions for exchange direct-exchange"
+      );
+      fireEvent.click(actionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create Binding")).toBeInTheDocument();
+      });
+
+      // Click Create Binding
+      const createBindingButton = screen.getByText("Create Binding");
+      fireEvent.click(createBindingButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("create-binding-dialog")).toBeInTheDocument();
+        expect(
+          screen.getByText("Create Binding from direct-exchange")
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("opens Publish Message dialog from action menu", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      // Open action menu
+      const actionButton = screen.getByLabelText(
+        "Actions for exchange direct-exchange"
+      );
+      fireEvent.click(actionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Publish Message")).toBeInTheDocument();
+      });
+
+      // Click Publish Message
+      const publishButton = screen.getByText("Publish Message");
+      fireEvent.click(publishButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("publish-message-dialog")
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText("Publish Message to direct-exchange")
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("opens Delete Confirmation dialog from action menu", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      // Open action menu
+      const actionButton = screen.getByLabelText(
+        "Actions for exchange direct-exchange"
+      );
+      fireEvent.click(actionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Delete Exchange")).toBeInTheDocument();
+      });
+
+      // Click Delete Exchange
+      const deleteButton = screen.getByText("Delete Exchange");
+      fireEvent.click(deleteButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("delete-confirmation-dialog")
+        ).toBeInTheDocument();
+        expect(screen.getByText("Delete direct-exchange")).toBeInTheDocument();
+      });
+    });
+
+    it("refreshes exchanges list after successful exchange creation", async () => {
+      const mockRefreshExchanges = vi.fn();
+      vi.mocked(useExchanges).mockReturnValue({
+        data: {
+          items: mockExchanges,
+          page: 0,
+          pageSize: 50,
+          totalItems: mockExchanges.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        },
+        loading: false,
+        error: null,
+        lastUpdated: new Date(),
+        loadExchanges: vi.fn(),
+        refreshExchanges: mockRefreshExchanges,
+        clearError: vi.fn(),
+        invalidateCache: vi.fn(),
+      });
+
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      // Open create dialog
+      const createButton = screen.getByRole("button", {
+        name: /create exchange/i,
+      });
+      fireEvent.click(createButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("create-exchange-dialog")
+        ).toBeInTheDocument();
+      });
+
+      // Click create button in dialog
+      const createDialogButton = screen.getByText("Create");
+      fireEvent.click(createDialogButton);
+
+      await waitFor(() => {
+        expect(mockRefreshExchanges).toHaveBeenCalled();
+      });
+    });
+
+    it("refreshes exchanges list after successful binding creation", async () => {
+      const mockRefreshExchanges = vi.fn();
+      vi.mocked(useExchanges).mockReturnValue({
+        data: {
+          items: mockExchanges,
+          page: 0,
+          pageSize: 50,
+          totalItems: mockExchanges.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        },
+        loading: false,
+        error: null,
+        lastUpdated: new Date(),
+        loadExchanges: vi.fn(),
+        refreshExchanges: mockRefreshExchanges,
+        clearError: vi.fn(),
+        invalidateCache: vi.fn(),
+      });
+
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      // Open action menu and create binding
+      const actionButton = screen.getByLabelText(
+        "Actions for exchange direct-exchange"
+      );
+      fireEvent.click(actionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create Binding")).toBeInTheDocument();
+      });
+
+      const createBindingButton = screen.getByText("Create Binding");
+      fireEvent.click(createBindingButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("create-binding-dialog")).toBeInTheDocument();
+      });
+
+      // Click create binding button in dialog
+      const createDialogButton = screen.getByText("Create Binding");
+      fireEvent.click(createDialogButton);
+
+      await waitFor(() => {
+        expect(mockRefreshExchanges).toHaveBeenCalled();
+      });
+    });
+
+    it("does not refresh after message publishing", async () => {
+      const mockRefreshExchanges = vi.fn();
+      vi.mocked(useExchanges).mockReturnValue({
+        data: {
+          items: mockExchanges,
+          page: 0,
+          pageSize: 50,
+          totalItems: mockExchanges.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        },
+        loading: false,
+        error: null,
+        lastUpdated: new Date(),
+        loadExchanges: vi.fn(),
+        refreshExchanges: mockRefreshExchanges,
+        clearError: vi.fn(),
+        invalidateCache: vi.fn(),
+      });
+
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      // Open action menu and publish message
+      const actionButton = screen.getByLabelText(
+        "Actions for exchange direct-exchange"
+      );
+      fireEvent.click(actionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Publish Message")).toBeInTheDocument();
+      });
+
+      const publishButton = screen.getByText("Publish Message");
+      fireEvent.click(publishButton);
+
+      await waitFor(() => {
+        expect(
+          screen.getByTestId("publish-message-dialog")
+        ).toBeInTheDocument();
+      });
+
+      // Click publish button in dialog
+      const publishDialogButton = screen.getByText("Publish");
+      fireEvent.click(publishDialogButton);
+
+      // Should not refresh for message publishing
+      await waitFor(() => {
+        expect(mockRefreshExchanges).not.toHaveBeenCalled();
+      });
+    });
+
+    it("disables Create Exchange button when loading", () => {
+      vi.mocked(useExchanges).mockReturnValue({
+        data: {
+          items: [],
+          page: 0,
+          pageSize: 50,
+          totalItems: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrevious: false,
+        },
+        loading: true,
+        error: null,
+        lastUpdated: new Date(),
+        loadExchanges: vi.fn(),
+        refreshExchanges: vi.fn(),
+        clearError: vi.fn(),
+        invalidateCache: vi.fn(),
+      });
+
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      const createButton = screen.getByRole("button", {
+        name: /create exchange/i,
+      });
+      expect(createButton).toBeDisabled();
+    });
+
+    it("closes action menu when dialog opens", async () => {
+      render(<ExchangesList clusterId={mockClusterId} />, {
+        wrapper: TestWrapper,
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("direct-exchange")).toBeInTheDocument();
+      });
+
+      // Open action menu
+      const actionButton = screen.getByLabelText(
+        "Actions for exchange direct-exchange"
+      );
+      fireEvent.click(actionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Create Binding")).toBeInTheDocument();
+      });
+
+      // Click Create Binding - this should close the menu and open dialog
+      const createBindingButton = screen.getByText("Create Binding");
+      fireEvent.click(createBindingButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId("create-binding-dialog")).toBeInTheDocument();
+        // Menu should be closed (menu items should not be visible)
+        expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+      });
+    });
   });
 });

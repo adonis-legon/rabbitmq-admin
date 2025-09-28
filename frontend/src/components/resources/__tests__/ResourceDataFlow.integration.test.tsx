@@ -20,10 +20,25 @@ const TestWrapper = ({
   const theme = createTheme();
   return (
     <MemoryRouter initialEntries={initialEntries}>
-      <ThemeProvider theme={theme}>{children}</ThemeProvider>
+      <ThemeProvider theme={theme}>
+        <div>
+          {children}
+        </div>
+      </ThemeProvider>
     </MemoryRouter>
   );
 };
+
+// Mock the NotificationProvider and useNotification hook
+vi.mock("../../../contexts/NotificationContext", () => ({
+  NotificationProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  useNotification: () => ({
+    success: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
 
 // Mock react-router-dom navigate
 const mockNavigate = vi.fn();

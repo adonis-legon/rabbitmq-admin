@@ -1,0 +1,380 @@
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import { NotificationProvider } from "../../../contexts/NotificationContext";
+import CreateExchangeDialog from "../CreateExchangeDialog";
+import CreateQueueDialog from "../CreateQueueDialog";
+import PublishMessageDialog from "../PublishMessageDialog";
+
+// Mock the API
+vi.mock("../../../services/api/rabbitmqResourcesApi", () => ({
+  rabbitmqResourcesApi: {
+    createExchange: vi.fn(),
+    createQueue: vi.fn(),
+    publishMessage: vi.fn(),
+    getVirtualHosts: vi.fn(),
+  },
+}));
+
+// Mock the virtual hosts hook
+vi.mock("../../../hooks/useVirtualHosts", () => ({
+  useVirtualHosts: () => ({
+    virtualHosts: [{ name: "/", description: "Default virtual host" }],
+    loading: false,
+    error: null,
+  }),
+}));
+
+// Import the mocked API to get access to the mock functions
+import { rabbitmqResourcesApi } from "../../../services/api/rabbitmqResourcesApi";
+const mockCreateExchange = vi.mocked(rabbitmqResourcesApi.createExchange);
+const mockCreateQueue = vi.mocked(rabbitmqResourcesApi.createQueue);
+const mockPublishMessage = vi.mocked(rabbitmqResourcesApi.publishMessage);
+const mockGetVirtualHosts = vi.mocked(rabbitmqResourcesApi.getVirtualHosts);
+
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <NotificationProvider>{children}</NotificationProvider>
+);
+
+describe("Notification System Integration", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetVirtualHosts.mockResolvedValue([
+      { name: "/", description: "Default virtual host" },
+    ]);
+  });
+
+  describe("CreateExchangeDialog", () => {
+    it("should show success notification on successful exchange creation", async () => {
+      mockCreateExchange.mockResolvedValue(undefined);
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      render(
+        <TestWrapper>
+          <CreateExchangeDialog
+            open={true}
+            clusterId="test-cluster"
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form
+      fireEvent.change(screen.getByLabelText(/Exchange Name/i), {
+        target: { value: "test-exchange" },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Create Exchange/i }));
+
+      await waitFor(() => {
+        expect(mockCreateExchange).toHaveBeenCalled();
+      });
+
+      // Check that success notification appears
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Exchange "test-exchange" created successfully/i)
+        ).toBeInTheDocument();
+      });
+
+      expect(mockOnSuccess).toHaveBeenCalled();
+      expect(mockOnClose).toHaveBeenCalled();
+    });
+
+    it("should show error notification on exchange creation failure", async () => {
+      const errorResponse = {
+        response: {
+          status: 409,
+          data: { message: "Exchange already exists" },
+        },
+      };
+      mockCreateExchange.mockRejectedValue(errorResponse);
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      render(
+        <TestWrapper>
+          <CreateExchangeDialog
+            open={true}
+            clusterId="test-cluster"
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form
+      fireEvent.change(screen.getByLabelText(/Exchange Name/i), {
+        target: { value: "test-exchange" },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Create Exchange/i }));
+
+      await waitFor(() => {
+        expect(mockCreateExchange).toHaveBeenCalled();
+      });
+
+      // Check that error notification appears
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Exchange "test-exchange" already exists/i)
+        ).toBeInTheDocument();
+      });
+
+      expect(mockOnSuccess).not.toHaveBeenCalled();
+      expect(mockOnClose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("CreateQueueDialog", () => {
+    it("should show success notification with durability information", async () => {
+      mockCreateQueue.mockResolvedValue(undefined);
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      render(
+        <TestWrapper>
+          <CreateQueueDialog
+            open={true}
+            clusterId="test-cluster"
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form
+      fireEvent.change(screen.getByLabelText(/Queue Name/i), {
+        target: { value: "test-queue" },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Create Queue/i }));
+
+      await waitFor(() => {
+        expect(mockCreateQueue).toHaveBeenCalled();
+      });
+
+      // Check that success notification appears with durability info
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            /Queue "test-queue" created successfully.*Type: durable/i
+          )
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("should show error notification for permission denied", async () => {
+      const errorResponse = {
+        response: {
+          status: 403,
+        },
+      };
+      mockCreateQueue.mockRejectedValue(errorResponse);
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      render(
+        <TestWrapper>
+          <CreateQueueDialog
+            open={true}
+            clusterId="test-cluster"
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form
+      fireEvent.change(screen.getByLabelText(/Queue Name/i), {
+        target: { value: "test-queue" },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Create Queue/i }));
+
+      await waitFor(() => {
+        expect(mockCreateQueue).toHaveBeenCalled();
+      });
+
+      // Check that error notification appears
+      await waitFor(() => {
+        expect(
+          screen.getByText(/You do not have permission to create queues/i)
+        ).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("PublishMessageDialog", () => {
+    it("should show success notification for routed message", async () => {
+      mockPublishMessage.mockResolvedValue({ routed: true });
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      render(
+        <TestWrapper>
+          <PublishMessageDialog
+            open={true}
+            clusterId="test-cluster"
+            context="exchange"
+            targetResource={{ name: "test-exchange", vhost: "/" }}
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form
+      fireEvent.change(screen.getByLabelText(/Message Payload/i), {
+        target: { value: "test message" },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Publish Message/i }));
+
+      await waitFor(() => {
+        expect(mockPublishMessage).toHaveBeenCalled();
+      });
+
+      // Check that success notification appears
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            /Message published to exchange "test-exchange".*routed successfully/i
+          )
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("should show warning notification for unrouted message", async () => {
+      mockPublishMessage.mockResolvedValue({ routed: false });
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      render(
+        <TestWrapper>
+          <PublishMessageDialog
+            open={true}
+            clusterId="test-cluster"
+            context="exchange"
+            targetResource={{ name: "test-exchange", vhost: "/" }}
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form
+      fireEvent.change(screen.getByLabelText(/Message Payload/i), {
+        target: { value: "test message" },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Publish Message/i }));
+
+      await waitFor(() => {
+        expect(mockPublishMessage).toHaveBeenCalled();
+      });
+
+      // Check that warning notification appears
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            /Message published to exchange "test-exchange".*was not routed/i
+          )
+        ).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe("Loading States", () => {
+    it("should show loading indicators during operations", async () => {
+      // Mock a delayed response to test loading state
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      mockCreateExchange.mockImplementation(() => 
+        new Promise((resolve) => {
+          setTimeout(() => resolve(undefined), 100);
+        })
+      );
+
+      render(
+        <TestWrapper>
+          <CreateExchangeDialog
+            open={true}
+            clusterId="test-cluster"
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form
+      fireEvent.change(screen.getByLabelText(/Exchange Name/i), {
+        target: { value: "test-exchange" },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Create Exchange/i }));
+
+      // Check that submit button is disabled during loading
+      expect(
+        screen.getByRole("button", { name: /Create Exchange/i })
+      ).toBeDisabled();
+
+      // Wait for the operation to complete
+      await waitFor(() => {
+        expect(mockOnSuccess).toHaveBeenCalled();
+      }, { timeout: 2000 });
+    });
+  });
+
+  describe("Notification Duration", () => {
+    it("should use appropriate durations for different notification types", async () => {
+      // This test verifies that the notification system uses the enhanced duration logic
+      mockCreateExchange.mockResolvedValue(undefined);
+      const mockOnSuccess = vi.fn();
+      const mockOnClose = vi.fn();
+
+      render(
+        <TestWrapper>
+          <CreateExchangeDialog
+            open={true}
+            clusterId="test-cluster"
+            onClose={mockOnClose}
+            onSuccess={mockOnSuccess}
+          />
+        </TestWrapper>
+      );
+
+      // Fill in the form with a long name to test duration calculation
+      fireEvent.change(screen.getByLabelText(/Exchange Name/i), {
+        target: {
+          value:
+            "very-long-exchange-name-that-should-extend-notification-duration",
+        },
+      });
+
+      // Submit the form
+      fireEvent.click(screen.getByRole("button", { name: /Create Exchange/i }));
+
+      await waitFor(() => {
+        expect(mockCreateExchange).toHaveBeenCalled();
+      });
+
+      // The notification should appear (duration testing is handled by the notification system)
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Exchange.*created successfully/i)
+        ).toBeInTheDocument();
+      });
+    });
+  });
+});

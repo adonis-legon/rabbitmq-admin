@@ -50,10 +50,11 @@ vi.mock("../shared/RefreshControls", () => ({
 }));
 
 // Mock clipboard API
-Object.assign(navigator, {
-  clipboard: {
+Object.defineProperty(navigator, 'clipboard', {
+  value: {
     writeText: vi.fn(() => Promise.resolve()),
   },
+  writable: true,
 });
 
 const mockChannel: RabbitMQChannel = {
