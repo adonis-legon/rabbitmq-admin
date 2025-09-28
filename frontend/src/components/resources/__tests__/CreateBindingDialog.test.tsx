@@ -5,11 +5,15 @@ import CreateBindingDialog, { BindingContext } from "../CreateBindingDialog";
 import { rabbitmqResourcesApi } from "../../../services/api/rabbitmqResourcesApi";
 import { useVirtualHosts } from "../../../hooks/useVirtualHosts";
 import { useNotification } from "../../../contexts/NotificationContext";
+import { useWriteOperationState } from "../../../hooks/useWriteOperationState";
+import { useWriteOperationNotifications } from "../../../hooks/useWriteOperationNotifications";
 
 // Mock dependencies
 vi.mock("../../../services/api/rabbitmqResourcesApi");
 vi.mock("../../../hooks/useVirtualHosts");
 vi.mock("../../../contexts/NotificationContext");
+vi.mock("../../../hooks/useWriteOperationState");
+vi.mock("../../../hooks/useWriteOperationNotifications");
 vi.mock("../../common/KeyValueEditor", () => ({
   default: ({ value, onChange, disabled }: any) => (
     <div data-testid="key-value-editor">
@@ -32,6 +36,8 @@ vi.mock("../../common/KeyValueEditor", () => ({
 const mockRabbitmqResourcesApi = rabbitmqResourcesApi as any;
 const mockUseVirtualHosts = useVirtualHosts as any;
 const mockUseNotification = useNotification as any;
+const mockUseWriteOperationState = useWriteOperationState as any;
+const mockUseWriteOperationNotifications = useWriteOperationNotifications as any;
 
 const mockVirtualHosts = [
   { name: "/", description: "Default virtual host" },
@@ -44,6 +50,14 @@ const mockNotification = {
   info: vi.fn(),
   warning: vi.fn(),
 };
+
+const mockWriteOperationNotifications = {
+  notifyBindingCreated: vi.fn(),
+  notifyOperationError: vi.fn(),
+};
+
+// Mock executeOperation that actually calls the API
+const mockExecuteOperation = vi.fn();
 
 describe("CreateBindingDialog", () => {
   const defaultProps = {
@@ -66,6 +80,30 @@ describe("CreateBindingDialog", () => {
       error: null,
     });
     mockUseNotification.mockReturnValue(mockNotification);
+
+    // Mock the write operation state hook with proper executeOperation
+    mockExecuteOperation.mockImplementation(async (operation, onSuccess, onError) => {
+      try {
+        const result = await operation();
+        onSuccess?.(result);
+        return result;
+      } catch (error) {
+        onError?.(error);
+        throw error;
+      }
+    });
+
+    mockUseWriteOperationState.mockReturnValue({
+      loading: false,
+      error: null,
+      success: false,
+      executeOperation: mockExecuteOperation,
+      reset: vi.fn(),
+    });
+
+    // Mock the write operation notifications hook
+    mockUseWriteOperationNotifications.mockReturnValue(mockWriteOperationNotifications);
+
     mockRabbitmqResourcesApi.createExchangeToQueueBinding = vi
       .fn()
       .mockResolvedValue(undefined);
@@ -308,7 +346,9 @@ describe("CreateBindingDialog", () => {
 
       const routingKeyField = screen.getByLabelText("Routing Key");
       const longRoutingKey = "a".repeat(256);
-      await user.type(routingKeyField, longRoutingKey);
+
+      // Use fireEvent.change instead of slow typing
+      fireEvent.change(routingKeyField, { target: { value: longRoutingKey } });
 
       const createButton = screen.getByText("Create Binding");
       await user.click(createButton);
@@ -374,9 +414,11 @@ describe("CreateBindingDialog", () => {
         );
       });
 
-      expect(mockNotification.success).toHaveBeenCalledWith(
-        'Binding "test-exchange → test-queue (queue) (routing key: "test.routing.key")" created successfully',
-        4000
+      expect(mockWriteOperationNotifications.notifyBindingCreated).toHaveBeenCalledWith(
+        "test-exchange",
+        "test-queue",
+        "queue",
+        "test.routing.key"
       );
       expect(defaultProps.onSuccess).toHaveBeenCalled();
       expect(defaultProps.onClose).toHaveBeenCalled();
@@ -525,9 +567,11 @@ describe("CreateBindingDialog", () => {
       await user.click(createButton);
 
       await waitFor(() => {
-        expect(mockNotification.error).toHaveBeenCalledWith(
-          'Binding "test-exchange → test-queue" already exists',
-          10000
+        expect(mockWriteOperationNotifications.notifyOperationError).toHaveBeenCalledWith(
+          "create",
+          "Binding",
+          "test-exchange → test-queue",
+          conflictError
         );
       });
     });
@@ -555,9 +599,11 @@ describe("CreateBindingDialog", () => {
       await user.click(createButton);
 
       await waitFor(() => {
-        expect(mockNotification.error).toHaveBeenCalledWith(
-          "Invalid routing key format",
-          10000
+        expect(mockWriteOperationNotifications.notifyOperationError).toHaveBeenCalledWith(
+          "create",
+          "Binding",
+          "test-exchange → test-queue",
+          badRequestError
         );
       });
     });
@@ -582,9 +628,11 @@ describe("CreateBindingDialog", () => {
       await user.click(createButton);
 
       await waitFor(() => {
-        expect(mockNotification.error).toHaveBeenCalledWith(
-          "You do not have permission to create bindings on this cluster",
-          10000
+        expect(mockWriteOperationNotifications.notifyOperationError).toHaveBeenCalledWith(
+          "create",
+          "Binding",
+          "test-exchange → test-queue",
+          permissionError
         );
       });
     });
@@ -609,9 +657,11 @@ describe("CreateBindingDialog", () => {
       await user.click(createButton);
 
       await waitFor(() => {
-        expect(mockNotification.error).toHaveBeenCalledWith(
-          'Binding "test-exchange → test-queue" not found',
-          10000
+        expect(mockWriteOperationNotifications.notifyOperationError).toHaveBeenCalledWith(
+          "create",
+          "Binding",
+          "test-exchange → test-queue",
+          notFoundError
         );
       });
     });
@@ -634,7 +684,12 @@ describe("CreateBindingDialog", () => {
       await user.click(createButton);
 
       await waitFor(() => {
-        expect(mockNotification.error).toHaveBeenCalledWith("Network error", 10000);
+        expect(mockWriteOperationNotifications.notifyOperationError).toHaveBeenCalledWith(
+          "create",
+          "Binding",
+          "test-exchange → test-queue",
+          genericError
+        );
       });
     });
 
@@ -664,13 +719,18 @@ describe("CreateBindingDialog", () => {
   describe("Loading States", () => {
     it("shows loading state during submission", async () => {
       const user = userEvent.setup();
-      let resolvePromise: () => void;
-      const promise = new Promise<void>((resolve) => {
-        resolvePromise = resolve;
+
+      // Mock loading state as true for this test
+      mockUseWriteOperationState.mockReturnValue({
+        loading: true,
+        error: null,
+        success: false,
+        setLoading: vi.fn(),
+        setError: vi.fn(),
+        setSuccess: vi.fn(),
+        executeOperation: mockExecuteOperation,
+        reset: vi.fn(),
       });
-      mockRabbitmqResourcesApi.createExchangeToQueueBinding.mockReturnValue(
-        promise
-      );
 
       render(<CreateBindingDialog {...defaultProps} />);
 
@@ -679,18 +739,12 @@ describe("CreateBindingDialog", () => {
       );
       await user.type(destinationField, "test-queue");
 
-      const createButton = screen.getByText("Create Binding");
-      await user.click(createButton);
+      // When loading, the button shows a spinner instead of text, so find it by position
+      const buttons = screen.getAllByRole("button");
+      const createButton = buttons.find(button => button.textContent === "" || button.querySelector('svg'));
 
-      // Should show loading spinner
-      expect(screen.getByRole("progressbar")).toBeInTheDocument();
       expect(createButton).toBeDisabled();
-
-      // Resolve the promise
-      resolvePromise!();
-      await waitFor(() => {
-        expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
-      });
+      expect(screen.getByRole("progressbar")).toBeInTheDocument();
     });
 
     it("disables form fields during submission", async () => {
@@ -699,6 +753,16 @@ describe("CreateBindingDialog", () => {
       const promise = new Promise<void>((resolve) => {
         resolvePromise = resolve;
       });
+
+      // Mock loading state as true for this test
+      mockUseWriteOperationState.mockReturnValue({
+        loading: true,
+        error: null,
+        success: false,
+        executeOperation: mockExecuteOperation,
+        reset: vi.fn(),
+      });
+
       mockRabbitmqResourcesApi.createExchangeToQueueBinding.mockReturnValue(
         promise
       );
@@ -710,10 +774,7 @@ describe("CreateBindingDialog", () => {
       );
       await user.type(destinationField, "test-queue");
 
-      const createButton = screen.getByText("Create Binding");
-      await user.click(createButton);
-
-      // Form fields should be disabled
+      // Form fields should be disabled when loading
       expect(destinationField).toBeDisabled();
       expect(screen.getByLabelText("Routing Key")).toBeDisabled();
 

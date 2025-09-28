@@ -367,11 +367,9 @@ describe("PublishMessageDialog", () => {
         name: /message payload/i,
       });
 
-      // Clear and type new values
-      await user.clear(targetInput);
-      await user.type(targetInput, "test-exchange");
-      await user.clear(payloadInput);
-      await user.type(payloadInput, "Hello World");
+      // Use fireEvent.change for faster test execution
+      fireEvent.change(targetInput, { target: { value: "test-exchange" } });
+      fireEvent.change(payloadInput, { target: { value: "Hello World" } });
 
       const publishButton = screen.getByRole("button", {
         name: /publish message/i,

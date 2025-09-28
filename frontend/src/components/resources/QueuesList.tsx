@@ -35,7 +35,6 @@ import {
   ResourceFilters as ResourceFiltersType,
 } from "../../types/rabbitmq";
 import { useQueues } from "../../hooks/useQueues";
-import { useNotification } from "../../contexts/NotificationContext";
 import { useWriteOperationNotifications } from "../../hooks/useWriteOperationNotifications";
 import { rabbitmqResourcesApi } from "../../services/api/rabbitmqResourcesApi";
 import ResourceTable from "./shared/ResourceTable";
@@ -104,7 +103,6 @@ export const QueuesList: React.FC<QueuesListProps> = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [purgeLoading, setPurgeLoading] = useState(false);
 
-  const { success, error: notificationError } = useNotification();
   const { notifyQueueDeleted, notifyQueuePurged, notifyOperationError } =
     useWriteOperationNotifications();
 
