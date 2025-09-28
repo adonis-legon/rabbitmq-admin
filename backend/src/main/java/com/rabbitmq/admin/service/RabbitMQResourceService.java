@@ -268,6 +268,60 @@ public class RabbitMQResourceService {
     }
 
     /**
+     * Retrieves virtual hosts from the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param user      the current authenticated user
+     * @return Mono containing list of virtual host data
+     */
+    public Mono<List<VirtualHostDto>> getVirtualHosts(UUID clusterId, User user) {
+        logger.debug("Fetching virtual hosts for cluster {}", clusterId);
+
+        Instant startTime = Instant.now();
+        String path = "/api/vhosts";
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = Map.of();
+
+        return proxyService.get(clusterId, path, List.class, user)
+                .map(response -> {
+                    try {
+                        List<VirtualHostDto> result = objectMapper.convertValue(response,
+                                new TypeReference<List<VirtualHostDto>>() {
+                                });
+                        logger.debug("Parsed {} virtual hosts from response", result.size());
+                        return result;
+                    } catch (Exception e) {
+                        logger.error("Failed to parse virtual hosts response for cluster {}: {}",
+                                clusterId, e.getMessage());
+                        throw new RabbitMQResourceException("Failed to parse virtual hosts response", e);
+                    }
+                })
+                .onErrorMap(throwable -> {
+                    if (throwable instanceof RabbitMQResourceException) {
+                        return throwable;
+                    }
+                    return new RabbitMQResourceException("Failed to fetch virtual hosts", throwable);
+                })
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "vhosts", "list", auditParams);
+                    logger.debug("Successfully fetched {} virtual hosts for cluster {} in {}ms",
+                            result.size(), clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "vhosts", "list",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to fetch virtual hosts for cluster {} after {}ms: {}",
+                            clusterId, duration.toMillis(), error.getMessage());
+                });
+    }
+
+    /**
      * Retrieves bindings for a specific queue from the specified RabbitMQ cluster.
      * 
      * @param clusterId the cluster connection ID
@@ -438,6 +492,491 @@ public class RabbitMQResourceService {
             logger.warn("Failed to encode query parameter: {}", param);
             return param;
         }
+    }
+
+    /**
+     * Creates a new exchange in the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param request   the exchange creation request
+     * @param user      the current authenticated user
+     * @return Mono<Void> indicating completion
+     */
+    public Mono<Void> createExchange(UUID clusterId, CreateExchangeRequest request, User user) {
+        logger.debug("Creating exchange {} of type {} in vhost {} for cluster {} by user {}",
+                request.getName(), request.getType(), request.getVhost(), clusterId, user.getUsername());
+
+        Instant startTime = Instant.now();
+        String path = String.format("/api/exchanges/%s/%s",
+                encodePathSegment(request.getVhost()),
+                encodePathSegment(request.getName()));
+
+        // Create request body for RabbitMQ Management API
+        Map<String, Object> body = new HashMap<>();
+        body.put("type", request.getType());
+        body.put("durable", request.getDurable());
+        body.put("auto_delete", request.getAutoDelete());
+        body.put("internal", request.getInternal());
+        body.put("arguments", request.getArguments());
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = Map.of(
+                "exchangeName", request.getName(),
+                "exchangeType", request.getType(),
+                "vhost", request.getVhost(),
+                "durable", request.getDurable(),
+                "autoDelete", request.getAutoDelete(),
+                "internal", request.getInternal());
+
+        return proxyService.put(clusterId, path, body, Void.class, user)
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "exchanges", "create", auditParams);
+                    logger.debug("Successfully created exchange {} in vhost {} for cluster {} in {}ms",
+                            request.getName(), request.getVhost(), clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "exchanges", "create",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to create exchange {} in vhost {} for cluster {} after {}ms: {}",
+                            request.getName(), request.getVhost(), clusterId, duration.toMillis(), error.getMessage());
+                });
+    }
+
+    /**
+     * Deletes an exchange from the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param vhost     the virtual host name
+     * @param name      the exchange name
+     * @param ifUnused  whether to delete only if unused (optional)
+     * @param user      the current authenticated user
+     * @return Mono<Void> indicating completion
+     */
+    public Mono<Void> deleteExchange(UUID clusterId, String vhost, String name, Boolean ifUnused, User user) {
+        logger.debug("Deleting exchange {} in vhost {} for cluster {} by user {} (ifUnused: {})",
+                name, vhost, clusterId, user.getUsername(), ifUnused);
+
+        Instant startTime = Instant.now();
+        StringBuilder pathBuilder = new StringBuilder();
+        pathBuilder.append(String.format("/api/exchanges/%s/%s",
+                encodePathSegment(vhost),
+                encodePathSegment(name)));
+
+        // Add query parameters if specified
+        if (ifUnused != null && ifUnused) {
+            pathBuilder.append("?if-unused=true");
+        }
+
+        String path = pathBuilder.toString();
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = new HashMap<>();
+        auditParams.put("exchangeName", name);
+        auditParams.put("vhost", vhost);
+        if (ifUnused != null) {
+            auditParams.put("ifUnused", ifUnused);
+        }
+
+        return proxyService.delete(clusterId, path, user)
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "exchanges", "delete", auditParams);
+                    logger.debug("Successfully deleted exchange {} in vhost {} for cluster {} in {}ms",
+                            name, vhost, clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "exchanges", "delete",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to delete exchange {} in vhost {} for cluster {} after {}ms: {}",
+                            name, vhost, clusterId, duration.toMillis(), error.getMessage());
+                });
+    }
+
+    /**
+     * Creates a new queue in the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param request   the queue creation request
+     * @param user      the current authenticated user
+     * @return Mono<Void> indicating completion
+     */
+    public Mono<Void> createQueue(UUID clusterId, CreateQueueRequest request, User user) {
+        logger.debug("Creating queue {} in vhost {} for cluster {} by user {}",
+                request.getName(), request.getVhost(), clusterId, user.getUsername());
+
+        Instant startTime = Instant.now();
+        String path = String.format("/api/queues/%s/%s",
+                encodePathSegment(request.getVhost()),
+                encodePathSegment(request.getName()));
+
+        // Create request body for RabbitMQ Management API
+        Map<String, Object> body = new HashMap<>();
+        body.put("durable", request.getDurable());
+        body.put("auto_delete", request.getAutoDelete());
+        body.put("exclusive", request.getExclusive());
+        body.put("arguments", request.getArguments());
+        if (request.getNode() != null && !request.getNode().trim().isEmpty()) {
+            body.put("node", request.getNode());
+        }
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = new HashMap<>();
+        auditParams.put("queueName", request.getName());
+        auditParams.put("vhost", request.getVhost());
+        auditParams.put("durable", request.getDurable());
+        auditParams.put("autoDelete", request.getAutoDelete());
+        auditParams.put("exclusive", request.getExclusive());
+        if (request.getNode() != null) {
+            auditParams.put("node", request.getNode());
+        }
+
+        return proxyService.put(clusterId, path, body, Void.class, user)
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "queues", "create", auditParams);
+                    logger.debug("Successfully created queue {} in vhost {} for cluster {} in {}ms",
+                            request.getName(), request.getVhost(), clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "queues", "create",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to create queue {} in vhost {} for cluster {} after {}ms: {}",
+                            request.getName(), request.getVhost(), clusterId, duration.toMillis(), error.getMessage());
+                });
+    }
+
+    /**
+     * Deletes a queue from the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param vhost     the virtual host name
+     * @param name      the queue name
+     * @param ifEmpty   whether to delete only if empty (optional)
+     * @param ifUnused  whether to delete only if unused (optional)
+     * @param user      the current authenticated user
+     * @return Mono<Void> indicating completion
+     */
+    public Mono<Void> deleteQueue(UUID clusterId, String vhost, String name, Boolean ifEmpty, Boolean ifUnused,
+            User user) {
+        logger.debug("Deleting queue {} in vhost {} for cluster {} by user {} (ifEmpty: {}, ifUnused: {})",
+                name, vhost, clusterId, user.getUsername(), ifEmpty, ifUnused);
+
+        Instant startTime = Instant.now();
+        StringBuilder pathBuilder = new StringBuilder();
+        pathBuilder.append(String.format("/api/queues/%s/%s",
+                encodePathSegment(vhost),
+                encodePathSegment(name)));
+
+        // Add query parameters if specified
+        boolean hasParams = false;
+        if (ifEmpty != null && ifEmpty) {
+            pathBuilder.append("?if-empty=true");
+            hasParams = true;
+        }
+        if (ifUnused != null && ifUnused) {
+            pathBuilder.append(hasParams ? "&" : "?");
+            pathBuilder.append("if-unused=true");
+        }
+
+        String path = pathBuilder.toString();
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = new HashMap<>();
+        auditParams.put("queueName", name);
+        auditParams.put("vhost", vhost);
+        if (ifEmpty != null) {
+            auditParams.put("ifEmpty", ifEmpty);
+        }
+        if (ifUnused != null) {
+            auditParams.put("ifUnused", ifUnused);
+        }
+
+        return proxyService.delete(clusterId, path, user)
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "queues", "delete", auditParams);
+                    logger.debug("Successfully deleted queue {} in vhost {} for cluster {} in {}ms",
+                            name, vhost, clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "queues", "delete",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to delete queue {} in vhost {} for cluster {} after {}ms: {}",
+                            name, vhost, clusterId, duration.toMillis(), error.getMessage());
+                });
+    }
+
+    /**
+     * Purges all messages from a queue in the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param vhost     the virtual host name
+     * @param name      the queue name
+     * @param user      the current authenticated user
+     * @return Mono<Void> indicating completion
+     */
+    public Mono<Void> purgeQueue(UUID clusterId, String vhost, String name, User user) {
+        logger.debug("Purging queue {} in vhost {} for cluster {} by user {}",
+                name, vhost, clusterId, user.getUsername());
+
+        Instant startTime = Instant.now();
+        String path = String.format("/api/queues/%s/%s/contents",
+                encodePathSegment(vhost),
+                encodePathSegment(name));
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = Map.of(
+                "queueName", name,
+                "vhost", vhost);
+
+        return proxyService.delete(clusterId, path, user)
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "queues", "purge", auditParams);
+                    logger.debug("Successfully purged queue {} in vhost {} for cluster {} in {}ms",
+                            name, vhost, clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "queues", "purge",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to purge queue {} in vhost {} for cluster {} after {}ms: {}",
+                            name, vhost, clusterId, duration.toMillis(), error.getMessage());
+                });
+    }
+
+    /**
+     * Creates a binding between a source exchange and destination (queue or
+     * exchange) in the specified RabbitMQ cluster.
+     * 
+     * @param clusterId       the cluster connection ID
+     * @param vhost           the virtual host name
+     * @param source          the source exchange name
+     * @param destination     the destination name (queue or exchange)
+     * @param destinationType the destination type ("q" for queue, "e" for exchange)
+     * @param request         the binding creation request
+     * @param user            the current authenticated user
+     * @return Mono<Void> indicating completion
+     */
+    public Mono<Void> createBinding(UUID clusterId, String vhost, String source, String destination,
+            String destinationType, CreateBindingRequest request, User user) {
+        logger.debug(
+                "Creating binding from exchange {} to {} {} with routing key {} in vhost {} for cluster {} by user {}",
+                source, destinationType, destination, request.getRoutingKey(), vhost, clusterId, user.getUsername());
+
+        Instant startTime = Instant.now();
+        String path = String.format("/api/bindings/%s/e/%s/%s/%s",
+                encodePathSegment(vhost),
+                encodePathSegment(source),
+                destinationType, // "q" for queue, "e" for exchange
+                encodePathSegment(destination));
+
+        // Create request body for RabbitMQ Management API
+        Map<String, Object> body = new HashMap<>();
+        body.put("routing_key", request.getRoutingKey());
+        body.put("arguments", request.getArguments());
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = Map.of(
+                "source", source,
+                "destination", destination,
+                "destinationType", destinationType,
+                "routingKey", request.getRoutingKey(),
+                "vhost", vhost);
+
+        return proxyService.post(clusterId, path, body, Void.class, user)
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "bindings", "create", auditParams);
+                    logger.debug(
+                            "Successfully created binding from exchange {} to {} {} in vhost {} for cluster {} in {}ms",
+                            source, destinationType, destination, vhost, clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "bindings", "create",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error(
+                            "Failed to create binding from exchange {} to {} {} in vhost {} for cluster {} after {}ms: {}",
+                            source, destinationType, destination, vhost, clusterId, duration.toMillis(),
+                            error.getMessage());
+                });
+    }
+
+    /**
+     * Publishes a message to an exchange in the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param vhost     the virtual host name
+     * @param exchange  the exchange name (use empty string for default exchange)
+     * @param request   the message publishing request
+     * @param user      the current authenticated user
+     * @return Mono<PublishResponse> indicating whether the message was routed
+     */
+    public Mono<PublishResponse> publishMessage(UUID clusterId, String vhost, String exchange,
+            PublishMessageRequest request, User user) {
+        logger.debug("Publishing message to exchange {} in vhost {} for cluster {} by user {}",
+                exchange, vhost, clusterId, user.getUsername());
+
+        Instant startTime = Instant.now();
+        String path = String.format("/api/exchanges/%s/%s/publish",
+                encodePathSegment(vhost),
+                encodePathSegment(exchange));
+
+        // Create request body for RabbitMQ Management API
+        Map<String, Object> body = new HashMap<>();
+        body.put("routing_key", request.getRoutingKey());
+        body.put("payload", request.getPayload());
+        body.put("payload_encoding", request.getPayloadEncoding());
+        body.put("properties", request.getProperties());
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = Map.of(
+                "exchange", exchange,
+                "vhost", vhost,
+                "routingKey", request.getRoutingKey(),
+                "payloadEncoding", request.getPayloadEncoding(),
+                "payloadSize", request.getPayload() != null ? request.getPayload().length() : 0);
+
+        return proxyService.post(clusterId, path, body, PublishResponse.class, user)
+                .map(response -> {
+                    try {
+                        // Handle case where RabbitMQ returns a Map instead of PublishResponse
+                        if (response instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> responseMap = (Map<String, Object>) response;
+                            Boolean routed = (Boolean) responseMap.get("routed");
+                            return new PublishResponse(routed);
+                        }
+                        return (PublishResponse) response;
+                    } catch (Exception e) {
+                        logger.error("Failed to parse publish response for cluster {}: {}", clusterId, e.getMessage());
+                        throw new RabbitMQResourceException("Failed to parse publish response", e);
+                    }
+                })
+                .onErrorMap(throwable -> {
+                    if (throwable instanceof RabbitMQResourceException) {
+                        return throwable;
+                    }
+                    return new RabbitMQResourceException("Failed to publish message", throwable);
+                })
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "messages", "publish", auditParams);
+                    logger.debug(
+                            "Successfully published message to exchange {} in vhost {} for cluster {} in {}ms (routed: {})",
+                            exchange, vhost, clusterId, duration.toMillis(), result.getRouted());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "messages", "publish",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to publish message to exchange {} in vhost {} for cluster {} after {}ms: {}",
+                            exchange, vhost, clusterId, duration.toMillis(), error.getMessage());
+                });
+    }
+
+    /**
+     * Retrieves messages from a queue in the specified RabbitMQ cluster.
+     * 
+     * @param clusterId the cluster connection ID
+     * @param vhost     the virtual host name
+     * @param queue     the queue name
+     * @param request   the message retrieval request
+     * @param user      the current authenticated user
+     * @return Mono containing list of messages
+     */
+    public Mono<List<MessageDto>> getMessages(UUID clusterId, String vhost, String queue,
+            GetMessagesRequest request, User user) {
+        logger.debug(
+                "Getting {} messages from queue {} in vhost {} for cluster {} by user {} (ackmode: {}, encoding: {})",
+                request.getCount(), queue, vhost, clusterId, user.getUsername(),
+                request.getAckmode(), request.getEncoding());
+
+        Instant startTime = Instant.now();
+        String path = String.format("/api/queues/%s/%s/get",
+                encodePathSegment(vhost),
+                encodePathSegment(queue));
+
+        // Create request body for RabbitMQ Management API
+        Map<String, Object> body = new HashMap<>();
+        body.put("count", request.getCount());
+        body.put("ackmode", request.getAckmode());
+        body.put("encoding", request.getEncoding());
+        if (request.getTruncate() != null) {
+            body.put("truncate", request.getTruncate());
+        }
+
+        // Record metrics and audit
+        metricsService.recordClusterAccess(clusterId);
+        metricsService.recordUserAccess(user.getUsername());
+
+        Map<String, Object> auditParams = Map.of(
+                "queueName", queue,
+                "vhost", vhost,
+                "count", request.getCount(),
+                "ackmode", request.getAckmode(),
+                "encoding", request.getEncoding());
+
+        return proxyService.post(clusterId, path, body, List.class, user)
+                .map(response -> {
+                    try {
+                        List<MessageDto> result = objectMapper.convertValue(response,
+                                new TypeReference<List<MessageDto>>() {
+                                });
+                        logger.debug("Parsed {} messages from response", result.size());
+                        return result;
+                    } catch (Exception e) {
+                        logger.error("Failed to parse messages response for cluster {}: {}",
+                                clusterId, e.getMessage());
+                        throw new RabbitMQResourceException("Failed to parse messages response", e);
+                    }
+                })
+                .onErrorMap(throwable -> {
+                    if (throwable instanceof RabbitMQResourceException) {
+                        return throwable;
+                    }
+                    return new RabbitMQResourceException("Failed to get messages from queue", throwable);
+                })
+                .doOnSuccess(result -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccess(user.getUsername(), clusterId, "messages", "get", auditParams);
+                    logger.debug("Successfully retrieved {} messages from queue {} in vhost {} for cluster {} in {}ms",
+                            result.size(), queue, vhost, clusterId, duration.toMillis());
+                })
+                .doOnError(error -> {
+                    Duration duration = Duration.between(startTime, Instant.now());
+                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "messages", "get",
+                            error.getMessage(), error.getClass().getSimpleName());
+                    logger.error("Failed to get messages from queue {} in vhost {} for cluster {} after {}ms: {}",
+                            queue, vhost, clusterId, duration.toMillis(), error.getMessage());
+                });
     }
 
     /**

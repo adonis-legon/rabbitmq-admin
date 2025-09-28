@@ -1,8 +1,10 @@
 package com.rabbitmq.admin.controller;
 
+import com.rabbitmq.admin.dto.VirtualHostDto;
 import com.rabbitmq.admin.security.UserPrincipal;
 import com.rabbitmq.admin.service.RabbitMQProxyService;
 import com.rabbitmq.admin.service.RabbitMQProxyService.RabbitMQProxyException;
+import com.rabbitmq.admin.service.RabbitMQResourceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -12,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,9 +31,11 @@ public class RabbitMQController {
         private static final Logger logger = LoggerFactory.getLogger(RabbitMQController.class);
 
         private final RabbitMQProxyService proxyService;
+        private final RabbitMQResourceService resourceService;
 
-        public RabbitMQController(RabbitMQProxyService proxyService) {
+        public RabbitMQController(RabbitMQProxyService proxyService, RabbitMQResourceService resourceService) {
                 this.proxyService = proxyService;
+                this.resourceService = resourceService;
         }
 
         /**
@@ -257,15 +262,23 @@ public class RabbitMQController {
          * @return Mono with virtual hosts data
          */
         @GetMapping("/{clusterId}/vhosts")
-        public Mono<ResponseEntity<Object>> getVirtualHosts(
+        public Mono<ResponseEntity<List<VirtualHostDto>>> getVirtualHosts(
                         @PathVariable UUID clusterId,
                         @AuthenticationPrincipal UserPrincipal principal) {
 
                 logger.debug("Getting virtual hosts for cluster {} by user {}", clusterId, principal.getUsername());
 
-                return proxyService.get(clusterId, "/api/vhosts", Object.class, principal.getUser())
-                                .map(ResponseEntity::ok)
-                                .onErrorResume(this::handleError);
+                return resourceService.getVirtualHosts(clusterId, principal.getUser())
+                                .map(result -> {
+                                        logger.debug("Successfully returned {} virtual hosts for cluster {}",
+                                                        result.size(), clusterId);
+                                        return ResponseEntity.ok(result);
+                                })
+                                .onErrorResume(error -> {
+                                        logger.error("Failed to get virtual hosts for cluster {}: {}", clusterId,
+                                                        error.getMessage());
+                                        return Mono.just(ResponseEntity.status(500).<List<VirtualHostDto>>build());
+                                });
         }
 
         /**
