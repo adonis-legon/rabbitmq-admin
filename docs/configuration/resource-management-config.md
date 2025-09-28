@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide covers configuration options for the RabbitMQ Resource Management features, including auto-refresh settings, pagination preferences, caching behavior, and performance tuning.
+This guide covers configuration options for the RabbitMQ Resource Management features, including auto-refresh settings, pagination preferences, caching behavior, and performance tuning. The resource management system supports both read operations (viewing resources) and write operations (creating, modifying, and deleting resources). Write operations are currently implemented in the backend for exchanges, queues, binding creation, and message publishing, with frontend UI components partially implemented (exchange creation dialog available, additional dialogs planned for future implementation). Note that binding deletion is not currently supported via API.
 
 ## Auto-Refresh Configuration
 

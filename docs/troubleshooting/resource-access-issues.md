@@ -450,6 +450,9 @@ Before diving into specific issues, run through this quick checklist:
    # Run integration tests with real RabbitMQ (automated testing)
    mvn test -pl backend -Dtest=WebClientBindingsIntegrationTest -Drabbitmq.available=true
 
+   # Run write operations integration tests to verify endpoint functionality
+   mvn test -pl backend -Dtest=RabbitMQWriteOperationsIntegrationTest
+
    # Or run specific test methods for targeted debugging
    mvn test -pl backend -Dtest=WebClientBindingsTest#testWebClientDirectCall
    mvn test -pl backend -Dtest=WebClientEncodingTest#testUrlEncodingIssues

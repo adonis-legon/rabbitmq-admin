@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RabbitMQ Resource Management feature provides a comprehensive interface for browsing and monitoring RabbitMQ cluster resources. This read-only interface allows you to inspect connections, channels, exchanges, and queues from your assigned RabbitMQ clusters.
+The RabbitMQ Resource Management feature provides a comprehensive interface for browsing, monitoring, and managing RabbitMQ cluster resources. This interface allows you to inspect connections and channels, as well as create, modify, and delete exchanges, queues, create bindings, and publish messages to your assigned RabbitMQ clusters. Write operations are implemented in the backend for exchanges, queues, binding creation, and message publishing, with message consumption fully implemented. Frontend UI components are partially implemented: exchange creation dialog and queue creation dialog are available, with additional dialogs for binding creation, message publishing, and delete confirmations planned for future releases. Note that binding deletion is not currently supported via API.
 
 ## Getting Started
 
@@ -103,7 +103,7 @@ The application supports direct URL navigation to resource pages, enabling:
 
 ### RabbitMQ Management UI Access
 
-While the integrated resource browser provides comprehensive read-only access to RabbitMQ resources, you can also access the native RabbitMQ Management UI directly:
+While the integrated resource management interface provides comprehensive access to RabbitMQ resources including write operations, you can also access the native RabbitMQ Management UI directly for additional features:
 
 #### Accessing the Management UI
 
@@ -113,19 +113,24 @@ While the integrated resource browser provides comprehensive read-only access to
 
 #### When to Use Each Interface
 
-**Integrated Resource Browser (This Application)**:
+**Integrated Resource Management Interface (This Application)**:
 
-- **Read-only monitoring**: View connections, channels, exchanges, and queues
+- **Comprehensive resource management**: View, create, modify, and delete exchanges and queues; create bindings (deletion via native UI)
+- **Queue creation**: Create new queues with comprehensive configuration options including durability, auto-delete, exclusive settings, and custom arguments
+- **Exchange creation**: Create new exchanges with type selection, configuration options, and custom arguments
+- **Message publishing**: Publish messages to exchanges and queues with validation
 - **Filtered views**: Use search and filtering capabilities
 - **Consistent UI**: Unified interface across multiple clusters
 - **Mobile-friendly**: Responsive design for mobile and tablet access
+- **Built-in validation**: Comprehensive validation and error handling for all operations
 
 **Native RabbitMQ Management UI**:
 
-- **Full administrative access**: Create, modify, and delete resources
-- **Advanced features**: Queue purging, message publishing, policy management
-- **Real-time monitoring**: Live updates and detailed statistics
+- **Advanced administrative features**: Policy management, user management, permissions
+- **Message consumption**: Browse and consume messages from queues (not yet available in integrated interface)
+- **Real-time monitoring**: Live updates and detailed statistics with charts
 - **Plugin management**: Access to RabbitMQ plugins and advanced configuration
+- **Cluster administration**: Node management and cluster-wide settings
 
 ### Resource List Interface
 
@@ -533,7 +538,7 @@ The application protects sensitive information:
 
 - **Use Bookmarks**: Bookmark frequently accessed resource pages using direct URLs (e.g., `/resources/queues`)
 - **Direct Navigation**: Use direct URLs to quickly access specific resource types
-- **Native Management UI**: Access the RabbitMQ Management UI directly via cluster URLs for full administrative features not available in the integrated interface
+- **Native Management UI**: Access the RabbitMQ Management UI directly via cluster URLs for advanced administrative features like policy management and message consumption
 - **Filter Strategically**: Use filters to focus on relevant resources
 - **Batch Operations**: Review multiple resources before taking action
 - **Context Switching**: Keep cluster context in mind when switching resources
