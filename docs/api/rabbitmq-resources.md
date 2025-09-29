@@ -29,6 +29,12 @@ Where `{clusterId}` is the UUID of the cluster connection.
 
 The API uses a specific encoding scheme for path parameters to handle special characters safely:
 
+### Technical Note: Default Exchange Handling
+
+**Fixed in Latest Version**: The system now correctly handles publishing to the default exchange (empty name) by avoiding URL encoding of empty exchange names. This ensures proper API path construction for default exchange operations.
+
+**Implementation Details**: When the exchange parameter is empty (indicating the default exchange), the system constructs the API path as `/api/exchanges/{vhost}//publish` instead of attempting to encode an empty string, which would result in malformed URLs.
+
 ### Virtual Host Encoding
 
 Virtual host names are **Base64 encoded** to handle special characters, particularly the default virtual host `/`:
@@ -685,7 +691,7 @@ The API supports write operations for managing RabbitMQ resources. These operati
 - ✅ **Queue Management**: Create, delete, and purge queues with conditional options (if-empty, if-unused)
 - ✅ **Binding Management**: Create bindings between exchanges and queues/exchanges with full argument support
 - ✅ **Message Publishing**: Publish messages to exchanges and queues with routing confirmation and comprehensive properties
-- ⚠️ **Message Consumption**: Service layer implemented, controller endpoint pending (task 7 in implementation plan)
+- ✅ **Message Consumption**: Fully implemented with 30-second timeout protection and comprehensive error handling
 
 **Backend Implementation Complete**: All write operations are fully implemented in the backend with comprehensive validation, error handling, audit logging, and metrics collection. The implementation includes proper URL encoding/decoding for virtual hosts and resource names, support for complex arguments and properties, and integration with the existing security model.
 
@@ -919,6 +925,8 @@ Publishes a message to an exchange.
 
 **Endpoint:** `POST /api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{exchange}/publish`
 
+**Special Case - Default Exchange:** When publishing to the default exchange, use an empty string for the `{exchange}` parameter. The system automatically handles this case by constructing the correct API path without URL encoding the empty exchange name.
+
 **Request Body:**
 
 ```json
@@ -966,28 +974,84 @@ Publishes a message directly to a queue using the default exchange.
 
 **Response:** Same as exchange publishing
 
-**Note:** This endpoint publishes directly to a queue by using the default exchange with the queue name as the routing key.
+**Note:** This endpoint publishes directly to a queue by using the default exchange (empty name) with the queue name as the routing key. The system automatically handles the special case of the default exchange by constructing the correct API path without encoding an empty exchange name.
 
-#### Get Messages (Service Implementation Complete)
+#### Get Messages
 
-**Note:** Message consumption functionality has been implemented at the service layer but the controller endpoint is not yet available. The service method supports full message retrieval functionality and will be exposed via REST API in a future release.
+Retrieves messages from a specific queue with configurable acknowledgment modes and encoding options.
 
-**Planned Endpoint:** `POST /api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}/get`
+**Endpoint:** `POST /api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}/get`
+
+**Parameters:**
+
+- `vhost`: The virtual host name (Base64 encoded)
+- `name`: The name of the queue (URL encoded)
 
 **Implementation Status:**
 
 - ✅ **Service Layer**: `RabbitMQResourceService.getMessages()` method fully implemented
 - ✅ **DTO Support**: `GetMessagesRequest` and `MessageDto` with comprehensive validation
+- ✅ **Controller Endpoint**: Fully implemented with 30-second timeout protection
 - ✅ **Features**: Support for acknowledgment modes, encoding options, and message truncation
-- ⚠️ **Controller Endpoint**: Not yet implemented - planned for next development phase
-- ⚠️ **Frontend Integration**: Pending controller endpoint completion
+- ✅ **Frontend Integration**: Ready for integration with comprehensive dialog components
+
+**Request Body:**
+
+```json
+{
+  "count": 10,
+  "ackmode": "ack_requeue_false",
+  "encoding": "auto",
+  "truncate": 50000
+}
+```
+
+**Request Body Schema:**
+
+| Field      | Type    | Required | Description                                                                                                 |
+| ---------- | ------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `count`    | integer | Yes      | Number of messages to retrieve (1-1000)                                                                     |
+| `ackmode`  | string  | Yes      | Acknowledgment mode: `ack_requeue_true`, `ack_requeue_false`, `reject_requeue_true`, `reject_requeue_false` |
+| `encoding` | string  | Yes      | Message encoding: `auto` or `base64`                                                                        |
+| `truncate` | integer | No       | Maximum message payload size in bytes (default: 50000)                                                      |
+
+**Response Example:**
+
+```json
+[
+  {
+    "payloadBytes": 1024,
+    "redelivered": false,
+    "exchange": "test-exchange",
+    "routingKey": "test.key",
+    "messageCount": 5,
+    "properties": {
+      "contentType": "application/json",
+      "deliveryMode": 2,
+      "priority": 0,
+      "timestamp": 1640995200000,
+      "messageId": "msg-123",
+      "userId": "guest",
+      "appId": "my-app"
+    },
+    "payload": "{\"message\": \"Hello World\"}",
+    "payloadEncoding": "string"
+  }
+]
+```
+
+**Timeout Behavior:**
+
+The get messages operation includes a **30-second timeout** to prevent indefinite blocking when retrieving messages from queues. If the operation takes longer than 30 seconds, it will be cancelled and return a 500 Internal Server Error. This timeout ensures system stability and prevents resource exhaustion during high-latency operations.
 
 **Implemented Features:**
 
-- Retrieve messages from queues with different acknowledgment modes (`ack_requeue_true`, `ack_requeue_false`, `reject_requeue_true`, `reject_requeue_false`)
+- Retrieve messages from queues with different acknowledgment modes
 - Support for message encoding options (`auto`, `base64`)
 - Configurable message count retrieval (1-1000 messages)
 - Optional message truncation for large payloads
+- **30-second operation timeout** for system stability
+- Enhanced error logging with full exception details
 - Comprehensive audit logging and metrics collection
 - Proper error handling and response parsing
 

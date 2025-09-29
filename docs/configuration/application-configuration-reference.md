@@ -274,6 +274,9 @@ rabbitmq:
 
         # Connection request timeout in milliseconds
         connection-request-timeout: 5000
+
+        # Message operation timeout in milliseconds (for blocking operations like getMessages)
+        message-operation-timeout: 30000
 ```
 
 **Environment Variables:**
@@ -282,6 +285,10 @@ rabbitmq:
 - `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_PER_ROUTE`: Maximum per route (default: 10)
 - `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_CONNECTION_TIMEOUT`: Connection timeout (default: 10000ms)
 - `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_SOCKET_TIMEOUT`: Socket timeout (default: 30000ms)
+
+**Message Operation Timeouts:**
+
+The application implements a **30-second timeout** for blocking message operations (such as `getMessages`) to prevent indefinite blocking and ensure system stability. This timeout is currently hardcoded but can be made configurable in future versions if needed.
 
 ### Thread Pool Configuration
 

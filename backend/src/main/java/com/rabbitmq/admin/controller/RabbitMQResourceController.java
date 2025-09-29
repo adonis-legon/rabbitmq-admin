@@ -591,7 +591,7 @@ public class RabbitMQResourceController {
 
                 try {
                         PublishResponse result = resourceService.publishMessage(clusterId, vhost, exchange, request,
-                                        principal.getUser()).block();
+                                        principal.getUser());
 
                         logger.debug("Successfully published message to exchange {} in vhost {} for cluster {} (routed: {})",
                                         exchange, vhost, clusterId, result != null ? result.getRouted() : null);
@@ -644,7 +644,7 @@ public class RabbitMQResourceController {
                                         request.getPayloadEncoding());
 
                         PublishResponse result = resourceService.publishMessage(clusterId, vhost, "", queueRequest,
-                                        principal.getUser()).block();
+                                        principal.getUser());
                         logger.debug("Successfully published message to queue {} in vhost {} for cluster {} (routed: {})",
                                         queue, vhost, clusterId, result != null ? result.getRouted() : null);
                         return ResponseEntity.ok(result);
@@ -689,13 +689,13 @@ public class RabbitMQResourceController {
 
                 try {
                         List<MessageDto> result = resourceService
-                                        .getMessages(clusterId, vhost, queue, request, principal.getUser()).block();
+                                        .getMessages(clusterId, vhost, queue, request, principal.getUser());
                         logger.debug("Successfully returned {} messages from queue {} in vhost {} for cluster {}",
                                         result != null ? result.size() : 0, queue, vhost, clusterId);
                         return ResponseEntity.ok(result);
                 } catch (Exception error) {
                         logger.error("Failed to get messages from queue {} in vhost {} for cluster {}: {}",
-                                        queue, vhost, clusterId, error.getMessage());
+                                        queue, vhost, clusterId, error.getMessage(), error);
                         return ResponseEntity.status(500).build();
                 }
         }

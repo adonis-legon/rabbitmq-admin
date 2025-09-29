@@ -534,8 +534,8 @@ class RabbitMQResourceControllerTest {
 
         @Test
         void publishMessage_ShouldAcceptRequest() throws Exception {
-                // Given - Simple mock that returns empty Mono to avoid complex reactive setup
-                doReturn(Mono.just(new com.rabbitmq.admin.dto.PublishResponse(true)))
+                // Given - Simple mock that returns response directly
+                doReturn(new com.rabbitmq.admin.dto.PublishResponse(true))
                                 .when(resourceService)
                                 .publishMessage(any(), any(), any(), any(), any());
 
@@ -559,7 +559,7 @@ class RabbitMQResourceControllerTest {
         @Test
         void publishMessage_ShouldAcceptComplexRequest() throws Exception {
                 // Given - Simple mock setup
-                doReturn(Mono.just(new com.rabbitmq.admin.dto.PublishResponse(true)))
+                doReturn(new com.rabbitmq.admin.dto.PublishResponse(true))
                                 .when(resourceService)
                                 .publishMessage(any(), any(), any(), any(), any());
 
@@ -587,8 +587,8 @@ class RabbitMQResourceControllerTest {
 
         @Test
         void getMessages_ShouldAcceptRequest() throws Exception {
-                // Given - Simple mock that returns empty Mono to avoid complex reactive setup
-                doReturn(Mono.just(List.of()))
+                // Given - Simple mock that returns empty list directly
+                doReturn(List.of())
                                 .when(resourceService)
                                 .getMessages(any(), any(), any(), any(), any());
 
@@ -611,7 +611,7 @@ class RabbitMQResourceControllerTest {
         @Test
         void getMessages_ShouldAcceptComplexRequest() throws Exception {
                 // Given - Simple mock setup
-                doReturn(Mono.just(List.of()))
+                doReturn(List.of())
                                 .when(resourceService)
                                 .getMessages(any(), any(), any(), any(), any());
 

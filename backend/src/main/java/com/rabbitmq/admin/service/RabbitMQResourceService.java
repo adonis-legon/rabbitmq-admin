@@ -836,15 +836,17 @@ public class RabbitMQResourceService {
      * @param user      the current authenticated user
      * @return Mono<PublishResponse> indicating whether the message was routed
      */
-    public Mono<PublishResponse> publishMessage(UUID clusterId, String vhost, String exchange,
+    public PublishResponse publishMessage(UUID clusterId, String vhost, String exchange,
             PublishMessageRequest request, User user) {
         logger.debug("Publishing message to exchange {} in vhost {} for cluster {} by user {}",
                 exchange, vhost, clusterId, user.getUsername());
 
         Instant startTime = Instant.now();
+        // Handle default exchange (empty name) - use amq.default in Management API
+        String exchangeName = exchange.isEmpty() ? "amq.default" : exchange;
         String path = String.format("/api/exchanges/%s/%s/publish",
                 encodePathSegment(vhost),
-                encodePathSegment(exchange));
+                encodePathSegment(exchangeName));
 
         // Create request body for RabbitMQ Management API
         Map<String, Object> body = new HashMap<>();
@@ -864,42 +866,35 @@ public class RabbitMQResourceService {
                 "payloadEncoding", request.getPayloadEncoding(),
                 "payloadSize", request.getPayload() != null ? request.getPayload().length() : 0);
 
-        return proxyService.post(clusterId, path, body, PublishResponse.class, user)
-                .map(response -> {
-                    try {
-                        // Handle case where RabbitMQ returns a Map instead of PublishResponse
-                        if (response instanceof Map) {
-                            @SuppressWarnings("unchecked")
-                            Map<String, Object> responseMap = (Map<String, Object>) response;
-                            Boolean routed = (Boolean) responseMap.get("routed");
-                            return new PublishResponse(routed);
-                        }
-                        return (PublishResponse) response;
-                    } catch (Exception e) {
-                        logger.error("Failed to parse publish response for cluster {}: {}", clusterId, e.getMessage());
-                        throw new RabbitMQResourceException("Failed to parse publish response", e);
-                    }
-                })
-                .onErrorMap(throwable -> {
-                    if (throwable instanceof RabbitMQResourceException) {
-                        return throwable;
-                    }
-                    return new RabbitMQResourceException("Failed to publish message", throwable);
-                })
-                .doOnSuccess(result -> {
-                    Duration duration = Duration.between(startTime, Instant.now());
-                    auditService.logResourceAccess(user.getUsername(), clusterId, "messages", "publish", auditParams);
-                    logger.debug(
-                            "Successfully published message to exchange {} in vhost {} for cluster {} in {}ms (routed: {})",
-                            exchange, vhost, clusterId, duration.toMillis(), result.getRouted());
-                })
-                .doOnError(error -> {
-                    Duration duration = Duration.between(startTime, Instant.now());
-                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "messages", "publish",
-                            error.getMessage(), error.getClass().getSimpleName());
-                    logger.error("Failed to publish message to exchange {} in vhost {} for cluster {} after {}ms: {}",
-                            exchange, vhost, clusterId, duration.toMillis(), error.getMessage());
-                });
+        try {
+            Object response = proxyService.post(clusterId, path, body, PublishResponse.class, user).block();
+
+            PublishResponse result;
+            // Handle case where RabbitMQ returns a Map instead of PublishResponse
+            if (response instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> responseMap = (Map<String, Object>) response;
+                Boolean routed = (Boolean) responseMap.get("routed");
+                result = new PublishResponse(routed);
+            } else {
+                result = (PublishResponse) response;
+            }
+
+            Duration duration = Duration.between(startTime, Instant.now());
+            auditService.logResourceAccess(user.getUsername(), clusterId, "messages", "publish", auditParams);
+            logger.debug(
+                    "Successfully published message to exchange {} in vhost {} for cluster {} in {}ms (routed: {})",
+                    exchange, vhost, clusterId, duration.toMillis(), result.getRouted());
+
+            return result;
+        } catch (Exception error) {
+            Duration duration = Duration.between(startTime, Instant.now());
+            auditService.logResourceAccessFailure(user.getUsername(), clusterId, "messages", "publish",
+                    error.getMessage(), error.getClass().getSimpleName());
+            logger.error("Failed to publish message to exchange {} in vhost {} for cluster {} after {}ms: {}",
+                    exchange, vhost, clusterId, duration.toMillis(), error.getMessage());
+            throw new RabbitMQResourceException("Failed to publish message", error);
+        }
     }
 
     /**
@@ -912,7 +907,7 @@ public class RabbitMQResourceService {
      * @param user      the current authenticated user
      * @return Mono containing list of messages
      */
-    public Mono<List<MessageDto>> getMessages(UUID clusterId, String vhost, String queue,
+    public List<MessageDto> getMessages(UUID clusterId, String vhost, String queue,
             GetMessagesRequest request, User user) {
         logger.debug(
                 "Getting {} messages from queue {} in vhost {} for cluster {} by user {} (ackmode: {}, encoding: {})",
@@ -944,39 +939,26 @@ public class RabbitMQResourceService {
                 "ackmode", request.getAckmode(),
                 "encoding", request.getEncoding());
 
-        return proxyService.post(clusterId, path, body, List.class, user)
-                .map(response -> {
-                    try {
-                        List<MessageDto> result = objectMapper.convertValue(response,
-                                new TypeReference<List<MessageDto>>() {
-                                });
-                        logger.debug("Parsed {} messages from response", result.size());
-                        return result;
-                    } catch (Exception e) {
-                        logger.error("Failed to parse messages response for cluster {}: {}",
-                                clusterId, e.getMessage());
-                        throw new RabbitMQResourceException("Failed to parse messages response", e);
-                    }
-                })
-                .onErrorMap(throwable -> {
-                    if (throwable instanceof RabbitMQResourceException) {
-                        return throwable;
-                    }
-                    return new RabbitMQResourceException("Failed to get messages from queue", throwable);
-                })
-                .doOnSuccess(result -> {
-                    Duration duration = Duration.between(startTime, Instant.now());
-                    auditService.logResourceAccess(user.getUsername(), clusterId, "messages", "get", auditParams);
-                    logger.debug("Successfully retrieved {} messages from queue {} in vhost {} for cluster {} in {}ms",
-                            result.size(), queue, vhost, clusterId, duration.toMillis());
-                })
-                .doOnError(error -> {
-                    Duration duration = Duration.between(startTime, Instant.now());
-                    auditService.logResourceAccessFailure(user.getUsername(), clusterId, "messages", "get",
-                            error.getMessage(), error.getClass().getSimpleName());
-                    logger.error("Failed to get messages from queue {} in vhost {} for cluster {} after {}ms: {}",
-                            queue, vhost, clusterId, duration.toMillis(), error.getMessage());
-                });
+        try {
+            Object response = proxyService.post(clusterId, path, body, List.class, user).block();
+            List<MessageDto> result = objectMapper.convertValue(response,
+                    new TypeReference<List<MessageDto>>() {
+                    });
+
+            Duration duration = Duration.between(startTime, Instant.now());
+            auditService.logResourceAccess(user.getUsername(), clusterId, "messages", "get", auditParams);
+            logger.debug("Successfully retrieved {} messages from queue {} in vhost {} for cluster {} in {}ms",
+                    result.size(), queue, vhost, clusterId, duration.toMillis());
+
+            return result;
+        } catch (Exception error) {
+            Duration duration = Duration.between(startTime, Instant.now());
+            auditService.logResourceAccessFailure(user.getUsername(), clusterId, "messages", "get",
+                    error.getMessage(), error.getClass().getSimpleName());
+            logger.error("Failed to get messages from queue {} in vhost {} for cluster {} after {}ms: {}",
+                    queue, vhost, clusterId, duration.toMillis(), error.getMessage());
+            throw new RabbitMQResourceException("Failed to get messages from queue", error);
+        }
     }
 
     /**

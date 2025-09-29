@@ -274,7 +274,7 @@ class WriteOperationsRequirementsValidationTest {
                         when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
                                         eq("test-exchange"),
                                         any(PublishMessageRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(new PublishResponse(true)));
+                                        .thenReturn(new PublishResponse(true));
 
                         PublishMessageRequest request = new PublishMessageRequest();
                         request.setRoutingKey("test.key");
@@ -298,7 +298,7 @@ class WriteOperationsRequirementsValidationTest {
                         when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
                                         eq("test-exchange"),
                                         any(PublishMessageRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(new PublishResponse(false)));
+                                        .thenReturn(new PublishResponse(false));
 
                         PublishMessageRequest request = new PublishMessageRequest();
                         request.setRoutingKey("unrouted.key");
@@ -363,7 +363,7 @@ class WriteOperationsRequirementsValidationTest {
                 void shouldPublishToQueueViaDefaultExchange() throws Exception {
                         when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), eq(""),
                                         any(PublishMessageRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(new PublishResponse(true)));
+                                        .thenReturn(new PublishResponse(true));
 
                         PublishMessageRequest request = new PublishMessageRequest();
                         request.setPayload("Direct queue message");
@@ -391,7 +391,7 @@ class WriteOperationsRequirementsValidationTest {
                         List<MessageDto> messages = Arrays.asList(createTestMessage());
                         when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"), eq("test-queue"),
                                         any(GetMessagesRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(messages));
+                                        .thenReturn(messages);
 
                         GetMessagesRequest request = new GetMessagesRequest();
                         request.setCount(1);
@@ -415,7 +415,7 @@ class WriteOperationsRequirementsValidationTest {
                 void shouldSupportDifferentAckModes() throws Exception {
                         when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"), eq("test-queue"),
                                         any(GetMessagesRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(Arrays.asList(createTestMessage())));
+                                        .thenReturn(Arrays.asList(createTestMessage()));
 
                         String[] ackModes = { "ack_requeue_true", "ack_requeue_false", "reject_requeue_true",
                                         "reject_requeue_false" };

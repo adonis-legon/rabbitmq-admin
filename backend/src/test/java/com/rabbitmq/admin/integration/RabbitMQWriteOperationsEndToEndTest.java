@@ -98,7 +98,7 @@ class RabbitMQWriteOperationsEndToEndTest extends IntegrationTestBase {
                         when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
                                         eq("test-exchange"),
                                         any(PublishMessageRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(new PublishResponse(true)));
+                                        .thenReturn(new PublishResponse(true));
 
                         when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("/"),
                                         eq("test-exchange"),
@@ -164,12 +164,12 @@ class RabbitMQWriteOperationsEndToEndTest extends IntegrationTestBase {
 
                         when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), eq(""),
                                         any(PublishMessageRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(new PublishResponse(true)));
+                                        .thenReturn(new PublishResponse(true));
 
                         List<MessageDto> messages = Arrays.asList(createTestMessage("Test message content"));
                         when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"), eq("test-queue"),
                                         any(GetMessagesRequest.class), any(User.class)))
-                                        .thenReturn(Mono.just(messages));
+                                        .thenReturn(messages);
 
                         when(rabbitMQResourceService.purgeQueue(eq(testCluster.getId()), eq("/"), eq("test-queue"),
                                         any(User.class)))

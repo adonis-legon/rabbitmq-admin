@@ -116,7 +116,7 @@ The system will show whether the message was successfully routed to any queues.
 
 5. Click **"Publish"** to send the message directly to the queue
 
-This uses the default exchange with the queue name as the routing key.
+This uses the default exchange (which has an empty name) with the queue name as the routing key. The system automatically handles the special URL encoding requirements for the default exchange.
 
 ### Consuming Messages from Queues
 
@@ -136,6 +136,8 @@ This uses the default exchange with the queue name as the routing key.
 5. Click **"Get Messages"** to retrieve messages
 
 Retrieved messages will be displayed with their properties, headers, and payload content.
+
+**Timeout Behavior**: Message retrieval operations have a 30-second timeout to ensure system stability. If the operation takes longer than 30 seconds (which may happen with very large messages or slow cluster connections), the operation will be cancelled and you'll receive an error message. In such cases, try reducing the message count or check your cluster connectivity.
 
 ### Purging Queues
 
