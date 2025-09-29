@@ -490,6 +490,9 @@ mvn test -pl backend -Dtest=RabbitMQWriteOperationsIntegrationTest
 # DTO validation and serialization tests
 mvn test -pl backend -Dtest=DtoValidationComprehensiveTest
 
+# End-to-End workflow testing
+mvn test -pl backend -Dtest=RabbitMQWriteOperationsEndToEndTest
+
 # End-to-End testing (local development only - not part of CI/CD)
 # This comprehensive test validates resource management features but is too slow for CI/CD
 ./scripts/e2e-test.sh
@@ -506,6 +509,7 @@ mvn test -pl backend -Dtest=DtoValidationComprehensiveTest
 - **Resource Management**: Comprehensive controller tests for all RabbitMQ resource endpoints including pagination, filtering, authentication, and enhanced error handling with automatic recovery
 - **DTO Validation**: Comprehensive validation testing with `DtoValidationComprehensiveTest` covering JSON serialization/deserialization, constraint enforcement, null handling, and complex nested object processing for all write operation DTOs
 - **Write Operations Integration**: Complete integration testing with `RabbitMQWriteOperationsIntegrationTest` covering all write endpoints (exchanges, queues, bindings, messages), authentication/authorization scenarios, error handling, URL encoding, and edge cases
+- **End-to-End Workflow Testing**: Comprehensive end-to-end testing with `RabbitMQWriteOperationsEndToEndTest` validating complete resource lifecycles (exchange: create→bind→publish→delete, queue: create→publish→consume→purge→delete), security model compliance, multi-configuration testing, and UI consistency validation
 - **WebClient Integration Testing**: Enhanced `WebClientBindingsTest.java` with comprehensive debugging capabilities for RabbitMQ Management API connectivity, including multiple test approaches, proper type safety, StepVerifier-based error handling for CI/CD environments, and configuration alignment with production services. Includes `WebClientLiveTest.java` for immediate feedback testing with running RabbitMQ instances, `WebClientDebugTest.java` for detailed WebClient vs curl debugging and URL variation testing, `WebClientEncodingTest.java` for URL encoding issue identification and resolution (especially vhost `/` encoding), and `WebClientBindingsIntegrationTest.java` for automated integration testing when available
 - **UI Component Testing**: Advanced MUI DataGrid mocking, theme provider integration, comprehensive interaction testing for resource management components, extensive test coverage for ExchangesList with modal behaviors, accessibility, and performance testing, and complete PublishMessageDialog testing with form validation, API integration, error handling, and dual context support (exchange/queue)
 - **Performance Optimization**: Browser-based caching with configurable TTL, cache invalidation, resource-specific optimization, and cache-first loading strategy (implemented for connections, in progress for other resources)

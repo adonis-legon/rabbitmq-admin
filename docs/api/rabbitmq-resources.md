@@ -18,6 +18,13 @@ The RabbitMQ Resource Management API allows authenticated users to browse, inspe
 
 Where `{clusterId}` is the UUID of the cluster connection.
 
+**API Structure:**
+
+- **Resource Management Endpoints**: `/api/rabbitmq/{clusterId}/resources/*` - Paginated access to RabbitMQ resources (connections, channels, exchanges, queues) with write operations
+- **Cluster Management Endpoints**: `/api/rabbitmq/{clusterId}/*` - Direct cluster-level operations (virtual hosts, overview, nodes, etc.)
+
+**Note**: Virtual hosts are accessed via the cluster management endpoint (`/api/rabbitmq/{clusterId}/vhosts`) as they are cluster-level metadata, not paginated resources.
+
 ## URL Encoding
 
 The API uses a specific encoding scheme for path parameters to handle special characters safely:
@@ -121,6 +128,48 @@ The API includes comprehensive integration tests through `RabbitMQWriteOperation
 - **URL Encoding**: Base64 encoding for virtual hosts and URL encoding for resource names
 - **Edge Cases**: Special characters in resource names, empty routing keys, large payloads
 - **Path Variables**: Proper handling of cluster IDs, virtual hosts, and resource names in URLs
+
+### End-to-End Testing
+
+The API includes comprehensive end-to-end testing through `RabbitMQWriteOperationsEndToEndTest` which validates:
+
+- **Complete Workflow Testing**: Full lifecycle validation for both exchanges and queues
+  - **Exchange Lifecycle**: create → bind → publish → delete workflow validation
+  - **Queue Lifecycle**: create → publish → consume → purge → delete workflow validation
+- **Security Model Compliance**: Authentication enforcement and role-based access control
+- **Multi-Configuration Testing**: Different virtual hosts, exchange types, and cluster configurations
+- **UI Consistency Validation**: Error response format consistency and URL encoding handling
+- **Production Readiness**: Comprehensive validation of all implemented features working together
+
+#### End-to-End Test Coverage
+
+**Exchange Workflow Testing:**
+
+- ✅ Exchange creation with proper validation and authentication
+- ✅ Binding creation from exchange to queue with routing key configuration
+- ✅ Message publishing to exchange with routing confirmation
+- ✅ Exchange deletion with conditional parameters (if-unused)
+
+**Queue Workflow Testing:**
+
+- ✅ Queue creation with durability and configuration options
+- ✅ Direct message publishing to queue via default exchange
+- ✅ Message consumption with acknowledgment mode selection
+- ✅ Queue purging to remove all messages
+- ✅ Queue deletion with conditional parameters (if-empty, if-unused)
+
+**Security Validation:**
+
+- ✅ Authentication requirement enforcement for all write operations
+- ✅ Role-based access control for both USER and ADMINISTRATOR roles
+- ✅ Proper error responses for unauthorized access attempts
+
+**Configuration Testing:**
+
+- ✅ Different virtual host configurations (default "/" and custom vhosts)
+- ✅ All exchange types (direct, fanout, topic, headers)
+- ✅ URL encoding consistency for special characters in resource names
+- ✅ Base64 encoding for virtual host path parameters
 
 ### Test Coverage by Operation
 
@@ -665,9 +714,11 @@ The current frontend provides full read-only access to all RabbitMQ resources wi
 
 #### Get Virtual Hosts
 
-Retrieves a list of available virtual hosts for the cluster.
+Retrieves a list of available virtual hosts for the cluster. This endpoint is used by write operation forms to populate virtual host dropdowns.
 
 **Endpoint:** `GET /api/rabbitmq/{clusterId}/vhosts`
+
+**Note:** This endpoint is part of the main RabbitMQ API controller (`/api/rabbitmq/{clusterId}/`), not the resource management controller (`/api/rabbitmq/{clusterId}/resources/`). Virtual hosts are cluster-level metadata and are accessed directly from the cluster API.
 
 **Response Example:**
 
@@ -689,6 +740,16 @@ Retrieves a list of available virtual hosts for the cluster.
   }
 ]
 ```
+
+**Response Schema:**
+
+| Field              | Type    | Description                              |
+| ------------------ | ------- | ---------------------------------------- |
+| `name`             | string  | Virtual host name                        |
+| `description`      | string  | Virtual host description                 |
+| `tags`             | string  | Comma-separated list of tags             |
+| `defaultQueueType` | string  | Default queue type for this virtual host |
+| `tracing`          | boolean | Whether message tracing is enabled       |
 
 ### Exchange Management
 
