@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +21,12 @@ import java.util.UUID;
  * Controller for RabbitMQ resource management endpoints.
  * Provides paginated access to connections, channels, exchanges, and queues
  * with proper security and validation.
+ * Requires USER or ADMINISTRATOR role for access.
  */
 @RestController
 @RequestMapping("/api/rabbitmq/{clusterId}/resources")
 @Validated
+@PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
 public class RabbitMQResourceController {
 
         private static final Logger logger = LoggerFactory.getLogger(RabbitMQResourceController.class);

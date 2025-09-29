@@ -14,7 +14,12 @@ The Cluster Management API allows administrators to manage RabbitMQ cluster conn
 
 ## Authentication
 
-All endpoints require JWT authentication with administrator role. Include the JWT token in the Authorization header:
+Cluster management endpoints have differentiated access control:
+
+- **Read operations**: Require USER or ADMINISTRATOR role
+- **Write operations**: Require ADMINISTRATOR role only
+
+Include the JWT token in the Authorization header:
 
 ```
 Authorization: Bearer <jwt-token>
@@ -84,11 +89,11 @@ interface ConnectionTestResponse {
 
 ### Get All Cluster Connections
 
-Retrieves all cluster connections (admin only).
+Retrieves all cluster connections.
 
 **Endpoint:** `GET /api/clusters`
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response Example:**
 
@@ -126,7 +131,7 @@ Retrieves only active cluster connections.
 
 **Endpoint:** `GET /api/clusters/active`
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response:** Same format as above, filtered to active clusters only.
 
@@ -140,7 +145,7 @@ Retrieves a specific cluster connection by ID.
 
 - `id` (path): UUID of the cluster connection
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response Example:**
 
@@ -387,7 +392,7 @@ Retrieves all users assigned to a specific cluster connection.
 
 - `clusterId` (path): UUID of the cluster connection
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response Example:**
 
@@ -422,7 +427,7 @@ Retrieves all users who are not assigned to a specific cluster connection.
 
 - `clusterId` (path): UUID of the cluster connection
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response:** Same format as assigned users list above.
 
@@ -450,7 +455,7 @@ Retrieves active cluster connections assigned to the current authenticated user.
 
 ### Get Cluster Connections for User
 
-Retrieves cluster connections assigned to a specific user (admin only).
+Retrieves cluster connections assigned to a specific user.
 
 **Endpoint:** `GET /api/clusters/by-user/{userId}`
 
@@ -458,13 +463,13 @@ Retrieves cluster connections assigned to a specific user (admin only).
 
 - `userId` (path): UUID of the user
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response:** List of cluster connections assigned to the specified user.
 
 ### Get Active Cluster Connections for User
 
-Retrieves active cluster connections assigned to a specific user (admin only).
+Retrieves active cluster connections assigned to a specific user.
 
 **Endpoint:** `GET /api/clusters/by-user/{userId}/active`
 
@@ -472,7 +477,7 @@ Retrieves active cluster connections assigned to a specific user (admin only).
 
 - `userId` (path): UUID of the user
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response:** List of active cluster connections assigned to the specified user.
 
@@ -488,7 +493,7 @@ Checks if a cluster name already exists in the system.
 
 - `name` (path): Cluster name to check
 
-**Authorization:** Administrator role required
+**Authorization:** USER or ADMINISTRATOR role required
 
 **Response Example:**
 
@@ -827,7 +832,7 @@ function useClusterManagement(): UseClusterManagementResult {
 ### cURL Examples
 
 ```bash
-# Get all clusters (admin only)
+# Get all clusters (USER or ADMINISTRATOR role)
 curl -H "Authorization: Bearer $JWT_TOKEN" \
   http://localhost:8080/api/clusters
 

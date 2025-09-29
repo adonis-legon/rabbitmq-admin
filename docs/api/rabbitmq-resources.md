@@ -6,7 +6,7 @@ This document describes the RabbitMQ Resource Management API endpoints that prov
 
 The RabbitMQ Resource Management API allows authenticated users to browse, inspect, and manage resources from their assigned RabbitMQ clusters. The API provides both read-only access for resource inspection and write operations for resource management including creating, modifying, and deleting RabbitMQ resources. All endpoints require authentication and users can only access clusters they have been assigned to.
 
-**Architecture Note**: The API has been migrated from a reactive (WebFlux/Mono-based) to a synchronous (blocking) architecture for improved simplicity and debugging capabilities while maintaining high performance through optimized connection pooling and caching.
+**Architecture Note**: The API uses a mixed architecture approach combining both synchronous (blocking) and reactive patterns for optimal performance and maintainability. Simple proxy operations (connections, channels, exchanges, queues) use blocking patterns for improved simplicity and debugging capabilities, while complex operations like virtual host retrieval use reactive patterns (WebFlux/Mono-based) for enhanced security context propagation and error handling. Both approaches maintain high performance through optimized connection pooling and caching.
 
 **Frontend Integration**: The resource management interface supports direct URL navigation to specific resource pages (e.g., `/resources/connections`, `/resources/queues`) through client-side routing, enabling bookmarking and direct linking to resource views. The application includes enhanced loading state management to prevent premature redirects during page refreshes and initial navigation.
 
@@ -719,6 +719,8 @@ Retrieves a list of available virtual hosts for the cluster. This endpoint is us
 **Endpoint:** `GET /api/rabbitmq/{clusterId}/vhosts`
 
 **Note:** This endpoint is part of the main RabbitMQ API controller (`/api/rabbitmq/{clusterId}/`), not the resource management controller (`/api/rabbitmq/{clusterId}/resources/`). Virtual hosts are cluster-level metadata and are accessed directly from the cluster API.
+
+**Security Enhancement:** ✅ **IMPLEMENTED** - This endpoint implements reactive security context propagation using `Mono<ResponseEntity<List<VirtualHostDto>>>` return type with proper error handling through `onErrorResume()`. The reactive pattern ensures consistent error responses and maintains proper authentication context throughout the processing chain. Other resource endpoints (connections, channels, exchanges, queues) use blocking patterns with try-catch error handling and `handleErrorBlocking()` for consistent error responses.
 
 **Response Example:**
 

@@ -39,7 +39,7 @@ A comprehensive web application for managing RabbitMQ clusters with authenticati
 - [📝 API Documentation](#-api-documentation)
   - [Authentication Endpoints](#authentication-endpoints)
   - [User Management](#user-management-admin-only)
-  - [Cluster Management](#cluster-management-admin-only)
+  - [Cluster Management](#cluster-management)
   - [RabbitMQ Resource Management](#rabbitmq-resource-management)
   - [RabbitMQ Proxy](#rabbitmq-proxy)
 - [📦 Versioning](#-versioning)
@@ -542,8 +542,12 @@ docker logs rabbitmq-admin-db
 ### Application Security
 
 - JWT authentication with configurable expiration
-- Role-based access control (RBAC)
+- Role-based access control (RBAC) with USER and ADMINISTRATOR roles
 - Hybrid security model: API endpoints protected server-side, frontend routes protected client-side
+- Method-level security with @PreAuthorize annotations
+- HTTP security configuration with role-based endpoint protection
+- Reactive error handling patterns for WebFlux endpoints with proper `onErrorResume()` implementation ✅ **IMPLEMENTED**
+- Comprehensive security model documented in [Security Architecture](docs/architecture/security-model.md)
 - Input validation and sanitization
 - SQL injection prevention
 - XSS protection with CSP headers
@@ -1051,18 +1055,20 @@ For comprehensive deployment documentation, see [Production Deployment Guide](do
 - `PUT /api/users/{id}` - Update user
 - `DELETE /api/users/{id}` - Delete user
 
-### Cluster Management (Admin Only)
+### Cluster Management
 
-- `GET /api/clusters` - List cluster connections
-- `POST /api/clusters` - Create cluster connection with user assignments
-- `PUT /api/clusters/{id}` - Update cluster connection and user assignments
-- `DELETE /api/clusters/{id}` - Delete cluster connection
-- `POST /api/clusters/test` - Test new connection (before creating)
-- `POST /api/clusters/{id}/test` - Test existing cluster connection
-- `GET /api/clusters/my` - Get current user's accessible clusters
-- `POST /api/clusters/{clusterId}/users/{userId}` - Assign user to cluster
-- `DELETE /api/clusters/{clusterId}/users/{userId}` - Remove user from cluster
-- `GET /api/clusters/{clusterId}/users` - Get users assigned to cluster
+**Access Control**: Read operations allow USER and ADMINISTRATOR roles; write operations require ADMINISTRATOR role only.
+
+- `GET /api/clusters` - List cluster connections (USER/ADMIN)
+- `POST /api/clusters` - Create cluster connection with user assignments (ADMIN only)
+- `PUT /api/clusters/{id}` - Update cluster connection and user assignments (ADMIN only)
+- `DELETE /api/clusters/{id}` - Delete cluster connection (ADMIN only)
+- `POST /api/clusters/test` - Test new connection (ADMIN only)
+- `POST /api/clusters/{id}/test` - Test existing cluster connection (ADMIN only)
+- `GET /api/clusters/my` - Get current user's accessible clusters (USER/ADMIN)
+- `POST /api/clusters/{clusterId}/users/{userId}` - Assign user to cluster (ADMIN only)
+- `DELETE /api/clusters/{clusterId}/users/{userId}` - Remove user from cluster (ADMIN only)
+- `GET /api/clusters/{clusterId}/users` - Get users assigned to cluster (USER/ADMIN)
 
 For comprehensive cluster management API documentation including user assignment features, request/response examples, and TypeScript interfaces, see [Cluster Management API Documentation](docs/api/cluster-management.md).
 
@@ -1159,6 +1165,7 @@ For detailed architecture and design documentation, see:
 
 - [Frontend Architecture](docs/architecture/frontend-architecture.md) - React component architecture and patterns
 - [UI Components Architecture](docs/architecture/ui-components.md) - UI component design system and icon management
+- [Security Model](docs/architecture/security-model.md) - Authentication, authorization, and security implementation
 
 RabbitMQ Admin is a three-tier web application that provides a comprehensive administrative interface for managing RabbitMQ clusters. The application implements role-based access control with JWT authentication and follows modern web development practices.
 

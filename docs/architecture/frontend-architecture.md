@@ -790,10 +790,11 @@ describe("PublishMessageDialog", () => {
 
 ### Authorization
 
-- Role-based component rendering
-- Route protection
-- API endpoint authorization
-- Cluster access validation
+- Role-based component rendering with USER and ADMINISTRATOR roles
+- Route protection with ProtectedRoute and AdminRoute components
+- API endpoint authorization handled by backend security configuration
+- Cluster access validation based on user assignments
+- Method-level security with @PreAuthorize annotations on backend controllers
 
 ### Data Protection
 
