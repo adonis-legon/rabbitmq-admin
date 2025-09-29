@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Comprehensive integration tests for RabbitMQ write operations.
- * Tests all write operation endpoints with authentication, authorization, 
+ * Tests all write operation endpoints with authentication, authorization,
  * error handling, and edge cases.
  * 
  * Note: These tests focus on controller layer integration, endpoint routing,
@@ -95,12 +95,11 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
         void getVirtualHosts_ShouldReturnVirtualHosts_WhenServiceReturnsData() throws Exception {
             // Given
             List<VirtualHostDto> virtualHosts = Arrays.asList(
-                createVirtualHostDto("/", "Default virtual host"),
-                createVirtualHostDto("test-vhost", "Test virtual host")
-            );
+                    createVirtualHostDto("/", "Default virtual host"),
+                    createVirtualHostDto("test-vhost", "Test virtual host"));
 
             when(rabbitMQResourceService.getVirtualHosts(eq(testCluster.getId()), any(User.class)))
-                .thenReturn(Mono.just(virtualHosts));
+                    .thenReturn(Mono.just(virtualHosts));
 
             // When & Then
             mockMvc.perform(get("/api/rabbitmq/{clusterId}/vhosts", testCluster.getId())
@@ -130,7 +129,7 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
         void getVirtualHosts_ShouldReturn500_WhenServiceThrowsException() throws Exception {
             // Given
             when(rabbitMQResourceService.getVirtualHosts(eq(testCluster.getId()), any(User.class)))
-                .thenReturn(Mono.error(new RuntimeException("RabbitMQ connection failed")));
+                    .thenReturn(Mono.error(new RuntimeException("RabbitMQ connection failed")));
 
             // When & Then
             mockMvc.perform(get("/api/rabbitmq/{clusterId}/vhosts", testCluster.getId())
@@ -150,9 +149,9 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
         void createExchange_ShouldReturnOk_WhenValidRequest() throws Exception {
             // Given
             CreateExchangeRequest request = createExchangeRequest("test-exchange", "direct", "/");
-            
+
             when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), eq(request), any(User.class)))
-                .thenReturn(Mono.empty());
+                    .thenReturn(Mono.empty());
 
             // When & Then
             mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
@@ -185,13 +184,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             // Given
             String vhost = Base64.getEncoder().encodeToString("/".getBytes());
             String exchangeName = "test-exchange";
-            
-            when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("/"), 
-                eq(exchangeName), eq(true), any(User.class)))
-                .thenReturn(Mono.empty());
+
+            when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("/"),
+                    eq(exchangeName), eq(true), any(User.class)))
+                    .thenReturn(Mono.empty());
 
             // When & Then
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}", 
+            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}",
                     testCluster.getId(), vhost, exchangeName)
                     .with(authentication(userAuth))
                     .param("ifUnused", "true"))
@@ -204,9 +203,9 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
         void createExchange_ShouldReturn500_WhenServiceThrowsException() throws Exception {
             // Given
             CreateExchangeRequest request = createExchangeRequest("test-exchange", "direct", "/");
-            
+
             when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), eq(request), any(User.class)))
-                .thenReturn(Mono.error(new RuntimeException("RabbitMQ API error")));
+                    .thenReturn(Mono.error(new RuntimeException("RabbitMQ API error")));
 
             // When & Then
             mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
@@ -227,9 +226,9 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
         void createQueue_ShouldReturnOk_WhenValidRequest() throws Exception {
             // Given
             CreateQueueRequest request = createQueueRequest("test-queue", "/");
-            
+
             when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), eq(request), any(User.class)))
-                .thenReturn(Mono.empty());
+                    .thenReturn(Mono.empty());
 
             // When & Then
             mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/queues", testCluster.getId())
@@ -262,13 +261,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             // Given
             String vhost = Base64.getEncoder().encodeToString("/".getBytes());
             String queueName = "test-queue";
-            
-            when(rabbitMQResourceService.deleteQueue(eq(testCluster.getId()), eq("/"), 
-                eq(queueName), eq(true), eq(true), any(User.class)))
-                .thenReturn(Mono.empty());
+
+            when(rabbitMQResourceService.deleteQueue(eq(testCluster.getId()), eq("/"),
+                    eq(queueName), eq(true), eq(true), any(User.class)))
+                    .thenReturn(Mono.empty());
 
             // When & Then
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}", 
+            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}",
                     testCluster.getId(), vhost, queueName)
                     .with(authentication(userAuth))
                     .param("ifEmpty", "true")
@@ -283,13 +282,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             // Given
             String vhost = Base64.getEncoder().encodeToString("/".getBytes());
             String queueName = "test-queue";
-            
-            when(rabbitMQResourceService.purgeQueue(eq(testCluster.getId()), eq("/"), 
-                eq(queueName), any(User.class)))
-                .thenReturn(Mono.empty());
+
+            when(rabbitMQResourceService.purgeQueue(eq(testCluster.getId()), eq("/"),
+                    eq(queueName), any(User.class)))
+                    .thenReturn(Mono.empty());
 
             // When & Then
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}/contents", 
+            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}/contents",
                     testCluster.getId(), vhost, queueName)
                     .with(authentication(userAuth)))
                     .andExpect(status().isOk());
@@ -309,13 +308,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             String source = "test-exchange";
             String destination = "test-queue";
             CreateBindingRequest request = createBindingRequest("test.routing.key");
-            
-            when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"), 
-                eq(source), eq(destination), eq("q"), eq(request), any(User.class)))
-                .thenReturn(Mono.empty());
+
+            when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"),
+                    eq(source), eq(destination), eq("q"), eq(request), any(User.class)))
+                    .thenReturn(Mono.empty());
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}",
                     testCluster.getId(), vhost, source, destination)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -332,13 +331,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             String source = "source-exchange";
             String destination = "dest-exchange";
             CreateBindingRequest request = createBindingRequest("test.routing.key");
-            
-            when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"), 
-                eq(source), eq(destination), eq("e"), eq(request), any(User.class)))
-                .thenReturn(Mono.empty());
+
+            when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"),
+                    eq(source), eq(destination), eq("e"), eq(request), any(User.class)))
+                    .thenReturn(Mono.empty());
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/e/{destination}", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/e/{destination}",
                     testCluster.getId(), vhost, source, destination)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -357,7 +356,7 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             CreateBindingRequest request = createBindingRequest("test.routing.key");
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}",
                     testCluster.getId(), invalidVhost, source, destination)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -379,13 +378,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             String exchange = "test-exchange";
             PublishMessageRequest request = createPublishMessageRequest("test.routing.key", "Hello World");
             PublishResponse response = new PublishResponse(true);
-            
-            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), 
-                eq(exchange), eq(request), any(User.class)))
-                .thenReturn(Mono.just(response));
+
+            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
+                    eq(exchange), eq(request), any(User.class)))
+                    .thenReturn(Mono.just(response));
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{exchange}/publish", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{exchange}/publish",
                     testCluster.getId(), vhost, exchange)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -403,13 +402,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             String queue = "test-queue";
             PublishMessageRequest request = createPublishMessageRequest("", "Hello Queue");
             PublishResponse response = new PublishResponse(true);
-            
-            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), 
-                eq(""), any(PublishMessageRequest.class), any(User.class)))
-                .thenReturn(Mono.just(response));
+
+            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
+                    eq(""), any(PublishMessageRequest.class), any(User.class)))
+                    .thenReturn(Mono.just(response));
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/publish", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/publish",
                     testCluster.getId(), vhost, queue)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -427,16 +426,15 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             String queue = "test-queue";
             GetMessagesRequest request = createGetMessagesRequest(5, "ack_requeue_true");
             List<MessageDto> messages = Arrays.asList(
-                createMessageDto("Hello 1", "test.key.1"),
-                createMessageDto("Hello 2", "test.key.2")
-            );
-            
-            when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"), 
-                eq(queue), eq(request), any(User.class)))
-                .thenReturn(Mono.just(messages));
+                    createMessageDto("Hello 1", "test.key.1"),
+                    createMessageDto("Hello 2", "test.key.2"));
+
+            when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"),
+                    eq(queue), eq(request), any(User.class)))
+                    .thenReturn(Mono.just(messages));
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/get", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/get",
                     testCluster.getId(), vhost, queue)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -458,7 +456,7 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             PublishMessageRequest request = createPublishMessageRequest("test.key", null);
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{exchange}/publish", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{exchange}/publish",
                     testCluster.getId(), vhost, exchange)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -479,7 +477,7 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             // Given
             CreateExchangeRequest request = createExchangeRequest("test-exchange", "direct", "/");
             when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), eq(request), any(User.class)))
-                .thenReturn(Mono.empty());
+                    .thenReturn(Mono.empty());
 
             // When & Then
             mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
@@ -496,7 +494,7 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             // Given
             CreateQueueRequest request = createQueueRequest("test-queue", "/");
             when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), eq(request), any(User.class)))
-                .thenReturn(Mono.empty());
+                    .thenReturn(Mono.empty());
 
             // When & Then
             mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/queues", testCluster.getId())
@@ -532,13 +530,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             // Given
             String vhost = Base64.getEncoder().encodeToString("test-vhost".getBytes());
             String exchangeName = "test.exchange-with_special@chars";
-            
-            when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("test-vhost"), 
-                eq(exchangeName), isNull(), any(User.class)))
-                .thenReturn(Mono.empty());
+
+            when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("test-vhost"),
+                    eq(exchangeName), isNull(), any(User.class)))
+                    .thenReturn(Mono.empty());
 
             // When & Then
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}", 
+            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}",
                     testCluster.getId(), vhost, exchangeName)
                     .with(authentication(userAuth)))
                     .andExpect(status().isOk());
@@ -553,13 +551,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             String source = "test-exchange";
             String destination = "test-queue";
             CreateBindingRequest request = createBindingRequest(""); // Empty routing key
-            
-            when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"), 
-                eq(source), eq(destination), eq("q"), eq(request), any(User.class)))
-                .thenReturn(Mono.empty());
+
+            when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"),
+                    eq(source), eq(destination), eq("q"), eq(request), any(User.class)))
+                    .thenReturn(Mono.empty());
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}",
                     testCluster.getId(), vhost, source, destination)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -577,13 +575,13 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             String largePayload = "x".repeat(10000); // 10KB payload
             PublishMessageRequest request = createPublishMessageRequest("test.key", largePayload);
             PublishResponse response = new PublishResponse(true);
-            
-            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), 
-                eq(exchange), eq(request), any(User.class)))
-                .thenReturn(Mono.just(response));
+
+            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
+                    eq(exchange), eq(request), any(User.class)))
+                    .thenReturn(Mono.just(response));
 
             // When & Then
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{exchange}/publish", 
+            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{exchange}/publish",
                     testCluster.getId(), vhost, exchange)
                     .with(authentication(userAuth))
                     .contentType(MediaType.APPLICATION_JSON)
@@ -598,7 +596,7 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
             // Given
             CreateExchangeRequest request = createExchangeRequest("test-exchange", "direct", "/");
             when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), eq(request), any(User.class)))
-                .thenReturn(Mono.error(new RuntimeException("Service error")));
+                    .thenReturn(Mono.error(new RuntimeException("Service error")));
 
             // When & Then
             mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
@@ -614,7 +612,7 @@ class RabbitMQWriteOperationsIntegrationTest extends IntegrationTestBase {
         VirtualHostDto dto = new VirtualHostDto();
         dto.setName(name);
         dto.setDescription(description);
-        dto.setTags("");
+        dto.setTags(List.of());
         dto.setDefaultQueueType("classic");
         dto.setTracing(false);
         return dto;

@@ -727,14 +727,14 @@ Retrieves a list of available virtual hosts for the cluster. This endpoint is us
   {
     "name": "/",
     "description": "Default virtual host",
-    "tags": "",
+    "tags": [],
     "defaultQueueType": "classic",
     "tracing": false
   },
   {
     "name": "production",
     "description": "Production environment",
-    "tags": "production",
+    "tags": ["production", "env:prod"],
     "defaultQueueType": "quorum",
     "tracing": true
   }
@@ -743,13 +743,13 @@ Retrieves a list of available virtual hosts for the cluster. This endpoint is us
 
 **Response Schema:**
 
-| Field              | Type    | Description                              |
-| ------------------ | ------- | ---------------------------------------- |
-| `name`             | string  | Virtual host name                        |
-| `description`      | string  | Virtual host description                 |
-| `tags`             | string  | Comma-separated list of tags             |
-| `defaultQueueType` | string  | Default queue type for this virtual host |
-| `tracing`          | boolean | Whether message tracing is enabled       |
+| Field              | Type     | Description                              |
+| ------------------ | -------- | ---------------------------------------- |
+| `name`             | string   | Virtual host name                        |
+| `description`      | string   | Virtual host description                 |
+| `tags`             | string[] | Array of tags associated with the vhost  |
+| `defaultQueueType` | string   | Default queue type for this virtual host |
+| `tracing`          | boolean  | Whether message tracing is enabled       |
 
 ### Exchange Management
 

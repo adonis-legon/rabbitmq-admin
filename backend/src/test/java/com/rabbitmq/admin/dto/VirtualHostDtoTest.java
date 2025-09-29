@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,12 +32,12 @@ class VirtualHostDtoTest {
         messageStats.put("deliver", 95);
 
         VirtualHostDto dto = new VirtualHostDto(
-                "/", "Default virtual host", "management",
+                "/", "Default virtual host", List.of("management"),
                 "classic", false, messageStats);
 
         assertEquals("/", dto.getName());
         assertEquals("Default virtual host", dto.getDescription());
-        assertEquals("management", dto.getTags());
+        assertEquals(List.of("management"), dto.getTags());
         assertEquals("classic", dto.getDefaultQueueType());
         assertFalse(dto.getTracing());
         assertEquals(messageStats, dto.getMessageStats());
@@ -51,14 +52,14 @@ class VirtualHostDtoTest {
 
         dto.setName("/test");
         dto.setDescription("Test virtual host");
-        dto.setTags("test,development");
+        dto.setTags(List.of("test", "development"));
         dto.setDefaultQueueType("quorum");
         dto.setTracing(true);
         dto.setMessageStats(messageStats);
 
         assertEquals("/test", dto.getName());
         assertEquals("Test virtual host", dto.getDescription());
-        assertEquals("test,development", dto.getTags());
+        assertEquals(List.of("test", "development"), dto.getTags());
         assertEquals("quorum", dto.getDefaultQueueType());
         assertTrue(dto.getTracing());
         assertEquals(messageStats, dto.getMessageStats());
@@ -71,14 +72,14 @@ class VirtualHostDtoTest {
         messageStats.put("deliver_get", 180);
 
         VirtualHostDto dto = new VirtualHostDto(
-                "/production", "Production environment", "production,critical",
+                "/production", "Production environment", List.of("production", "critical"),
                 "classic", false, messageStats);
 
         String json = objectMapper.writeValueAsString(dto);
 
         assertTrue(json.contains("\"name\":\"/production\""));
         assertTrue(json.contains("\"description\":\"Production environment\""));
-        assertTrue(json.contains("\"tags\":\"production,critical\""));
+        assertTrue(json.contains("\"tags\":[\"production\",\"critical\"]"));
         assertTrue(json.contains("\"default_queue_type\":\"classic\""));
         assertTrue(json.contains("\"tracing\":false"));
         assertTrue(json.contains("\"publish\":200"));
@@ -90,7 +91,7 @@ class VirtualHostDtoTest {
         String json = "{" +
                 "\"name\":\"/staging\"," +
                 "\"description\":\"Staging environment\"," +
-                "\"tags\":\"staging\"," +
+                "\"tags\":[\"staging\"]," +
                 "\"default_queue_type\":\"quorum\"," +
                 "\"tracing\":true," +
                 "\"message_stats\":{\"publish\":50,\"deliver\":45}" +
@@ -100,7 +101,7 @@ class VirtualHostDtoTest {
 
         assertEquals("/staging", dto.getName());
         assertEquals("Staging environment", dto.getDescription());
-        assertEquals("staging", dto.getTags());
+        assertEquals(List.of("staging"), dto.getTags());
         assertEquals("quorum", dto.getDefaultQueueType());
         assertTrue(dto.getTracing());
 
@@ -161,13 +162,13 @@ class VirtualHostDtoTest {
         VirtualHostDto dto = new VirtualHostDto();
         dto.setName("/my-app");
         dto.setDescription("Application specific virtual host");
-        dto.setTags("application,isolated");
+        dto.setTags(List.of("application", "isolated"));
         dto.setDefaultQueueType("quorum");
         dto.setTracing(true);
 
         assertEquals("/my-app", dto.getName());
         assertEquals("Application specific virtual host", dto.getDescription());
-        assertEquals("application,isolated", dto.getTags());
+        assertEquals(List.of("application", "isolated"), dto.getTags());
         assertEquals("quorum", dto.getDefaultQueueType());
         assertTrue(dto.getTracing());
     }
@@ -248,15 +249,15 @@ class VirtualHostDtoTest {
         VirtualHostDto dto = new VirtualHostDto();
 
         // Test single tag
-        dto.setTags("production");
-        assertEquals("production", dto.getTags());
+        dto.setTags(List.of("production"));
+        assertEquals(List.of("production"), dto.getTags());
 
         // Test multiple tags
-        dto.setTags("production,critical,monitored");
-        assertEquals("production,critical,monitored", dto.getTags());
+        dto.setTags(List.of("production", "critical", "monitored"));
+        assertEquals(List.of("production", "critical", "monitored"), dto.getTags());
 
         // Test empty tags
-        dto.setTags("");
-        assertEquals("", dto.getTags());
+        dto.setTags(List.of());
+        assertEquals(List.of(), dto.getTags());
     }
 }

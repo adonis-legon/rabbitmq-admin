@@ -523,8 +523,8 @@ class RabbitMQControllerTest {
         void getVirtualHosts_ShouldReturnOk_WhenSuccessful() throws Exception {
                 // Given
                 List<VirtualHostDto> vhostsData = List.of(
-                                new VirtualHostDto("/", "Default virtual host", "", "classic", false, Map.of()),
-                                new VirtualHostDto("test-vhost", "Test virtual host", "test", "quorum", true,
+                                new VirtualHostDto("/", "Default virtual host", List.of(), "classic", false, Map.of()),
+                                new VirtualHostDto("test-vhost", "Test virtual host", List.of("test"), "quorum", true,
                                                 Map.of()));
                 doReturn(Mono.just(vhostsData))
                                 .when(resourceService)

@@ -35,370 +35,381 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class RabbitMQWriteOperationsEndToEndTest extends IntegrationTestBase {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Autowired
-    private ClusterConnectionRepository clusterConnectionRepository;
+        @Autowired
+        private ClusterConnectionRepository clusterConnectionRepository;
 
-    @MockitoBean
-    private RabbitMQResourceService rabbitMQResourceService;
+        @MockitoBean
+        private RabbitMQResourceService rabbitMQResourceService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    private ClusterConnection testCluster;
-    private User testUser;
-    private User testAdmin;
-    private UserPrincipal userPrincipal;
-    private UserPrincipal adminPrincipal;
-    private UsernamePasswordAuthenticationToken userAuth;
-    private UsernamePasswordAuthenticationToken adminAuth;
+        private ClusterConnection testCluster;
+        private User testUser;
+        private User testAdmin;
+        private UserPrincipal userPrincipal;
+        private UserPrincipal adminPrincipal;
+        private UsernamePasswordAuthenticationToken userAuth;
+        private UsernamePasswordAuthenticationToken adminAuth;
 
-    @BeforeEach
-    void setUpTestData() {
-        super.setUpTestData();
-        clusterConnectionRepository.deleteAll();
+        @BeforeEach
+        void setUpTestData() {
+                super.setUpTestData();
+                clusterConnectionRepository.deleteAll();
 
-        // Create test cluster connection
-        testCluster = new ClusterConnection("Test Cluster", "http://localhost:15672", "testuser", "testpass");
-        testCluster = clusterConnectionRepository.save(testCluster);
+                // Create test cluster connection
+                testCluster = new ClusterConnection("Test Cluster", "http://localhost:15672", "testuser", "testpass");
+                testCluster = clusterConnectionRepository.save(testCluster);
 
-        // Create test users
-        testUser = new User("testuser", "encoded-password", UserRole.USER);
-        testAdmin = new User("adminuser", "encoded-password", UserRole.ADMINISTRATOR);
+                // Create test users
+                testUser = new User("testuser", "encoded-password", UserRole.USER);
+                testAdmin = new User("adminuser", "encoded-password", UserRole.ADMINISTRATOR);
 
-        // Create user principals and authentication tokens
-        userPrincipal = UserPrincipal.create(testUser);
-        adminPrincipal = UserPrincipal.create(testAdmin);
-        userAuth = new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
-        adminAuth = new UsernamePasswordAuthenticationToken(adminPrincipal, null, adminPrincipal.getAuthorities());
-    }
-
-    @Nested
-    @DisplayName("End-to-End Write Operations Workflow")
-    class EndToEndWorkflow {
-
-        @Test
-        @Transactional
-        @DisplayName("Should complete full exchange lifecycle - create, bind, publish, delete")
-        void completeExchangeLifecycle() throws Exception {
-            // Mock service responses for the complete workflow
-            when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), any(CreateExchangeRequest.class),
-                    eq(testUser)))
-                    .thenReturn(Mono.empty());
-
-            when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"), eq("test-exchange"),
-                    eq("test-queue"), eq("q"), any(CreateBindingRequest.class), eq(testUser)))
-                    .thenReturn(Mono.empty());
-
-            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), eq("test-exchange"),
-                    any(PublishMessageRequest.class), eq(testUser)))
-                    .thenReturn(Mono.just(new PublishResponse(true)));
-
-            when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("/"), eq("test-exchange"),
-                    eq(false), eq(testUser)))
-                    .thenReturn(Mono.empty());
-
-            // Step 1: Create exchange
-            CreateExchangeRequest createExchangeRequest = new CreateExchangeRequest();
-            createExchangeRequest.setName("test-exchange");
-            createExchangeRequest.setType("direct");
-            createExchangeRequest.setVhost("/");
-            createExchangeRequest.setDurable(true);
-
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createExchangeRequest)))
-                    .andExpect(status().isOk());
-
-            // Step 2: Create binding
-            CreateBindingRequest createBindingRequest = new CreateBindingRequest();
-            createBindingRequest.setRoutingKey("test.routing.key");
-
-            String encodedVhost = Base64.getEncoder().encodeToString("/".getBytes());
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}",
-                    testCluster.getId(), encodedVhost, "test-exchange", "test-queue")
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createBindingRequest)))
-                    .andExpect(status().isOk());
-
-            // Step 3: Publish message
-            PublishMessageRequest publishRequest = new PublishMessageRequest();
-            publishRequest.setRoutingKey("test.routing.key");
-            publishRequest.setPayload("Test message payload");
-            publishRequest.setPayloadEncoding("string");
-
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}/publish",
-                    testCluster.getId(), encodedVhost, "test-exchange")
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(publishRequest)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.routed").value(true));
-
-            // Step 4: Delete exchange
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}",
-                    testCluster.getId(), encodedVhost, "test-exchange")
-                    .with(authentication(userAuth))
-                    .param("ifUnused", "false"))
-                    .andExpect(status().isOk());
+                // Create user principals and authentication tokens
+                userPrincipal = UserPrincipal.create(testUser);
+                adminPrincipal = UserPrincipal.create(testAdmin);
+                userAuth = new UsernamePasswordAuthenticationToken(userPrincipal, null, userPrincipal.getAuthorities());
+                adminAuth = new UsernamePasswordAuthenticationToken(adminPrincipal, null,
+                                adminPrincipal.getAuthorities());
         }
 
-        @Test
-        @Transactional
-        @DisplayName("Should complete full queue lifecycle - create, publish, consume, purge, delete")
-        void completeQueueLifecycle() throws Exception {
-            // Mock service responses for the complete workflow
-            when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), any(CreateQueueRequest.class),
-                    eq(testUser)))
-                    .thenReturn(Mono.empty());
+        @Nested
+        @DisplayName("End-to-End Write Operations Workflow")
+        class EndToEndWorkflow {
 
-            when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), eq(""),
-                    any(PublishMessageRequest.class), eq(testUser)))
-                    .thenReturn(Mono.just(new PublishResponse(true)));
+                @Test
+                @Transactional
+                @DisplayName("Should complete full exchange lifecycle - create, bind, publish, delete")
+                void completeExchangeLifecycle() throws Exception {
+                        // Mock service responses for the complete workflow
+                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
+                                        any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-            List<MessageDto> messages = Arrays.asList(createTestMessage("Test message content"));
-            when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"), eq("test-queue"),
-                    any(GetMessagesRequest.class), eq(testUser)))
-                    .thenReturn(Mono.just(messages));
+                        when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"),
+                                        eq("test-exchange"),
+                                        eq("test-queue"), eq("q"), any(CreateBindingRequest.class), any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-            when(rabbitMQResourceService.purgeQueue(eq(testCluster.getId()), eq("/"), eq("test-queue"), eq(testUser)))
-                    .thenReturn(Mono.empty());
+                        when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
+                                        eq("test-exchange"),
+                                        any(PublishMessageRequest.class), any(User.class)))
+                                        .thenReturn(Mono.just(new PublishResponse(true)));
 
-            when(rabbitMQResourceService.deleteQueue(eq(testCluster.getId()), eq("/"), eq("test-queue"),
-                    eq(false), eq(false), eq(testUser)))
-                    .thenReturn(Mono.empty());
+                        when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("/"),
+                                        eq("test-exchange"),
+                                        eq(false), any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-            // Step 1: Create queue
-            CreateQueueRequest createQueueRequest = new CreateQueueRequest();
-            createQueueRequest.setName("test-queue");
-            createQueueRequest.setVhost("/");
-            createQueueRequest.setDurable(true);
+                        // Step 1: Create exchange
+                        CreateExchangeRequest createExchangeRequest = new CreateExchangeRequest();
+                        createExchangeRequest.setName("test-exchange");
+                        createExchangeRequest.setType("direct");
+                        createExchangeRequest.setVhost("/");
+                        createExchangeRequest.setDurable(true);
 
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/queues", testCluster.getId())
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createQueueRequest)))
-                    .andExpect(status().isOk());
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(createExchangeRequest)))
+                                        .andExpect(status().isOk());
 
-            // Step 2: Publish message to queue (via default exchange)
-            PublishMessageRequest publishRequest = new PublishMessageRequest();
-            publishRequest.setRoutingKey("test-queue");
-            publishRequest.setPayload("Test message for queue");
-            publishRequest.setPayloadEncoding("string");
+                        // Step 2: Create binding
+                        CreateBindingRequest createBindingRequest = new CreateBindingRequest();
+                        createBindingRequest.setRoutingKey("test.routing.key");
 
-            String encodedVhost = Base64.getEncoder().encodeToString("/".getBytes());
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/publish",
-                    testCluster.getId(), encodedVhost, "test-queue")
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(publishRequest)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.routed").value(true));
+                        String encodedVhost = Base64.getEncoder().encodeToString("/".getBytes());
+                        mockMvc.perform(post(
+                                        "/api/rabbitmq/{clusterId}/resources/bindings/{vhost}/e/{source}/q/{destination}",
+                                        testCluster.getId(), encodedVhost, "test-exchange", "test-queue")
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(createBindingRequest)))
+                                        .andExpect(status().isOk());
 
-            // Step 3: Get messages from queue
-            GetMessagesRequest getMessagesRequest = new GetMessagesRequest();
-            getMessagesRequest.setCount(1);
-            getMessagesRequest.setAckmode("ack_requeue_true");
-            getMessagesRequest.setEncoding("auto");
+                        // Step 3: Publish message
+                        PublishMessageRequest publishRequest = new PublishMessageRequest();
+                        publishRequest.setRoutingKey("test.routing.key");
+                        publishRequest.setPayload("Test message payload");
+                        publishRequest.setPayloadEncoding("string");
 
-            mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/get",
-                    testCluster.getId(), encodedVhost, "test-queue")
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(getMessagesRequest)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$").isArray())
-                    .andExpect(jsonPath("$[0].payload").exists());
+                        mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}/publish",
+                                        testCluster.getId(), encodedVhost, "test-exchange")
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(publishRequest)))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.routed").value(true));
 
-            // Step 4: Purge queue
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}/contents",
-                    testCluster.getId(), encodedVhost, "test-queue")
-                    .with(authentication(userAuth)))
-                    .andExpect(status().isOk());
+                        // Step 4: Delete exchange
+                        mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}",
+                                        testCluster.getId(), encodedVhost, "test-exchange")
+                                        .with(authentication(userAuth))
+                                        .param("ifUnused", "false"))
+                                        .andExpect(status().isOk());
+                }
 
-            // Step 5: Delete queue
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}",
-                    testCluster.getId(), encodedVhost, "test-queue")
-                    .with(authentication(userAuth))
-                    .param("ifEmpty", "false")
-                    .param("ifUnused", "false"))
-                    .andExpect(status().isOk());
-        }
-    }
+                @Test
+                @Transactional
+                @DisplayName("Should complete full queue lifecycle - create, publish, consume, purge, delete")
+                void completeQueueLifecycle() throws Exception {
+                        // Mock service responses for the complete workflow
+                        when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), any(CreateQueueRequest.class),
+                                        any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-    @Nested
-    @DisplayName("Security Model Compliance")
-    class SecurityModelCompliance {
+                        when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"), eq(""),
+                                        any(PublishMessageRequest.class), any(User.class)))
+                                        .thenReturn(Mono.just(new PublishResponse(true)));
 
-        @Test
-        @Transactional
-        @DisplayName("Should enforce authentication for all write operations")
-        void enforceAuthenticationForWriteOperations() throws Exception {
-            CreateExchangeRequest createExchangeRequest = new CreateExchangeRequest();
-            createExchangeRequest.setName("test-exchange");
-            createExchangeRequest.setType("direct");
-            createExchangeRequest.setVhost("/");
+                        List<MessageDto> messages = Arrays.asList(createTestMessage("Test message content"));
+                        when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"), eq("test-queue"),
+                                        any(GetMessagesRequest.class), any(User.class)))
+                                        .thenReturn(Mono.just(messages));
 
-            // Test without authentication - should be redirected or return 401
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createExchangeRequest)))
-                    .andExpect(status().isUnauthorized());
-        }
+                        when(rabbitMQResourceService.purgeQueue(eq(testCluster.getId()), eq("/"), eq("test-queue"),
+                                        any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-        @Test
-        @Transactional
-        @DisplayName("Should allow both USER and ADMINISTRATOR roles for write operations")
-        void allowBothUserAndAdminRoles() throws Exception {
-            when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), any(CreateExchangeRequest.class),
-                    any(User.class)))
-                    .thenReturn(Mono.empty());
+                        when(rabbitMQResourceService.deleteQueue(eq(testCluster.getId()), eq("/"), eq("test-queue"),
+                                        eq(false), eq(false), any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-            CreateExchangeRequest createExchangeRequest = new CreateExchangeRequest();
-            createExchangeRequest.setName("test-exchange");
-            createExchangeRequest.setType("direct");
-            createExchangeRequest.setVhost("/");
+                        // Step 1: Create queue
+                        CreateQueueRequest createQueueRequest = new CreateQueueRequest();
+                        createQueueRequest.setName("test-queue");
+                        createQueueRequest.setVhost("/");
+                        createQueueRequest.setDurable(true);
 
-            // Test with USER role
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createExchangeRequest)))
-                    .andExpect(status().isOk());
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/queues", testCluster.getId())
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(createQueueRequest)))
+                                        .andExpect(status().isOk());
 
-            // Test with ADMINISTRATOR role
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                    .with(authentication(adminAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(createExchangeRequest)))
-                    .andExpect(status().isOk());
-        }
-    }
+                        // Step 2: Publish message to queue (via default exchange)
+                        PublishMessageRequest publishRequest = new PublishMessageRequest();
+                        publishRequest.setRoutingKey("test-queue");
+                        publishRequest.setPayload("Test message for queue");
+                        publishRequest.setPayloadEncoding("string");
 
-    @Nested
-    @DisplayName("Different RabbitMQ Cluster Configurations")
-    class ClusterConfigurationTesting {
+                        String encodedVhost = Base64.getEncoder().encodeToString("/".getBytes());
+                        mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/publish",
+                                        testCluster.getId(), encodedVhost, "test-queue")
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(publishRequest)))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.routed").value(true));
 
-        @Test
-        @Transactional
-        @DisplayName("Should handle different virtual host configurations")
-        void handleDifferentVirtualHosts() throws Exception {
-            when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), any(CreateExchangeRequest.class),
-                    eq(testUser)))
-                    .thenReturn(Mono.empty());
+                        // Step 3: Get messages from queue
+                        GetMessagesRequest getMessagesRequest = new GetMessagesRequest();
+                        getMessagesRequest.setCount(1);
+                        getMessagesRequest.setAckmode("ack_requeue_true");
+                        getMessagesRequest.setEncoding("auto");
 
-            // Test with default vhost "/"
-            CreateExchangeRequest defaultVhostRequest = new CreateExchangeRequest();
-            defaultVhostRequest.setName("test-exchange-default");
-            defaultVhostRequest.setType("direct");
-            defaultVhostRequest.setVhost("/");
+                        mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{queue}/get",
+                                        testCluster.getId(), encodedVhost, "test-queue")
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(getMessagesRequest)))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$").isArray())
+                                        .andExpect(jsonPath("$[0].payload").exists());
 
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(defaultVhostRequest)))
-                    .andExpect(status().isOk());
+                        // Step 4: Purge queue
+                        mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}/contents",
+                                        testCluster.getId(), encodedVhost, "test-queue")
+                                        .with(authentication(userAuth)))
+                                        .andExpect(status().isOk());
 
-            // Test with custom vhost
-            CreateExchangeRequest customVhostRequest = new CreateExchangeRequest();
-            customVhostRequest.setName("test-exchange-custom");
-            customVhostRequest.setType("topic");
-            customVhostRequest.setVhost("test-vhost");
-
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(customVhostRequest)))
-                    .andExpect(status().isOk());
+                        // Step 5: Delete queue
+                        mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/queues/{vhost}/{name}",
+                                        testCluster.getId(), encodedVhost, "test-queue")
+                                        .with(authentication(userAuth))
+                                        .param("ifEmpty", "false")
+                                        .param("ifUnused", "false"))
+                                        .andExpect(status().isOk());
+                }
         }
 
-        @Test
-        @Transactional
-        @DisplayName("Should handle different exchange types")
-        void handleDifferentExchangeTypes() throws Exception {
-            when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), any(CreateExchangeRequest.class),
-                    eq(testUser)))
-                    .thenReturn(Mono.empty());
+        @Nested
+        @DisplayName("Security Model Compliance")
+        class SecurityModelCompliance {
 
-            String[] exchangeTypes = { "direct", "fanout", "topic", "headers" };
+                @Test
+                @Transactional
+                @DisplayName("Should enforce authentication for all write operations")
+                void enforceAuthenticationForWriteOperations() throws Exception {
+                        CreateExchangeRequest createExchangeRequest = new CreateExchangeRequest();
+                        createExchangeRequest.setName("test-exchange");
+                        createExchangeRequest.setType("direct");
+                        createExchangeRequest.setVhost("/");
 
-            for (String type : exchangeTypes) {
-                CreateExchangeRequest request = new CreateExchangeRequest();
-                request.setName("test-exchange-" + type);
-                request.setType(type);
-                request.setVhost("/");
+                        // Test without authentication - should be redirected or return 401
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(createExchangeRequest)))
+                                        .andExpect(status().isUnauthorized());
+                }
 
-                mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                        .with(authentication(userAuth))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                        .andExpect(status().isOk());
-            }
+                @Test
+                @Transactional
+                @DisplayName("Should allow both USER and ADMINISTRATOR roles for write operations")
+                void allowBothUserAndAdminRoles() throws Exception {
+                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
+                                        any(User.class)))
+                                        .thenReturn(Mono.empty());
+
+                        CreateExchangeRequest createExchangeRequest = new CreateExchangeRequest();
+                        createExchangeRequest.setName("test-exchange");
+                        createExchangeRequest.setType("direct");
+                        createExchangeRequest.setVhost("/");
+
+                        // Test with USER role
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(createExchangeRequest)))
+                                        .andExpect(status().isOk());
+
+                        // Test with ADMINISTRATOR role
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
+                                        .with(authentication(adminAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(createExchangeRequest)))
+                                        .andExpect(status().isOk());
+                }
         }
-    }
 
-    @Nested
-    @DisplayName("UI Consistency and Theme Compliance")
-    class UIConsistencyTesting {
+        @Nested
+        @DisplayName("Different RabbitMQ Cluster Configurations")
+        class ClusterConfigurationTesting {
 
-        @Test
-        @Transactional
-        @DisplayName("Should return consistent error response format")
-        void returnConsistentErrorFormat() throws Exception {
-            // Test with invalid exchange name (empty)
-            CreateExchangeRequest invalidRequest = new CreateExchangeRequest();
-            invalidRequest.setName(""); // Invalid empty name
-            invalidRequest.setType("direct");
-            invalidRequest.setVhost("/");
+                @Test
+                @Transactional
+                @DisplayName("Should handle different virtual host configurations")
+                void handleDifferentVirtualHosts() throws Exception {
+                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
+                                        any(User.class)))
+                                        .thenReturn(Mono.empty());
 
-            mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
-                    .with(authentication(userAuth))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(invalidRequest)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+                        // Test with default vhost "/"
+                        CreateExchangeRequest defaultVhostRequest = new CreateExchangeRequest();
+                        defaultVhostRequest.setName("test-exchange-default");
+                        defaultVhostRequest.setType("direct");
+                        defaultVhostRequest.setVhost("/");
+
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(defaultVhostRequest)))
+                                        .andExpect(status().isOk());
+
+                        // Test with custom vhost
+                        CreateExchangeRequest customVhostRequest = new CreateExchangeRequest();
+                        customVhostRequest.setName("test-exchange-custom");
+                        customVhostRequest.setType("topic");
+                        customVhostRequest.setVhost("test-vhost");
+
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(customVhostRequest)))
+                                        .andExpect(status().isOk());
+                }
+
+                @Test
+                @Transactional
+                @DisplayName("Should handle different exchange types")
+                void handleDifferentExchangeTypes() throws Exception {
+                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
+                                        any(User.class)))
+                                        .thenReturn(Mono.empty());
+
+                        String[] exchangeTypes = { "direct", "fanout", "topic", "headers" };
+
+                        for (String type : exchangeTypes) {
+                                CreateExchangeRequest request = new CreateExchangeRequest();
+                                request.setName("test-exchange-" + type);
+                                request.setType(type);
+                                request.setVhost("/");
+
+                                mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges",
+                                                testCluster.getId())
+                                                .with(authentication(userAuth))
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(request)))
+                                                .andExpect(status().isOk());
+                        }
+                }
         }
 
-        @Test
-        @Transactional
-        @DisplayName("Should handle URL encoding consistently")
-        void handleUrlEncodingConsistently() throws Exception {
-            when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("/"),
-                    eq("test exchange with spaces"),
-                    eq(false), eq(testUser)))
-                    .thenReturn(Mono.empty());
+        @Nested
+        @DisplayName("UI Consistency and Theme Compliance")
+        class UIConsistencyTesting {
 
-            // Test with exchange name containing spaces
-            String exchangeNameWithSpaces = "test exchange with spaces";
-            String encodedVhost = Base64.getEncoder().encodeToString("/".getBytes());
-            String encodedExchangeName = java.net.URLEncoder.encode(exchangeNameWithSpaces, "UTF-8");
+                @Test
+                @Transactional
+                @DisplayName("Should return consistent error response format")
+                void returnConsistentErrorFormat() throws Exception {
+                        // Test with invalid exchange name (empty)
+                        CreateExchangeRequest invalidRequest = new CreateExchangeRequest();
+                        invalidRequest.setName(""); // Invalid empty name
+                        invalidRequest.setType("direct");
+                        invalidRequest.setVhost("/");
 
-            mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}",
-                    testCluster.getId(), encodedVhost, encodedExchangeName)
-                    .with(authentication(userAuth)))
-                    .andExpect(status().isOk());
+                        mockMvc.perform(put("/api/rabbitmq/{clusterId}/resources/exchanges", testCluster.getId())
+                                        .with(authentication(userAuth))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                                        .andExpect(status().isBadRequest())
+                                        .andExpect(content().contentType(MediaType.APPLICATION_JSON));
+                }
+
+                @Test
+                @Transactional
+                @DisplayName("Should handle URL encoding consistently")
+                void handleUrlEncodingConsistently() throws Exception {
+                        when(rabbitMQResourceService.deleteExchange(eq(testCluster.getId()), eq("/"),
+                                        eq("test exchange with spaces"),
+                                        isNull(), any(User.class)))
+                                        .thenReturn(Mono.empty());
+
+                        // Test with exchange name containing spaces
+                        String exchangeNameWithSpaces = "test exchange with spaces";
+                        String encodedVhost = Base64.getEncoder().encodeToString("/".getBytes());
+                        String encodedExchangeName = java.net.URLEncoder.encode(exchangeNameWithSpaces, "UTF-8");
+
+                        mockMvc.perform(delete("/api/rabbitmq/{clusterId}/resources/exchanges/{vhost}/{name}",
+                                        testCluster.getId(), encodedVhost, encodedExchangeName)
+                                        .with(authentication(userAuth)))
+                                        .andExpect(status().isOk());
+                }
         }
-    }
 
-    // Helper methods
-    private MessageDto createTestMessage(String payload) {
-        MessageDto message = new MessageDto();
-        message.setPayload(payload);
-        message.setPayloadEncoding("string");
-        message.setRoutingKey("test.key");
-        message.setRedelivered(false);
-        message.setExchange("test-exchange");
-        message.setMessageCount(1);
+        // Helper methods
+        private MessageDto createTestMessage(String payload) {
+                MessageDto message = new MessageDto();
+                message.setPayload(payload);
+                message.setPayloadEncoding("string");
+                message.setRoutingKey("test.key");
+                message.setRedelivered(false);
+                message.setExchange("test-exchange");
+                message.setMessageCount(1);
 
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("delivery_mode", 2);
-        properties.put("priority", 0);
-        message.setProperties(properties);
+                Map<String, Object> properties = new HashMap<>();
+                properties.put("delivery_mode", 2);
+                properties.put("priority", 0);
+                message.setProperties(properties);
 
-        return message;
-    }
+                return message;
+        }
 }

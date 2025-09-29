@@ -3,6 +3,7 @@ package com.rabbitmq.admin.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,7 +19,7 @@ public class VirtualHostDto {
     private String description;
 
     @JsonProperty("tags")
-    private String tags;
+    private List<String> tags;
 
     @JsonProperty("default_queue_type")
     private String defaultQueueType;
@@ -32,7 +33,7 @@ public class VirtualHostDto {
     public VirtualHostDto() {
     }
 
-    public VirtualHostDto(String name, String description, String tags, String defaultQueueType,
+    public VirtualHostDto(String name, String description, List<String> tags, String defaultQueueType,
             Boolean tracing, Map<String, Object> messageStats) {
         this.name = name;
         this.description = description;
@@ -58,11 +59,11 @@ public class VirtualHostDto {
         this.description = description;
     }
 
-    public String getTags() {
+    public List<String> getTags() {
         return tags;
     }
 
-    public void setTags(String tags) {
+    public void setTags(List<String> tags) {
         this.tags = tags;
     }
 
