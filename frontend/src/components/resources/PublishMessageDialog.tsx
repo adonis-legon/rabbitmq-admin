@@ -172,9 +172,13 @@ const PublishMessageDialog: React.FC<PublishMessageDialogProps> = ({
     headers: false,
   });
 
-  // Reset form when dialog opens
+  // Track if dialog was previously closed to detect actual opening
+  const [wasOpen, setWasOpen] = useState(open);
+
+  // Reset form when dialog opens (but not when virtualHosts refresh)
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpen) {
+      // Dialog is opening for the first time
       setFormData({
         vhost:
           targetResource?.vhost ||
@@ -194,14 +198,15 @@ const PublishMessageDialog: React.FC<PublishMessageDialogProps> = ({
       });
       reset();
     }
-  }, [open, targetResource, virtualHosts, context, reset]);
+    setWasOpen(open);
+  }, [open, targetResource, context, reset, virtualHosts, wasOpen]);
 
-  // Set default vhost when virtual hosts load
+  // Set default vhost when virtual hosts load (only if no vhost is set and dialog is open)
   useEffect(() => {
-    if (virtualHosts.length > 0 && !formData.vhost && !targetResource?.vhost) {
+    if (open && virtualHosts.length > 0 && !formData.vhost && !targetResource?.vhost) {
       setFormData((prev) => ({ ...prev, vhost: virtualHosts[0].name }));
     }
-  }, [virtualHosts, formData.vhost, targetResource?.vhost]);
+  }, [open, virtualHosts, formData.vhost, targetResource?.vhost]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -291,8 +296,8 @@ const PublishMessageDialog: React.FC<PublishMessageDialogProps> = ({
           );
           setSubmitError(
             err.response?.data?.message ||
-              err.message ||
-              "Failed to publish message. Please try again."
+            err.message ||
+            "Failed to publish message. Please try again."
           );
         }
       );
@@ -303,17 +308,17 @@ const PublishMessageDialog: React.FC<PublishMessageDialogProps> = ({
 
   const handleInputChange =
     (field: keyof FormData) =>
-    (
-      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
-    ) => {
-      const value = event.target.value;
-      setFormData((prev) => ({ ...prev, [field]: value }));
+      (
+        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
+      ) => {
+        const value = event.target.value;
+        setFormData((prev) => ({ ...prev, [field]: value }));
 
-      // Clear error when user starts typing
-      if (errors[field as keyof FormErrors]) {
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
-      }
-    };
+        // Clear error when user starts typing
+        if (errors[field as keyof FormErrors]) {
+          setErrors((prev) => ({ ...prev, [field]: undefined }));
+        }
+      };
 
   const handlePropertiesChange = (newProperties: Record<string, any>) => {
     setFormData((prev) => ({ ...prev, properties: newProperties }));
