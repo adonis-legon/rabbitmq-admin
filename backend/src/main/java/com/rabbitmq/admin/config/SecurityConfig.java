@@ -106,7 +106,7 @@ public class SecurityConfig {
 
                         // Static resources (frontend)
                         .requestMatchers("/", "/static/**", "/assets/**", "/*.js", "/*.css", "/*.ico", "/*.png",
-                                "/*.jpg", "/*.gif")
+                                "/*.jpg", "/*.gif", "/*.svg")
                         .permitAll()
                         .requestMatchers("/index.html", "/manifest.json").permitAll()
 
