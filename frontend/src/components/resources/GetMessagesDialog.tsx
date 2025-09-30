@@ -802,8 +802,6 @@ const GetMessagesDialog: React.FC<GetMessagesDialogProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-
-
     </>
   );
 };

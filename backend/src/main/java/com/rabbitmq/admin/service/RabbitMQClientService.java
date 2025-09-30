@@ -1,13 +1,18 @@
 package com.rabbitmq.admin.service;
 
 import com.rabbitmq.admin.model.ClusterConnection;
+import io.netty.channel.ChannelOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.Base64;
@@ -126,6 +131,15 @@ public class RabbitMQClientService {
                 .uri(uriBuilder -> buildUri(uriBuilder, path))
                 .retrieve()
                 .bodyToMono(responseType)
+                .timeout(Duration.ofSeconds(25)) // Add timeout to prevent hanging requests
+                .retryWhen(Retry.backoff(2, Duration.ofMillis(100)) // Retry up to 2 times with backoff
+                        .maxBackoff(Duration.ofSeconds(2))
+                        .filter(throwable -> {
+                            // Only retry on connection issues, not on HTTP errors
+                            return throwable instanceof reactor.netty.http.client.PrematureCloseException
+                                    || throwable instanceof java.net.ConnectException
+                                    || throwable instanceof java.util.concurrent.TimeoutException;
+                        }))
                 .doOnError(error -> logger.error("GET request failed for cluster {} path {}: {}",
                         clusterConnection.getId(), path, error.getMessage()));
     }
@@ -184,6 +198,7 @@ public class RabbitMQClientService {
 
         return client.delete()
                 .uri(uriBuilder -> buildUri(uriBuilder, path))
+                .header(HttpHeaders.ACCEPT, MediaType.ALL_VALUE) // Override default JSON Accept header
                 .retrieve()
                 .bodyToMono(Void.class)
                 .doOnError(error -> logger.error("DELETE request failed for cluster {} path {}: {}",
@@ -257,8 +272,25 @@ public class RabbitMQClientService {
         logger.debug("Creating WebClient for cluster {} with base URL: {}",
                 clusterConnection.getId(), baseUrl);
 
+        // Configure connection provider with proper pooling settings
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("rabbitmq-client")
+                .maxConnections(50) // Max connections per pool
+                .maxIdleTime(Duration.ofSeconds(30)) // Keep connections alive for 30s
+                .maxLifeTime(Duration.ofMinutes(5)) // Recycle connections after 5 minutes
+                .pendingAcquireTimeout(Duration.ofSeconds(10)) // Wait up to 10s for a connection
+                .evictInBackground(Duration.ofSeconds(30)) // Background cleanup every 30s
+                .build();
+
+        // Configure HTTP client with timeouts and connection pooling
+        HttpClient httpClient = HttpClient.create(connectionProvider)
+                .responseTimeout(Duration.ofSeconds(30)) // Total response timeout
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000) // Connect timeout
+                .option(ChannelOption.SO_KEEPALIVE, true) // Enable keep-alive
+                .wiretap(false); // Disable wiretap logging for performance
+
         return WebClient.builder()
                 .baseUrl(baseUrl)
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .defaultHeader(HttpHeaders.AUTHORIZATION, authHeader)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.USER_AGENT, "RabbitMQ-Admin-Client/1.0")

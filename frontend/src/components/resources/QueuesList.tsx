@@ -36,6 +36,7 @@ import {
 } from "../../types/rabbitmq";
 import { useQueues } from "../../hooks/useQueues";
 import { useWriteOperationNotifications } from "../../hooks/useWriteOperationNotifications";
+import { useAutoRefreshPreferences } from "../../hooks/useAutoRefreshPreferences";
 import { rabbitmqResourcesApi } from "../../services/api/rabbitmqResourcesApi";
 import ResourceTable from "./shared/ResourceTable";
 import ResourceFilters from "./shared/ResourceFilters";
@@ -73,8 +74,12 @@ export const QueuesList: React.FC<QueuesListProps> = ({
     typeFilter: [],
   });
 
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(30);
+  const { autoRefresh, refreshInterval, setAutoRefresh, setRefreshInterval } =
+    useAutoRefreshPreferences({
+      storageKey: 'rabbitmq-admin-queues-autorefresh',
+      defaultInterval: 30,
+      defaultEnabled: false,
+    });
   const [selectedQueue, setSelectedQueue] = useState<RabbitMQQueue | null>(
     null
   );

@@ -2,7 +2,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { act } from 'react';
 import { vi } from 'vitest';
-import { useVirtualHosts } from '../useVirtualHosts';
+import { useVirtualHosts, clearVirtualHostsCache } from '../useVirtualHosts';
 import { rabbitmqResourcesApi } from '../../services/api/rabbitmqResourcesApi';
 import { VirtualHost } from '../../types/rabbitmq';
 
@@ -30,6 +30,11 @@ const mockVirtualHosts: VirtualHost[] = [
 describe('useVirtualHosts', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        clearVirtualHostsCache(); // Clear cache between tests
+    });
+
+    afterEach(() => {
+        clearVirtualHostsCache(); // Clear cache after tests too
     });
 
     it('initializes with empty state', () => {
@@ -176,9 +181,14 @@ describe('useVirtualHosts', () => {
     });
 
     it('refreshes virtual hosts with refresh method', async () => {
+        const newVirtualHost: VirtualHost = {
+            name: 'new-vhost',
+            description: 'New virtual host'
+        };
+
         mockRabbitmqResourcesApi.getVirtualHosts
             .mockResolvedValueOnce(mockVirtualHosts)
-            .mockResolvedValueOnce([...mockVirtualHosts, { name: 'new-vhost' }]);
+            .mockResolvedValueOnce([...mockVirtualHosts, newVirtualHost]);
 
         const { result } = renderHook(() => useVirtualHosts('test-cluster'));
 
@@ -214,6 +224,7 @@ describe('useVirtualHosts', () => {
 
         const { result } = renderHook(() => useVirtualHosts('test-cluster'));
 
+        // Loading should be true when clusterId is provided during render
         expect(result.current.loading).toBe(true);
 
         act(() => {
@@ -235,13 +246,17 @@ describe('useVirtualHosts', () => {
 
         const { result } = renderHook(() => useVirtualHosts());
 
-        // Start the async operation but don't await it yet
+        // Initially loading should be false since no clusterId is provided
+        expect(result.current.loading).toBe(false);
+
+        // Start the async operation and wait for loading state to update
         act(() => {
             result.current.loadVirtualHosts('test-cluster');
         });
 
-        // Check loading state immediately after starting
-        expect(result.current.loading).toBe(true);
+        await waitFor(() => {
+            expect(result.current.loading).toBe(true);
+        });
 
         // Resolve the promise and wait for completion
         act(() => {

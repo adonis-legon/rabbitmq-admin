@@ -31,6 +31,7 @@ import {
 } from "../../types/rabbitmq";
 import { useExchanges } from "../../hooks/useExchanges";
 import { useWriteOperationNotifications } from "../../hooks/useWriteOperationNotifications";
+import { useAutoRefreshPreferences } from "../../hooks/useAutoRefreshPreferences";
 import { rabbitmqResourcesApi } from "../../services/api/rabbitmqResourcesApi";
 import ResourceTable from "./shared/ResourceTable";
 import ResourceFilters from "./shared/ResourceFilters";
@@ -67,8 +68,12 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     typeFilter: [],
   });
 
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(30);
+  const { autoRefresh, refreshInterval, setAutoRefresh, setRefreshInterval } =
+    useAutoRefreshPreferences({
+      storageKey: 'rabbitmq-admin-exchanges-autorefresh',
+      defaultInterval: 30,
+      defaultEnabled: false,
+    });
   const [selectedExchange, setSelectedExchange] =
     useState<RabbitMQExchange | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -484,8 +489,8 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
   const filteredExchanges = data?.items
     ? filters.typeFilter.length > 0
       ? data.items.filter((exchange) =>
-          filters.typeFilter.includes(exchange.type)
-        )
+        filters.typeFilter.includes(exchange.type)
+      )
       : data.items
     : [];
 

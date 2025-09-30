@@ -169,21 +169,22 @@ const MessageDisplayDialog: React.FC<MessageDisplayDialogProps> = ({
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      data-testid="message-display-dialog"
       PaperProps={{
         sx: { maxHeight: "90vh", height: "auto" },
       }}
     >
       <DialogTitle>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography variant="h6" component="span">
+          <Typography variant="h6" component="span" data-testid="queue-name">
             Messages from Queue "{queueName}"
           </Typography>
           <Chip
-            label={`${messages.length} message${
-              messages.length === 1 ? "" : "s"
-            }`}
+            label={`${messages.length} message${messages.length === 1 ? "" : "s"
+              }`}
             color="primary"
             size="small"
+            data-testid="message-count"
           />
         </Box>
       </DialogTitle>

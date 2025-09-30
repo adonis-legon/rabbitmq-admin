@@ -349,13 +349,15 @@ describe("GetMessagesDialog", () => {
     });
   });
 
-  it("shows MessageDisplayDialog when messages are retrieved", async () => {
+  it("shows messages in table when messages are retrieved", async () => {
     const user = userEvent.setup();
     const mockMessages = [
       {
         payloadEncoding: "string",
         payload: "test message",
         properties: {},
+        exchange: "test-exchange",
+        routingKey: "test-routing-key",
       },
     ];
     mockGetMessages.mockResolvedValue(mockMessages);
@@ -374,10 +376,13 @@ describe("GetMessagesDialog", () => {
     const submitButton = screen.getByRole("button", { name: "Get Messages" });
     await user.click(submitButton);
 
+    // Check that messages are displayed in the table
     await waitFor(() => {
-      expect(screen.getByTestId("message-display-dialog")).toBeInTheDocument();
-      expect(screen.getByTestId("queue-name")).toHaveTextContent("test-queue");
-      expect(screen.getByTestId("message-count")).toHaveTextContent("1");
+      expect(screen.getByText("Retrieved Messages (1)")).toBeInTheDocument();
+      expect(screen.getByText("#1")).toBeInTheDocument(); // Message number
+      expect(screen.getByText("test message")).toBeInTheDocument(); // Payload content
+      expect(screen.getByText("test-exchange")).toBeInTheDocument(); // Exchange name
+      expect(screen.getByText("test-routing-key")).toBeInTheDocument(); // Routing key
     });
   });
 

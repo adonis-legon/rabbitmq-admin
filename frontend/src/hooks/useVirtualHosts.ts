@@ -12,6 +12,12 @@ const virtualHostsCache = new Map<string, {
 const ongoingRequests = new Map<string, Promise<VirtualHost[]>>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Export for testing
+export const clearVirtualHostsCache = () => {
+    virtualHostsCache.clear();
+    ongoingRequests.clear();
+};
+
 interface UseVirtualHostsState {
     virtualHosts: VirtualHost[];
     loading: boolean;
