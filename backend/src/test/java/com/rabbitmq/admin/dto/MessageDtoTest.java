@@ -80,12 +80,12 @@ class MessageDtoTest {
 
         String json = objectMapper.writeValueAsString(dto);
 
-        assertTrue(json.contains("\"payload_encoding\":\"string\""));
+        assertTrue(json.contains("\"payloadEncoding\":\"string\""));
         assertTrue(json.contains("\"payload\":\"Test message\""));
-        assertTrue(json.contains("\"routing_key\":\"test.routing.key\""));
+        assertTrue(json.contains("\"routingKey\":\"test.routing.key\""));
         assertTrue(json.contains("\"redelivered\":false"));
         assertTrue(json.contains("\"exchange\":\"test-exchange\""));
-        assertTrue(json.contains("\"message_count\":1"));
+        assertTrue(json.contains("\"messageCount\":1"));
         assertTrue(json.contains("\"delivery_mode\":2"));
         assertTrue(json.contains("\"content_type\":\"text/plain\""));
     }
@@ -93,13 +93,13 @@ class MessageDtoTest {
     @Test
     void testJsonDeserialization() throws Exception {
         String json = "{" +
-                "\"payload_encoding\":\"base64\"," +
+                "\"payloadEncoding\":\"base64\"," +
                 "\"payload\":\"SGVsbG8=\"," +
                 "\"properties\":{\"delivery_mode\":1,\"priority\":3}," +
-                "\"routing_key\":\"my.key\"," +
+                "\"routingKey\":\"my.key\"," +
                 "\"redelivered\":true," +
                 "\"exchange\":\"my-exchange\"," +
-                "\"message_count\":15" +
+                "\"messageCount\":15" +
                 "}";
 
         MessageDto dto = objectMapper.readValue(json, MessageDto.class);

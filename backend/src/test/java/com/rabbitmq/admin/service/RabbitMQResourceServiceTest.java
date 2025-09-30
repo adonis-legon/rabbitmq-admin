@@ -195,6 +195,7 @@ class RabbitMQResourceServiceTest {
 
                 // Verify the request body includes headers (properties are directly the headers
                 // in this case)
+                @SuppressWarnings("unchecked")
                 ArgumentCaptor<Map<String, Object>> bodyCaptor = ArgumentCaptor.forClass(Map.class);
                 verify(proxyService).post(eq(testClusterId), anyString(), bodyCaptor.capture(),
                                 eq(PublishResponse.class), eq(testUser));
@@ -224,6 +225,7 @@ class RabbitMQResourceServiceTest {
                 resourceService.publishMessage(testClusterId, vhost, exchange, request, testUser);
 
                 // Then
+                @SuppressWarnings("unchecked")
                 ArgumentCaptor<Map<String, Object>> bodyCaptor = ArgumentCaptor.forClass(Map.class);
                 verify(proxyService).post(eq(testClusterId), anyString(), bodyCaptor.capture(),
                                 eq(PublishResponse.class), eq(testUser));
@@ -253,6 +255,8 @@ class RabbitMQResourceServiceTest {
                                 .thenReturn(Mono.just(mockMessages));
 
                 // When
+                // Note: The service now uses enhanced two-step JSON processing to ensure
+                // custom deserializers like PropertiesDeserializer are properly invoked
                 List<MessageDto> result = resourceService.getMessages(testClusterId, vhost, queue, request, testUser);
 
                 // Then
@@ -299,6 +303,7 @@ class RabbitMQResourceServiceTest {
                 resourceService.getMessages(testClusterId, vhost, queue, request, testUser);
 
                 // Then
+                @SuppressWarnings("unchecked")
                 ArgumentCaptor<Map<String, Object>> bodyCaptor = ArgumentCaptor.forClass(Map.class);
                 verify(proxyService).post(eq(testClusterId), anyString(), bodyCaptor.capture(), eq(List.class),
                                 eq(testUser));

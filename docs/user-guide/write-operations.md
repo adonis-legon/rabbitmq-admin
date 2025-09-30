@@ -135,7 +135,14 @@ This uses the default exchange (which has an empty name) with the queue name as 
 
 5. Click **"Get Messages"** to retrieve messages
 
-Retrieved messages will be displayed with their properties, headers, and payload content.
+Retrieved messages will be displayed in a dedicated message display dialog, showing:
+
+- **Message metadata**: Exchange, routing key, and payload encoding
+- **Message payload**: Full content with monospace formatting for readability
+- **Message properties**: Headers and other message properties in JSON format
+- **Message count**: Clear indication of how many messages were retrieved
+
+The message display dialog provides an optimized viewing experience for message content and can be reopened using the "View Retrieved Messages" button if closed.
 
 **Timeout Behavior**: Message retrieval operations have a 30-second timeout to ensure system stability. If the operation takes longer than 30 seconds (which may happen with very large messages or slow cluster connections), the operation will be cancelled and you'll receive an error message. In such cases, try reducing the message count or check your cluster connectivity.
 

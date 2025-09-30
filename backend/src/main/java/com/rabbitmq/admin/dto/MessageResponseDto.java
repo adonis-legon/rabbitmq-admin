@@ -1,29 +1,25 @@
 package com.rabbitmq.admin.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.rabbitmq.admin.dto.deserializer.PropertiesDeserializer;
 
 import java.util.Map;
 
 /**
- * DTO for RabbitMQ message information.
+ * DTO for RabbitMQ message information in API responses.
+ * Uses camelCase field names for frontend compatibility.
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class MessageDto {
+public class MessageResponseDto {
 
-    @JsonProperty("payload_encoding")
+    @JsonProperty("payloadEncoding")
     private String payloadEncoding;
 
     @JsonProperty("payload")
     private String payload;
 
     @JsonProperty("properties")
-    @JsonDeserialize(using = PropertiesDeserializer.class)
     private Map<String, Object> properties;
 
-    @JsonProperty("routing_key")
+    @JsonProperty("routingKey")
     private String routingKey;
 
     @JsonProperty("redelivered")
@@ -32,13 +28,13 @@ public class MessageDto {
     @JsonProperty("exchange")
     private String exchange;
 
-    @JsonProperty("message_count")
+    @JsonProperty("messageCount")
     private Integer messageCount;
 
-    public MessageDto() {
+    public MessageResponseDto() {
     }
 
-    public MessageDto(String payloadEncoding, String payload, Map<String, Object> properties,
+    public MessageResponseDto(String payloadEncoding, String payload, Map<String, Object> properties,
             String routingKey, Boolean redelivered, String exchange, Integer messageCount) {
         this.payloadEncoding = payloadEncoding;
         this.payload = payload;
@@ -47,6 +43,18 @@ public class MessageDto {
         this.redelivered = redelivered;
         this.exchange = exchange;
         this.messageCount = messageCount;
+    }
+
+    // Static factory method to convert from MessageDto
+    public static MessageResponseDto fromMessageDto(MessageDto messageDto) {
+        return new MessageResponseDto(
+                messageDto.getPayloadEncoding(),
+                messageDto.getPayload(),
+                messageDto.getProperties(),
+                messageDto.getRoutingKey(),
+                messageDto.getRedelivered(),
+                messageDto.getExchange(),
+                messageDto.getMessageCount());
     }
 
     public String getPayloadEncoding() {

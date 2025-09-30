@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
-  ContentCopy as ContentCopyIcon
+  ContentCopy as ContentCopyIcon,
 } from "@mui/icons-material";
 import { Message } from "../../types/rabbitmq";
 import { useNotification } from "../../contexts/NotificationContext";
@@ -170,7 +170,7 @@ const MessageDisplayDialog: React.FC<MessageDisplayDialogProps> = ({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: { minHeight: "600px", maxHeight: "90vh" },
+        sx: { maxHeight: "90vh", height: "auto" },
       }}
     >
       <DialogTitle>
@@ -179,15 +179,16 @@ const MessageDisplayDialog: React.FC<MessageDisplayDialogProps> = ({
             Messages from Queue "{queueName}"
           </Typography>
           <Chip
-            label={`${messages.length} message${messages.length === 1 ? "" : "s"
-              }`}
+            label={`${messages.length} message${
+              messages.length === 1 ? "" : "s"
+            }`}
             color="primary"
             size="small"
           />
         </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ pb: 1 }}>
+      <DialogContent sx={{ pb: 1, overflow: "auto" }}>
         {messages.length === 0 ? (
           <Alert severity="info" sx={{ mt: 2 }}>
             No messages were retrieved from the queue.
@@ -307,7 +308,7 @@ const MessageDisplayDialog: React.FC<MessageDisplayDialogProps> = ({
                               backgroundColor: "grey.50",
                               fontFamily: "monospace",
                               fontSize: "0.875rem",
-                              maxHeight: "300px",
+                              maxHeight: "400px",
                               overflow: "auto",
                               whiteSpace: "pre-wrap",
                               wordBreak: "break-all",

@@ -31,7 +31,7 @@ vi.mock("../MessageDisplayDialog", () => ({
     open ? (
       <div data-testid="message-display-dialog">
         <div data-testid="queue-name">{queueName}</div>
-        <div data-testid="message-count">{messages.length}</div>
+        <div data-testid="message-count">{messages?.length || 0}</div>
         <button onClick={onClose} data-testid="close-message-display">
           Close
         </button>
@@ -185,6 +185,7 @@ describe("GetMessagesDialog", () => {
 
   it("validates message count range", async () => {
     const user = userEvent.setup();
+    mockGetMessages.mockResolvedValue([]);
     renderWithTheme(<GetMessagesDialog {...defaultProps} />);
 
     // Set count to invalid value via slider (this is tricky with MUI slider)
@@ -218,7 +219,9 @@ describe("GetMessagesDialog", () => {
     await user.type(queueInput, "test-queue");
 
     // Find truncate input by role and name
-    const truncateInput = screen.getByRole("spinbutton", { name: /truncate limit/i });
+    const truncateInput = screen.getByRole("spinbutton", {
+      name: /truncate limit/i,
+    });
 
     await user.clear(truncateInput);
     await user.type(truncateInput, "100000"); // Too large
@@ -258,7 +261,9 @@ describe("GetMessagesDialog", () => {
     await user.clear(queueInput);
     await user.type(queueInput, "test-queue");
 
-    const truncateInput = screen.getByRole("spinbutton", { name: /truncate limit/i });
+    const truncateInput = screen.getByRole("spinbutton", {
+      name: /truncate limit/i,
+    });
     await user.clear(truncateInput);
     await user.type(truncateInput, "1000");
 
@@ -540,7 +545,7 @@ describe("GetMessagesDialog", () => {
     ).toBeInTheDocument();
   });
 
-  it("calls onSuccess when messages are retrieved successfully", async () => {
+  it("calls onSuccess when dialog is closed after retrieving messages", async () => {
     const user = userEvent.setup();
     const onSuccess = vi.fn();
     mockGetMessages.mockResolvedValue([
@@ -567,6 +572,28 @@ describe("GetMessagesDialog", () => {
     const submitButton = screen.getByRole("button", { name: "Get Messages" });
     await user.click(submitButton);
 
+    // Wait for messages to be retrieved and success alert to appear
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Successfully retrieved 1 message/)
+      ).toBeInTheDocument();
+    });
+
+    // Now close the dialog - get all Close buttons and click the main dialog one (not the alert one)
+    const closeButtons = screen.getAllByRole("button", { name: "Close" });
+    // The main dialog close button should be the second one (after the alert close button)
+    const dialogCloseButton = closeButtons.find(button =>
+      button.textContent === "Close" && !button.getAttribute("aria-label")
+    );
+
+    if (dialogCloseButton) {
+      await user.click(dialogCloseButton);
+    } else {
+      // Fallback: click the last Close button which should be the dialog button
+      await user.click(closeButtons[closeButtons.length - 1]);
+    }
+
+    // onSuccess should be called when dialog is closed
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
     });

@@ -133,7 +133,7 @@ Components for RabbitMQ resource management:
     - ✅ Queue creation dialog (CreateQueueDialog) with comprehensive form validation, virtual host integration, and queue options
     - ✅ Binding creation dialog (CreateBindingDialog) with dual context support and comprehensive validation
     - ✅ Message publishing dialog (PublishMessageDialog) with exchange/queue contexts and enhanced testing
-    - ✅ Message consumption dialog (GetMessagesDialog) with acknowledgment modes and message display integration
+    - ✅ Message consumption dialog (GetMessagesDialog) with acknowledgment modes and dedicated message display dialog
     - ✅ Delete confirmation dialog (DeleteConfirmationDialog) with multi-context support and conditional deletion options
     - 🚧 **ExchangesList Integration**: Currently integrating write operations with action menus, "Create Exchange" button, and dialog state management for create binding, publish message, and delete exchange operations
 
@@ -145,16 +145,20 @@ Components for RabbitMQ resource management:
     - Acknowledgment mode selection with detailed descriptions for each mode
     - Encoding options (auto/base64) for proper message display
     - Optional truncate limit for large message payloads
-    - Integration with MessageDisplayDialog for retrieved message viewing
+    - Integration with MessageDisplayDialog for optimized message viewing experience
     - Support for both standalone and queue-specific contexts
     - Comprehensive form validation and error handling
     - Pre-population of queue and virtual host when invoked from specific contexts
 
   - `MessageDisplayDialog`: Retrieved message display and formatting
-    - Proper message formatting with encoding detection
-    - Message properties and headers display
-    - Pagination for multiple retrieved messages
-    - Copy-to-clipboard functionality for message content
+    - Tabular message display with expandable rows for detailed view
+    - Message overview with exchange, routing key, and encoding information
+    - Proper message formatting with encoding detection and binary data handling
+    - Message properties and headers display with enhanced deserialization handling
+    - Backend two-step JSON processing ensures consistent property format
+    - Interactive message expansion with collapse/expand functionality
+    - Copy-to-clipboard functionality for message content and properties
+    - Visual indicators for redelivery status and encoding types
 
 - **Shared Resource Components** (`/components/resources/shared/`):
   - `ResourceTable`: Virtualized data table component

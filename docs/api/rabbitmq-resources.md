@@ -35,6 +35,22 @@ The API uses a specific encoding scheme for path parameters to handle special ch
 
 **Implementation Details**: When the exchange parameter is empty (indicating the default exchange), the system constructs the API path as `/api/exchanges/{vhost}//publish` instead of attempting to encode an empty string, which would result in malformed URLs.
 
+### Technical Note: Message Properties Deserialization
+
+**Enhanced in Latest Version**: The message retrieval system now includes enhanced deserialization handling to properly process custom deserializers for message properties. The `MessageDto` class includes a custom deserializer (`PropertiesDeserializer`) that handles inconsistencies in the RabbitMQ Management API response format.
+
+**Implementation Details**:
+
+The RabbitMQ Management API returns message properties in different formats depending on whether properties exist:
+
+- When no properties exist: returns an empty array `[]`
+- When properties exist: returns an object `{}`
+- When properties are null: returns `null`
+
+To ensure the custom deserializer is properly invoked, the service layer converts the proxy response to a JSON string first, then deserializes it using `ObjectMapper.readValue()` with the appropriate `TypeReference`. This two-step process ensures that custom deserializers like `PropertiesDeserializer` are correctly applied, providing consistent `Map<String, Object>` representation for message properties regardless of the original API response format.
+
+This enhancement ensures robust message consumption and display functionality across all message property scenarios.
+
 ### Virtual Host Encoding
 
 Virtual host names are **Base64 encoded** to handle special characters, particularly the default virtual host `/`:
@@ -222,7 +238,7 @@ The API includes comprehensive end-to-end testing through `RabbitMQWriteOperatio
 - `PublishMessageRequest` - Message publishing with payload size and encoding validation
 - `GetMessagesRequest` - Message consumption with count and acknowledgment mode validation
 - `VirtualHostDto` - Virtual host information with statistics
-- `MessageDto` - Message representation with properties and metadata
+- `MessageDto` - Message representation with properties and metadata, includes custom deserializer with enhanced two-step JSON processing for handling RabbitMQ API property format variations
 - `PublishResponse` - Publishing result with routing confirmation
 
 ## TypeScript Interfaces
@@ -691,7 +707,7 @@ The API supports write operations for managing RabbitMQ resources. These operati
 - ✅ **Queue Management**: Create, delete, and purge queues with conditional options (if-empty, if-unused)
 - ✅ **Binding Management**: Create bindings between exchanges and queues/exchanges with full argument support
 - ✅ **Message Publishing**: Publish messages to exchanges and queues with routing confirmation and comprehensive properties
-- ✅ **Message Consumption**: Fully implemented with 30-second timeout protection and comprehensive error handling
+- ✅ **Message Consumption**: Fully implemented with 30-second timeout protection, comprehensive error handling, and enhanced message property deserialization using two-step JSON processing to ensure custom deserializers are properly invoked for handling RabbitMQ API format variations (empty array vs object)
 
 **Backend Implementation Complete**: All write operations are fully implemented in the backend with comprehensive validation, error handling, audit logging, and metrics collection. The implementation includes proper URL encoding/decoding for virtual hosts and resource names, support for complex arguments and properties, and integration with the existing security model.
 
@@ -701,7 +717,7 @@ The API supports write operations for managing RabbitMQ resources. These operati
 - ✅ **Queue Creation Dialog**: Fully implemented CreateQueueDialog component with comprehensive form validation, queue options, virtual host integration, arguments editor, and complete test coverage
 - ✅ **Binding Creation Dialog**: Fully implemented CreateBindingDialog component with dual context support (exchange/queue), destination type selection, routing key validation, arguments editor, and comprehensive error handling
 - ✅ **Message Publishing Dialog**: Fully implemented PublishMessageDialog component with comprehensive form validation, dual context support (exchange/queue), payload encoding options, message properties and headers editors, routing confirmation feedback, and complete test coverage including form validation, API integration, error handling, and notification testing
-- ✅ **Message Consumption Dialog**: Fully implemented GetMessagesDialog and MessageDisplayDialog components with acknowledgment modes, message count selection, encoding options, and comprehensive validation
+- ✅ **Message Consumption Dialog**: Fully implemented GetMessagesDialog and MessageDisplayDialog components with acknowledgment modes, message count selection, encoding options, dedicated message display dialog, and comprehensive validation
 - ✅ **Delete Confirmation Dialog**: Fully implemented DeleteConfirmationDialog component with multi-context support, conditional deletion options, and comprehensive example integration patterns
 - 🚧 **UI Integration**: ExchangesList component integration in progress with action menus for write operations (create binding, publish message, delete exchange) and proper dialog state management
 - ✅ **Notification System**: Comprehensive notification utilities implemented with consistent message formatting, HTTP status code handling, routing result notifications, and automatic duration management
@@ -990,7 +1006,7 @@ Retrieves messages from a specific queue with configurable acknowledgment modes 
 **Implementation Status:**
 
 - ✅ **Service Layer**: `RabbitMQResourceService.getMessages()` method fully implemented
-- ✅ **DTO Support**: `GetMessagesRequest` and `MessageDto` with comprehensive validation
+- ✅ **DTO Support**: `GetMessagesRequest` and `MessageDto` with comprehensive validation and enhanced property deserialization using two-step JSON processing
 - ✅ **Controller Endpoint**: Fully implemented with 30-second timeout protection
 - ✅ **Features**: Support for acknowledgment modes, encoding options, and message truncation
 - ✅ **Frontend Integration**: Ready for integration with comprehensive dialog components

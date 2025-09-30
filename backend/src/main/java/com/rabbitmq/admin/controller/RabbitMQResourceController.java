@@ -666,7 +666,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity with list of messages
          */
         @PostMapping("/queues/{vhost}/{queue}/get")
-        public ResponseEntity<List<MessageDto>> getMessages(
+        public ResponseEntity<List<MessageResponseDto>> getMessages(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
                         @PathVariable String queue,
@@ -688,10 +688,16 @@ public class RabbitMQResourceController {
                                 request.getAckmode(), request.getEncoding());
 
                 try {
-                        List<MessageDto> result = resourceService
+                        List<MessageDto> messages = resourceService
                                         .getMessages(clusterId, vhost, queue, request, principal.getUser());
+
+                        // Convert to response DTOs with camelCase field names
+                        List<MessageResponseDto> result = messages.stream()
+                                        .map(MessageResponseDto::fromMessageDto)
+                                        .collect(java.util.stream.Collectors.toList());
+
                         logger.debug("Successfully returned {} messages from queue {} in vhost {} for cluster {}",
-                                        result != null ? result.size() : 0, queue, vhost, clusterId);
+                                        result.size(), queue, vhost, clusterId);
                         return ResponseEntity.ok(result);
                 } catch (Exception error) {
                         logger.error("Failed to get messages from queue {} in vhost {} for cluster {}: {}",

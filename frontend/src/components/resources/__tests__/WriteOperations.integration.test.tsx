@@ -217,12 +217,12 @@ describe("Write Operations Integration Tests", () => {
       const mockMessages = [
         {
           payload: "Test message content",
-          payload_encoding: "string",
+          payloadEncoding: "string",
           properties: { delivery_mode: 2 },
-          routing_key: "test.key",
+          routingKey: "test.key",
           redelivered: false,
           exchange: "test-exchange",
-          message_count: 1,
+          messageCount: 1,
         },
       ];
 
