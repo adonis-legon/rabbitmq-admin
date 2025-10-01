@@ -70,6 +70,17 @@ Reusable components used throughout the application:
   - Responsive behavior and Material-UI theme integration
   - Used across Dashboard and resource management pages
 
+- **`DeleteConfirmationDialog`**: Reusable confirmation dialog for destructive operations
+
+  - Multi-context support for exchange, queue, and purge operations
+  - Conditional deletion options (if-unused, if-empty parameters)
+  - Context-aware warning messages and confirmation text
+  - Loading states with disabled interactions during operations
+  - Proper error handling with parent component error management
+  - TypeScript type safety with DeleteType and DeleteOptions interfaces
+  - Material-UI integration with responsive design and accessibility
+  - **Example Integration**: Includes comprehensive example file (`DeleteConfirmationDialog.example.tsx`) demonstrating proper integration patterns with RabbitMQ API functions
+
 - **`LoadingSpinner`**: Consistent loading state indicator
 - **`ErrorBoundary`**: Error boundary for component error handling
 
@@ -117,6 +128,37 @@ Components for RabbitMQ resource management:
   - Pagination controls
   - Detail modal integration
   - Proper distinction between "no data" and "no filtered results" states
+  - **Write Operations Support**: Backend implementation complete for exchanges, queues, bindings, and message publishing. Frontend UI components implemented:
+    - ✅ Exchange creation dialog (CreateExchangeDialog) with comprehensive form validation and testing
+    - ✅ Queue creation dialog (CreateQueueDialog) with comprehensive form validation, virtual host integration, and queue options
+    - ✅ Binding creation dialog (CreateBindingDialog) with dual context support and comprehensive validation
+    - ✅ Message publishing dialog (PublishMessageDialog) with exchange/queue contexts and enhanced testing
+    - ✅ Message consumption dialog (GetMessagesDialog) with acknowledgment modes and dedicated message display dialog
+    - ✅ Delete confirmation dialog (DeleteConfirmationDialog) with multi-context support and conditional deletion options
+    - 🚧 **ExchangesList Integration**: Currently integrating write operations with action menus, "Create Exchange" button, and dialog state management for create binding, publish message, and delete exchange operations
+
+- **Message Operations Components**:
+
+  - `GetMessagesDialog`: Message consumption configuration dialog
+
+    - Interactive message count selection with slider control (1-100 messages)
+    - Acknowledgment mode selection with detailed descriptions for each mode
+    - Encoding options (auto/base64) for proper message display
+    - Optional truncate limit for large message payloads
+    - Integration with MessageDisplayDialog for optimized message viewing experience
+    - Support for both standalone and queue-specific contexts
+    - Comprehensive form validation and error handling
+    - Pre-population of queue and virtual host when invoked from specific contexts
+
+  - `MessageDisplayDialog`: Retrieved message display and formatting
+    - Tabular message display with expandable rows for detailed view
+    - Message overview with exchange, routing key, and encoding information
+    - Proper message formatting with encoding detection and binary data handling
+    - Message properties and headers display with enhanced deserialization handling
+    - Backend two-step JSON processing ensures consistent property format
+    - Interactive message expansion with collapse/expand functionality
+    - Copy-to-clipboard functionality for message content and properties
+    - Visual indicators for redelivery status and encoding types
 
 - **Shared Resource Components** (`/components/resources/shared/`):
   - `ResourceTable`: Virtualized data table component
@@ -158,6 +200,85 @@ User authentication and authorization:
 - `ProtectedRoute`: Route protection wrapper
 - `AdminRoute`: Admin-only route protection
 
+## Notification System
+
+### Notification Utilities (`/utils/notificationUtils.ts`)
+
+The application includes a comprehensive notification utility system for consistent user feedback across all write operations:
+
+#### Core Interfaces
+
+```typescript
+export interface NotificationOptions {
+  autoHideDuration?: number;
+  includeDetails?: boolean;
+}
+
+export interface ErrorDetails {
+  status?: number;
+  message?: string;
+  details?: string;
+}
+```
+
+#### Message Formatting Functions
+
+- **`formatSuccessMessage`**: Creates consistent success messages for write operations
+- **`formatErrorMessage`**: Handles HTTP status codes with user-friendly error messages
+- **`formatRoutingMessage`**: Provides routing feedback for message publishing operations
+- **`formatConsumptionMessage`**: Formats message consumption results with acknowledgment details
+- **`formatBindingDescription`**: Creates readable binding descriptions for notifications
+- **`formatVirtualHostName`**: Standardizes virtual host display names
+- **`formatLoadingMessage`**: Generates consistent loading state messages
+
+#### Error Handling by HTTP Status
+
+The notification system provides specific user-friendly messages for common HTTP status codes:
+
+- **400**: Invalid configuration with input validation guidance
+- **401**: Session expiration with re-authentication prompt
+- **403**: Permission denied with role-based messaging
+- **404**: Resource not found with context-specific details
+- **409**: Resource already exists conflicts
+- **412**: Precondition failed for conditional operations
+- **422**: Invalid data with validation details
+- **429**: Rate limiting with retry guidance
+- **5xx**: Server errors with retry suggestions
+
+#### Notification Duration Management
+
+The system automatically adjusts notification display duration based on:
+
+- Message type (success: 4s, info: 6s, warning: 8s, error: 10s)
+- Message length (longer messages get extended display time)
+- Content complexity (up to 3 additional seconds for detailed messages)
+
+#### Usage Examples
+
+```typescript
+// Success notification for resource creation
+const successMessage = formatSuccessMessage(
+  "created",
+  "Exchange",
+  "user-events",
+  "Ready to receive messages"
+);
+
+// Error notification with HTTP status handling
+const errorMessage = formatErrorMessage("delete", "Queue", "test-queue", {
+  status: 412,
+  message: "Queue has consumers",
+});
+
+// Message publishing feedback
+const routingResult = formatRoutingMessage(
+  "exchange",
+  "user-events",
+  true,
+  "user.created"
+);
+```
+
 ### Component Design Patterns
 
 #### 1. Composition Pattern
@@ -183,7 +304,58 @@ Components are designed for composition and reusability:
 </ResourceLayout>
 ```
 
-#### 2. Centralized Icon Management
+#### 2. Example-Driven Development Pattern
+
+Complex components include comprehensive example files demonstrating proper integration patterns:
+
+```typescript
+// DeleteConfirmationDialog.example.tsx demonstrates proper API integration
+const DeleteConfirmationExample: React.FC = () => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteType, setDeleteType] = useState<DeleteType>("exchange");
+  const [resourceName, setResourceName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleDeleteExchange = async (options: DeleteOptions) => {
+    setLoading(true);
+    try {
+      await rabbitmqResourcesApi.deleteExchange(
+        clusterId,
+        vhost,
+        resourceName,
+        options.ifUnused
+      );
+      // Success handling: show notification, refresh list
+    } catch (error) {
+      // Error handling: show error notification
+      throw error; // Re-throw to keep dialog open
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <DeleteConfirmationDialog
+      open={deleteDialogOpen}
+      onClose={() => setDeleteDialogOpen(false)}
+      onConfirm={handleConfirm}
+      deleteType={deleteType}
+      resourceName={resourceName}
+      loading={loading}
+    />
+  );
+};
+```
+
+**Example File Benefits:**
+
+- **Integration Guidance**: Shows proper API integration patterns
+- **Error Handling**: Demonstrates comprehensive error handling strategies
+- **State Management**: Illustrates proper loading state and dialog lifecycle management
+- **Type Safety**: Provides TypeScript usage examples with proper type definitions
+- **Best Practices**: Documents recommended patterns for component usage
+
+#### 3. Centralized Icon Management
 
 Icons are managed centrally for consistency and maintainability:
 
@@ -215,7 +387,7 @@ const DashboardBreadcrumbs = () => (
 );
 ```
 
-#### 3. Consistent Filtering Pattern
+#### 4. Consistent Filtering Pattern
 
 All list components follow a consistent filtering pattern:
 
@@ -253,7 +425,7 @@ useEffect(() => {
 }
 ```
 
-#### 4. Hook-Based State Management
+#### 5. Hook-Based State Management
 
 Custom hooks encapsulate business logic and state:
 
@@ -273,14 +445,49 @@ const {
 });
 ```
 
-#### 5. Context Providers
+#### 5. Notification Integration Pattern
+
+Components integrate with the notification system using consistent patterns:
+
+```typescript
+// Write operation with notification integration
+const handleCreateResource = async (data: CreateResourceRequest) => {
+  setLoading(true);
+  try {
+    await api.createResource(clusterId, data);
+
+    // Success notification with consistent formatting
+    const successMessage = formatSuccessMessage(
+      "created",
+      "Resource",
+      data.name
+    );
+    showNotification(successMessage, "success");
+
+    // Refresh data and close dialog
+    await refresh();
+    onClose();
+  } catch (error) {
+    // Error notification with HTTP status handling
+    const errorMessage = formatErrorMessage("create", "Resource", data.name, {
+      status: error.response?.status,
+      message: error.message,
+    });
+    showNotification(errorMessage, "error");
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+#### 6. Context Providers
 
 React contexts provide global state management:
 
 - `AuthProvider`: User authentication state
 - `ClusterContext`: Selected cluster information
-- `NotificationContext`: Application notifications
-- `ErrorContext`: Global error handling
+- `NotificationContext`: Application notifications with consistent formatting utilities
+- `ErrorContext`: Global error handling with notification integration
 
 ## Type System
 
@@ -391,6 +598,8 @@ const cache = new ResourceCache({
 
 ### Component Testing
 
+The application uses comprehensive component testing with React Testing Library and Vitest, focusing on user behavior and real-world scenarios:
+
 ```typescript
 // Component testing with React Testing Library and Vitest
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -418,6 +627,148 @@ test("should filter results when search term changes", async () => {
 });
 ```
 
+#### Advanced Component Testing Examples
+
+**Dialog Component Testing** (PublishMessageDialog):
+
+```typescript
+// Enhanced dialog testing with improved TypeScript typing and comprehensive validation
+describe("PublishMessageDialog", () => {
+  // Proper TypeScript mock setup with vi.mocked()
+  const mockPublishMessage = vi.mocked(rabbitmqResourcesApi.publishMessage);
+  const mockUseNotification = vi.mocked(useNotification);
+
+  it("publishes message to exchange successfully", async () => {
+    const user = userEvent.setup();
+    renderComponent({ context: "exchange" });
+
+    // Wait for virtual hosts to load and form to initialize
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("/")).toBeInTheDocument();
+    });
+
+    // Use accessible labels for robust element selection
+    const targetInput = screen.getByLabelText(/Target Exchange/i);
+    const routingKeyInput = screen.getByLabelText(/Routing Key/i);
+    const payloadInput = screen.getByLabelText(/Message Payload/i);
+
+    // Clear and type new values for reliable testing
+    await user.clear(targetInput);
+    await user.type(targetInput, "test-exchange");
+    await user.clear(routingKeyInput);
+    await user.type(routingKeyInput, "test.routing");
+    await user.clear(payloadInput);
+    await user.type(payloadInput, "Hello World");
+
+    const publishButton = screen.getByText("Publish Message");
+    await user.click(publishButton);
+
+    // Verify exact API call parameters
+    await waitFor(() => {
+      expect(mockPublishMessage).toHaveBeenCalledWith(
+        "test-cluster",
+        "/",
+        "test-exchange",
+        {
+          routingKey: "test.routing",
+          properties: {},
+          payload: "Hello World",
+          payloadEncoding: "string",
+        }
+      );
+    });
+
+    // Verify specific notification content
+    expect(mockNotificationContext.success).toHaveBeenCalledWith(
+      'Message published to exchange "test-exchange" and routed successfully'
+    );
+  });
+
+  it("validates routing key length limits", async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const targetInput = screen.getByLabelText(/Target Exchange/i);
+    const routingKeyInput = screen.getByLabelText(/Routing Key/i);
+    const payloadInput = screen.getByLabelText(/Message Payload/i);
+
+    await user.type(targetInput, "test-exchange");
+    await user.type(payloadInput, "test payload");
+
+    // Test routing key length validation (255 character limit)
+    const longRoutingKey = "a".repeat(256);
+    fireEvent.change(routingKeyInput, { target: { value: longRoutingKey } });
+
+    const publishButton = screen.getByText("Publish Message");
+    await user.click(publishButton);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Routing key cannot exceed 255 characters/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("validates base64 payload format", async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const targetInput = screen.getByLabelText(/Target Exchange/i);
+    const payloadInput = screen.getByLabelText(/Message Payload/i);
+
+    await user.type(targetInput, "test-exchange");
+
+    // Test encoding selection and validation
+    await user.click(screen.getByText("String (UTF-8)"));
+    await user.click(screen.getByText("Base64"));
+    await user.type(payloadInput, "invalid base64!");
+
+    const publishButton = screen.getByText("Publish Message");
+    await user.click(publishButton);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Invalid Base64 format/i)).toBeInTheDocument();
+    });
+  });
+
+  it("handles specific API error responses", async () => {
+    mockPublishMessage.mockRejectedValue({
+      response: {
+        status: 400,
+        data: { message: "Invalid message format" },
+      },
+    });
+    const user = userEvent.setup();
+    renderComponent();
+
+    // Test specific error handling with HTTP status codes
+    await user.type(targetInput, "test-exchange");
+    await user.type(payloadInput, "Hello World");
+    await user.click(publishButton);
+
+    await waitFor(() => {
+      expect(mockNotificationContext.error).toHaveBeenCalledWith(
+        "Invalid message format"
+      );
+    });
+  });
+});
+```
+
+**Testing Patterns Used:**
+
+- **Enhanced TypeScript Testing**: Using `vi.mocked()` for proper type safety in mock functions and better IntelliSense support
+- **Accessibility-First Testing**: Using `getByLabelText` and accessible names for robust element selection that matches real user interaction
+- **Async State Testing**: Proper handling of loading states and form initialization with `waitFor()` patterns
+- **User Event Simulation**: Using `@testing-library/user-event` for realistic user interactions including clear/type sequences
+- **Comprehensive Form Validation**: Testing field format validation, length limits, encoding validation, and required field scenarios
+- **API Integration Testing**: Mocking API calls with exact parameter verification and response handling
+- **Error Handling Testing**: Testing specific HTTP status codes (400, 403, 404) with proper error message validation
+- **Context Integration Testing**: Testing integration with notification and virtual host contexts with proper mock setup
+- **Dual Context Testing**: Testing components that work in multiple contexts (exchange/queue) with context-specific behavior
+- **Input Manipulation Testing**: Using both user events and direct `fireEvent.change` for edge cases like length validation
+- **Notification Testing**: Verifying exact notification content for success, warning, and error scenarios
+
 ### Integration Testing
 
 - Full user workflow testing
@@ -443,10 +794,11 @@ test("should filter results when search term changes", async () => {
 
 ### Authorization
 
-- Role-based component rendering
-- Route protection
-- API endpoint authorization
-- Cluster access validation
+- Role-based component rendering with USER and ADMINISTRATOR roles
+- Route protection with ProtectedRoute and AdminRoute components
+- API endpoint authorization handled by backend security configuration
+- Cluster access validation based on user assignments
+- Method-level security with @PreAuthorize annotations on backend controllers
 
 ### Data Protection
 

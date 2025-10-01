@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Typography, Chip, Tooltip, Alert, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Chip,
+  Tooltip,
+  Alert,
+  Button,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+} from "@mui/material";
 import {
   Queue as QueueIcon,
   PlayArrow as RunningIcon,
@@ -9,6 +21,14 @@ import {
   Memory as MemoryIcon,
   People as ConsumersIcon,
   Message as MessagesIcon,
+  Add as AddIcon,
+  MoreVert as MoreVertIcon,
+  Link as LinkIcon,
+  Send as SendIcon,
+  GetApp as GetAppIcon,
+  Clear as ClearIcon,
+  Delete as DeleteIcon,
+  MoveToInbox as ShovelIcon,
 } from "@mui/icons-material";
 import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import {
@@ -16,10 +36,21 @@ import {
   ResourceFilters as ResourceFiltersType,
 } from "../../types/rabbitmq";
 import { useQueues } from "../../hooks/useQueues";
+import { useWriteOperationNotifications } from "../../hooks/useWriteOperationNotifications";
+import { useAutoRefreshPreferences } from "../../hooks/useAutoRefreshPreferences";
+import { rabbitmqResourcesApi } from "../../services/api/rabbitmqResourcesApi";
 import ResourceTable from "./shared/ResourceTable";
 import ResourceFilters from "./shared/ResourceFilters";
 import RefreshControls from "./shared/RefreshControls";
 import QueueDetailModal from "./QueueDetailModal";
+import CreateQueueDialog from "./CreateQueueDialog";
+import CreateBindingDialog from "./CreateBindingDialog";
+import PublishMessageDialog from "./PublishMessageDialog";
+import GetMessagesDialog from "./GetMessagesDialog";
+import { CreateShovelDialog } from "./CreateShovelDialog";
+import DeleteConfirmationDialog, {
+  DeleteOptions,
+} from "../common/DeleteConfirmationDialog";
 
 interface QueuesListProps {
   clusterId: string;
@@ -45,17 +76,48 @@ export const QueuesList: React.FC<QueuesListProps> = ({
     typeFilter: [],
   });
 
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(30);
+  const { autoRefresh, refreshInterval, setAutoRefresh, setRefreshInterval } =
+    useAutoRefreshPreferences({
+      storageKey: 'rabbitmq-admin-queues-autorefresh',
+      defaultInterval: 30,
+      defaultEnabled: false,
+    });
   const [selectedQueue, setSelectedQueue] = useState<RabbitMQQueue | null>(
     null
   );
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
+  // Dialog states
+  const [createQueueDialogOpen, setCreateQueueDialogOpen] = useState(false);
+  const [createBindingDialogOpen, setCreateBindingDialogOpen] = useState(false);
+  const [publishMessageDialogOpen, setPublishMessageDialogOpen] =
+    useState(false);
+  const [getMessagesDialogOpen, setGetMessagesDialogOpen] = useState(false);
+  const [createShovelDialogOpen, setCreateShovelDialogOpen] = useState(false);
+  const [deleteConfirmationDialogOpen, setDeleteConfirmationDialogOpen] =
+    useState(false);
+  const [purgeConfirmationDialogOpen, setPurgeConfirmationDialogOpen] =
+    useState(false);
+
+  // Action menu state
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
+  const [actionMenuQueue, setActionMenuQueue] = useState<RabbitMQQueue | null>(
+    null
+  );
+
+  // Loading states for write operations
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [purgeLoading, setPurgeLoading] = useState(false);
+
+  const { notifyQueueDeleted, notifyQueuePurged, notifyOperationError } =
+    useWriteOperationNotifications();
+
   const {
     data,
     loading,
-    error,
+    error: queuesError,
     lastUpdated,
     loadQueues,
     refreshQueues,
@@ -130,6 +192,177 @@ export const QueuesList: React.FC<QueuesListProps> = ({
   const handleRefresh = useCallback(() => {
     refreshQueues();
   }, [refreshQueues]);
+
+  // Action menu handlers
+  const handleActionMenuOpen = useCallback(
+    (event: React.MouseEvent<HTMLElement>, queue: RabbitMQQueue) => {
+      event.stopPropagation();
+      // Close any open dialogs first
+      setCreateBindingDialogOpen(false);
+      setPublishMessageDialogOpen(false);
+      setGetMessagesDialogOpen(false);
+      setDeleteConfirmationDialogOpen(false);
+      setPurgeConfirmationDialogOpen(false);
+
+      setActionMenuAnchor(event.currentTarget);
+      setActionMenuQueue(queue);
+    },
+    []
+  );
+
+  const handleActionMenuClose = useCallback(() => {
+    setActionMenuAnchor(null);
+    // Don't clear actionMenuQueue here as dialogs need it
+  }, []);
+
+  // Dialog handlers
+  const handleCreateQueueOpen = useCallback(() => {
+    setCreateQueueDialogOpen(true);
+  }, []);
+
+  const handleCreateQueueClose = useCallback(() => {
+    setCreateQueueDialogOpen(false);
+  }, []);
+
+  const handleCreateQueueSuccess = useCallback(() => {
+    handleRefresh();
+  }, [handleRefresh]);
+
+  const handleCreateBindingOpen = useCallback(() => {
+    setCreateBindingDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handleCreateBindingClose = useCallback(() => {
+    setCreateBindingDialogOpen(false);
+    setActionMenuQueue(null);
+  }, []);
+
+  const handleCreateBindingSuccess = useCallback(() => {
+    // Refresh queues to update binding counts if needed
+    handleRefresh();
+  }, [handleRefresh]);
+
+  const handlePublishMessageOpen = useCallback(() => {
+    setPublishMessageDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handlePublishMessageClose = useCallback(() => {
+    setPublishMessageDialogOpen(false);
+    setActionMenuQueue(null);
+  }, []);
+
+  const handlePublishMessageSuccess = useCallback(() => {
+    // No need to refresh for message publishing
+  }, []);
+
+  const handleGetMessagesOpen = useCallback(() => {
+    setGetMessagesDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handleGetMessagesClose = useCallback(() => {
+    setGetMessagesDialogOpen(false);
+    setActionMenuQueue(null);
+  }, []);
+
+  const handleGetMessagesSuccess = useCallback(() => {
+    // No need to refresh for message consumption
+  }, []);
+
+  const handleCreateShovelOpen = useCallback(() => {
+    setCreateShovelDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handleCreateShovelClose = useCallback(() => {
+    setCreateShovelDialogOpen(false);
+    setActionMenuQueue(null);
+  }, []);
+
+  const handleCreateShovelSuccess = useCallback(() => {
+    handleRefresh();
+  }, [handleRefresh]);
+
+  const handlePurgeQueueOpen = useCallback(() => {
+    setPurgeConfirmationDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handlePurgeQueueClose = useCallback(() => {
+    setPurgeConfirmationDialogOpen(false);
+    setActionMenuQueue(null);
+  }, []);
+
+  const handlePurgeQueueConfirm = useCallback(async () => {
+    if (!actionMenuQueue) return;
+
+    try {
+      setPurgeLoading(true);
+      await rabbitmqResourcesApi.purgeQueue(
+        clusterId,
+        actionMenuQueue.vhost,
+        actionMenuQueue.name
+      );
+      notifyQueuePurged(actionMenuQueue.name);
+      handleRefresh();
+    } catch (err: any) {
+      console.error("Error purging queue:", err);
+      notifyOperationError("purge", "Queue", actionMenuQueue.name, err);
+      throw err; // Re-throw to prevent dialog from closing
+    } finally {
+      setPurgeLoading(false);
+    }
+  }, [
+    actionMenuQueue,
+    clusterId,
+    notifyQueuePurged,
+    notifyOperationError,
+    handleRefresh,
+  ]);
+
+  const handleDeleteQueueOpen = useCallback(() => {
+    setDeleteConfirmationDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handleDeleteQueueClose = useCallback(() => {
+    setDeleteConfirmationDialogOpen(false);
+    setActionMenuQueue(null);
+  }, []);
+
+  const handleDeleteQueueConfirm = useCallback(
+    async (options: DeleteOptions) => {
+      if (!actionMenuQueue) return;
+
+      try {
+        setDeleteLoading(true);
+        await rabbitmqResourcesApi.deleteQueue(
+          clusterId,
+          actionMenuQueue.vhost,
+          actionMenuQueue.name,
+          options.ifEmpty,
+          options.ifUnused
+        );
+        notifyQueueDeleted(actionMenuQueue.name, options);
+        handleRefresh();
+      } catch (err: any) {
+        console.error("Error deleting queue:", err);
+        notifyOperationError("delete", "Queue", actionMenuQueue.name, err);
+        throw err; // Re-throw to prevent dialog from closing
+      } finally {
+        setDeleteLoading(false);
+      }
+    },
+    [
+      actionMenuQueue,
+      clusterId,
+      notifyQueueDeleted,
+      notifyOperationError,
+      handleRefresh,
+    ]
+  );
 
   const handleRetry = useCallback(() => {
     clearError();
@@ -339,6 +572,27 @@ export const QueuesList: React.FC<QueuesListProps> = ({
         <Typography variant="body2">{params.value.toFixed(2)} msg/s</Typography>
       ),
     },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 80,
+      align: "center",
+      headerAlign: "center",
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          onClick={(event) =>
+            handleActionMenuOpen(event, params.row as RabbitMQQueue)
+          }
+          aria-label={`Actions for queue ${params.row.name}`}
+        >
+          <MoreVertIcon />
+        </IconButton>
+      ),
+    },
   ];
 
   // Filter queues by state if state filter is applied
@@ -364,6 +618,14 @@ export const QueuesList: React.FC<QueuesListProps> = ({
           Queues
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateQueueOpen}
+            disabled={loading}
+          >
+            Create Queue
+          </Button>
           <RefreshControls
             onRefresh={handleRefresh}
             autoRefresh={autoRefresh}
@@ -376,12 +638,12 @@ export const QueuesList: React.FC<QueuesListProps> = ({
         </Box>
       </Box>
 
-      {error && (
+      {queuesError && (
         <Alert
           severity="error"
           sx={{ mb: 2 }}
           action={
-            error.retryable && (
+            queuesError.retryable && (
               <Button color="inherit" size="small" onClick={handleRetry}>
                 Retry
               </Button>
@@ -389,11 +651,11 @@ export const QueuesList: React.FC<QueuesListProps> = ({
           }
         >
           <Typography variant="body2" fontWeight="medium">
-            {error.message}
+            {queuesError.message}
           </Typography>
-          {error.details && (
+          {queuesError.details && (
             <Typography variant="caption" display="block">
-              {error.details}
+              {queuesError.details}
             </Typography>
           )}
         </Alert>
@@ -414,7 +676,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
         data={formattedQueues}
         columns={columns}
         loading={loading}
-        error={error?.message || null}
+        error={queuesError?.message || null}
         totalRows={data?.totalItems}
         page={filters.page}
         pageSize={filters.pageSize}
@@ -433,6 +695,148 @@ export const QueuesList: React.FC<QueuesListProps> = ({
         queue={selectedQueue}
         clusterId={clusterId}
       />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={actionMenuAnchor}
+        open={Boolean(actionMenuAnchor)}
+        onClose={handleActionMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <MenuItem onClick={handleCreateBindingOpen}>
+          <ListItemIcon>
+            <LinkIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Create Binding</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handlePublishMessageOpen}>
+          <ListItemIcon>
+            <SendIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Publish Message</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleGetMessagesOpen}>
+          <ListItemIcon>
+            <GetAppIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Get Messages</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleCreateShovelOpen}>
+          <ListItemIcon>
+            <ShovelIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Move Messages</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handlePurgeQueueOpen}>
+          <ListItemIcon>
+            <ClearIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Purge Queue</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleDeleteQueueOpen} sx={{ color: "error.main" }}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Delete Queue</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Create Queue Dialog */}
+      <CreateQueueDialog
+        open={createQueueDialogOpen}
+        clusterId={clusterId}
+        onClose={handleCreateQueueClose}
+        onSuccess={handleCreateQueueSuccess}
+      />
+
+      {/* Create Binding Dialog */}
+      {actionMenuQueue && (
+        <CreateBindingDialog
+          open={createBindingDialogOpen}
+          clusterId={clusterId}
+          context="queue"
+          sourceResource={{
+            name: actionMenuQueue.name,
+            vhost: actionMenuQueue.vhost,
+          }}
+          onClose={handleCreateBindingClose}
+          onSuccess={handleCreateBindingSuccess}
+        />
+      )}
+
+      {/* Publish Message Dialog */}
+      {actionMenuQueue && (
+        <PublishMessageDialog
+          open={publishMessageDialogOpen}
+          clusterId={clusterId}
+          context="queue"
+          targetResource={{
+            name: actionMenuQueue.name,
+            vhost: actionMenuQueue.vhost,
+          }}
+          onClose={handlePublishMessageClose}
+          onSuccess={handlePublishMessageSuccess}
+        />
+      )}
+
+      {/* Get Messages Dialog */}
+      {actionMenuQueue && (
+        <GetMessagesDialog
+          open={getMessagesDialogOpen}
+          clusterId={clusterId}
+          targetQueue={{
+            name: actionMenuQueue.name,
+            vhost: actionMenuQueue.vhost,
+          }}
+          onClose={handleGetMessagesClose}
+          onSuccess={handleGetMessagesSuccess}
+        />
+      )}
+
+      {/* Move Messages Dialog */}
+      {actionMenuQueue && (
+        <CreateShovelDialog
+          open={createShovelDialogOpen}
+          clusterId={clusterId}
+          sourceQueue={{
+            name: actionMenuQueue.name,
+            vhost: actionMenuQueue.vhost,
+          }}
+          onClose={handleCreateShovelClose}
+          onSuccess={handleCreateShovelSuccess}
+        />
+      )}
+
+      {/* Purge Queue Confirmation Dialog */}
+      {actionMenuQueue && (
+        <DeleteConfirmationDialog
+          open={purgeConfirmationDialogOpen}
+          onClose={handlePurgeQueueClose}
+          onConfirm={handlePurgeQueueConfirm}
+          deleteType="purge"
+          resourceName={actionMenuQueue.name}
+          loading={purgeLoading}
+        />
+      )}
+
+      {/* Delete Queue Confirmation Dialog */}
+      {actionMenuQueue && (
+        <DeleteConfirmationDialog
+          open={deleteConfirmationDialogOpen}
+          onClose={handleDeleteQueueClose}
+          onConfirm={handleDeleteQueueConfirm}
+          deleteType="queue"
+          resourceName={actionMenuQueue.name}
+          loading={deleteLoading}
+        />
+      )}
     </Box>
   );
 };

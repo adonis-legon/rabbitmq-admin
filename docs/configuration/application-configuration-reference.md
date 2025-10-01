@@ -274,6 +274,9 @@ rabbitmq:
 
         # Connection request timeout in milliseconds
         connection-request-timeout: 5000
+
+        # Message operation timeout in milliseconds (for blocking operations like getMessages)
+        message-operation-timeout: 30000
 ```
 
 **Environment Variables:**
@@ -282,6 +285,10 @@ rabbitmq:
 - `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_MAX_PER_ROUTE`: Maximum per route (default: 10)
 - `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_CONNECTION_TIMEOUT`: Connection timeout (default: 10000ms)
 - `RABBITMQ_ADMIN_RESOURCES_CONNECTION_POOL_SOCKET_TIMEOUT`: Socket timeout (default: 30000ms)
+
+**Message Operation Timeouts:**
+
+The application implements a **30-second timeout** for blocking message operations (such as `getMessages`) to prevent indefinite blocking and ensure system stability. This timeout is currently hardcoded but can be made configurable in future versions if needed.
 
 ### Thread Pool Configuration
 
@@ -307,6 +314,45 @@ rabbitmq:
 
 ## Security Configuration
 
+### Security Model Overview
+
+The application uses Spring Security with JWT authentication and role-based access control (RBAC). The security model includes:
+
+- **Roles**: Two primary roles - `USER` and `ADMINISTRATOR`
+- **Authentication**: JWT tokens with configurable expiration
+- **Authorization**: Method-level security with `@PreAuthorize` annotations and HTTP security configuration
+- **Role Format**: Spring Security automatically adds the `ROLE_` prefix internally, so roles are configured as `USER` and `ADMINISTRATOR` (not `ROLE_USER` or `ROLE_ADMINISTRATOR`)
+- **Reactive Security**: Reactive endpoints with proper error handling and authentication context maintenance
+
+### Reactive Security Context
+
+For reactive endpoints using Spring WebFlux, the application implements explicit security context propagation:
+
+```java
+// Example from RabbitMQController.getVirtualHosts()
+return resourceService.getVirtualHosts(clusterId, principal.getUser())
+    .map(result -> {
+        logger.debug("Successfully returned {} virtual hosts for cluster {}",
+                    result.size(), clusterId);
+        return ResponseEntity.ok(result);
+    })
+    .onErrorResume(error -> {
+        logger.error("Failed to get virtual hosts for cluster {}: {}", clusterId,
+                    error.getMessage());
+        return Mono.just(ResponseEntity.status(500).<List<VirtualHostDto>>build());
+    });
+```
+
+**Benefits:**
+
+- **Error Handling**: Consistent error responses with proper HTTP status codes
+- **Logging**: Comprehensive logging for both success and error scenarios
+- **Reactive Patterns**: Proper use of reactive operators for async processing
+- **Graceful Degradation**: Meaningful error responses when operations fail
+
+**Implementation Pattern:**
+Reactive endpoints should use proper error handling with `onErrorResume()` to provide consistent error responses while maintaining authentication context throughout the processing chain.
+
 ### Resource Access Security
 
 Controls access to resource management features using the `Security` nested class:
@@ -316,7 +362,7 @@ rabbitmq:
   admin:
     resources:
       security:
-        # Minimum role required for resource access
+        # Minimum role required for resource access (USER or ADMINISTRATOR)
         min-role: USER
 
         # Resource-specific permissions

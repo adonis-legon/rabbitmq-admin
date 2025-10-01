@@ -39,7 +39,7 @@ A comprehensive web application for managing RabbitMQ clusters with authenticati
 - [📝 API Documentation](#-api-documentation)
   - [Authentication Endpoints](#authentication-endpoints)
   - [User Management](#user-management-admin-only)
-  - [Cluster Management](#cluster-management-admin-only)
+  - [Cluster Management](#cluster-management)
   - [RabbitMQ Resource Management](#rabbitmq-resource-management)
   - [RabbitMQ Proxy](#rabbitmq-proxy)
 - [📦 Versioning](#-versioning)
@@ -60,7 +60,7 @@ A comprehensive web application for managing RabbitMQ clusters with authenticati
 
 - **Authentication & Authorization**: JWT-based authentication with role-based access control and automatic token expiration handling
 - **Multi-Cluster Management**: Connect and manage multiple RabbitMQ clusters with user assignment controls
-- **RabbitMQ Resource Browsing**: View connections, channels, exchanges, and queues with advanced pagination, filtering, detailed tooltips, intelligent client-side caching with configurable TTL, and enhanced error handling with automatic recovery
+- **RabbitMQ Resource Management**: View, create, modify, and delete RabbitMQ resources (connections, channels, exchanges, queues) with advanced pagination, filtering, detailed tooltips, intelligent client-side caching with configurable TTL, and enhanced error handling with automatic recovery. Includes comprehensive write operations for exchange and queue management (create/delete with conditional options), binding creation between exchanges and queues/exchanges, and message publishing with routing confirmation and comprehensive properties support. Features a complete message publishing dialog with support for both exchange and queue contexts, payload encoding options (string/base64), message properties and headers editors, and routing confirmation feedback. Message consumption functionality is fully implemented with comprehensive UI dialogs for message retrieval and display. **UI Integration**: ExchangesList component fully integrated with write operations including "Create Exchange" button, per-exchange action menus for creating bindings, publishing messages, and deleting exchanges with comprehensive error handling and confirmation dialogs. **Notification System**: Comprehensive user feedback system with consistent message formatting, HTTP status code handling, routing result notifications, and automatic duration management.
 - **Intuitive Navigation**: Collapsible resource management menu with cluster-aware access control, visual state indicators, breadcrumb navigation, and direct URL access to resource pages
 - **TypeScript Support**: Comprehensive type definitions for all RabbitMQ resources with full IntelliSense support
 - **Modern UI**: React 18+ with Material UI v5 and responsive design
@@ -184,6 +184,8 @@ The project is organized into several key directories, each serving a specific p
 | `├── deployment/` | Deployment and production guides |
 | `├── troubleshooting/` | Common issues and solutions |
 | `└── user-guide/` | End-user documentation and guides |
+| `│   ├── resource-management.md` | Resource management user guide |
+| `│   └── notification-system.md` | Notification system user guide |
 
 ### 🐳 Infrastructure & Deployment
 
@@ -482,6 +484,15 @@ mvn test -pl backend -Dtest=RabbitMQClientServiceFixTest
 # Integration tests with real RabbitMQ (optional)
 mvn test -pl backend -Dtest=WebClientBindingsIntegrationTest -Drabbitmq.available=true
 
+# Write operations integration tests
+mvn test -pl backend -Dtest=RabbitMQWriteOperationsIntegrationTest
+
+# DTO validation and serialization tests
+mvn test -pl backend -Dtest=DtoValidationComprehensiveTest
+
+# End-to-End workflow testing
+mvn test -pl backend -Dtest=RabbitMQWriteOperationsEndToEndTest
+
 # End-to-End testing (local development only - not part of CI/CD)
 # This comprehensive test validates resource management features but is too slow for CI/CD
 ./scripts/e2e-test.sh
@@ -496,14 +507,14 @@ mvn test -pl backend -Dtest=WebClientBindingsIntegrationTest -Drabbitmq.availabl
 - **Test Organization**: Uses JUnit 5 `@Tag` annotations for test categorization (e.g., `@Tag("debug")` for WebClient debugging tests)
 - **Testing Framework**: Uses modern `@MockitoBean` annotation (migrated from deprecated `@MockBean` in Spring Boot 3.4.0+)
 - **Resource Management**: Comprehensive controller tests for all RabbitMQ resource endpoints including pagination, filtering, authentication, and enhanced error handling with automatic recovery
+- **DTO Validation**: Comprehensive validation testing with `DtoValidationComprehensiveTest` covering JSON serialization/deserialization, constraint enforcement, null handling, and complex nested object processing for all write operation DTOs
+- **Write Operations Integration**: Complete integration testing with `RabbitMQWriteOperationsIntegrationTest` covering all write endpoints (exchanges, queues, bindings, messages), authentication/authorization scenarios, error handling, URL encoding, and edge cases
+- **End-to-End Workflow Testing**: Comprehensive end-to-end testing with `RabbitMQWriteOperationsEndToEndTest` validating complete resource lifecycles (exchange: create→bind→publish→delete, queue: create→publish→consume→purge→delete), security model compliance, multi-configuration testing, and UI consistency validation
 - **WebClient Integration Testing**: Enhanced `WebClientBindingsTest.java` with comprehensive debugging capabilities for RabbitMQ Management API connectivity, including multiple test approaches, proper type safety, StepVerifier-based error handling for CI/CD environments, and configuration alignment with production services. Includes `WebClientLiveTest.java` for immediate feedback testing with running RabbitMQ instances, `WebClientDebugTest.java` for detailed WebClient vs curl debugging and URL variation testing, `WebClientEncodingTest.java` for URL encoding issue identification and resolution (especially vhost `/` encoding), and `WebClientBindingsIntegrationTest.java` for automated integration testing when available
-- **UI Component Testing**: Advanced MUI DataGrid mocking, theme provider integration, comprehensive interaction testing for resource management components, and extensive test coverage for ExchangesList with modal behaviors, accessibility, and performance testing
+- **UI Component Testing**: Advanced MUI DataGrid mocking, theme provider integration, comprehensive interaction testing for resource management components, extensive test coverage for ExchangesList with modal behaviors, accessibility, and performance testing, and complete PublishMessageDialog testing with form validation, API integration, error handling, and dual context support (exchange/queue)
 - **Performance Optimization**: Browser-based caching with configurable TTL, cache invalidation, resource-specific optimization, and cache-first loading strategy (implemented for connections, in progress for other resources)
 
-For detailed testing documentation and best practices, see:
-
-- [Frontend Testing Guide](docs/testing/frontend-testing-guide.md)
-- [Backend Testing Guide](docs/testing/backend-testing-guide.md)
+For detailed testing documentation and best practices, refer to the comprehensive test coverage descriptions above and the test files in the respective `src/test` directories.
 
 ## 📊 Monitoring & Health Checks
 
@@ -531,8 +542,12 @@ docker logs rabbitmq-admin-db
 ### Application Security
 
 - JWT authentication with configurable expiration
-- Role-based access control (RBAC)
+- Role-based access control (RBAC) with USER and ADMINISTRATOR roles
 - Hybrid security model: API endpoints protected server-side, frontend routes protected client-side
+- Method-level security with @PreAuthorize annotations
+- HTTP security configuration with role-based endpoint protection
+- Reactive error handling patterns for WebFlux endpoints with proper `onErrorResume()` implementation ✅ **IMPLEMENTED**
+- Comprehensive security model documented in [Security Architecture](docs/architecture/security-model.md)
 - Input validation and sanitization
 - SQL injection prevention
 - XSS protection with CSP headers
@@ -1040,18 +1055,20 @@ For comprehensive deployment documentation, see [Production Deployment Guide](do
 - `PUT /api/users/{id}` - Update user
 - `DELETE /api/users/{id}` - Delete user
 
-### Cluster Management (Admin Only)
+### Cluster Management
 
-- `GET /api/clusters` - List cluster connections
-- `POST /api/clusters` - Create cluster connection with user assignments
-- `PUT /api/clusters/{id}` - Update cluster connection and user assignments
-- `DELETE /api/clusters/{id}` - Delete cluster connection
-- `POST /api/clusters/test` - Test new connection (before creating)
-- `POST /api/clusters/{id}/test` - Test existing cluster connection
-- `GET /api/clusters/my` - Get current user's accessible clusters
-- `POST /api/clusters/{clusterId}/users/{userId}` - Assign user to cluster
-- `DELETE /api/clusters/{clusterId}/users/{userId}` - Remove user from cluster
-- `GET /api/clusters/{clusterId}/users` - Get users assigned to cluster
+**Access Control**: Read operations allow USER and ADMINISTRATOR roles; write operations require ADMINISTRATOR role only.
+
+- `GET /api/clusters` - List cluster connections (USER/ADMIN)
+- `POST /api/clusters` - Create cluster connection with user assignments (ADMIN only)
+- `PUT /api/clusters/{id}` - Update cluster connection and user assignments (ADMIN only)
+- `DELETE /api/clusters/{id}` - Delete cluster connection (ADMIN only)
+- `POST /api/clusters/test` - Test new connection (ADMIN only)
+- `POST /api/clusters/{id}/test` - Test existing cluster connection (ADMIN only)
+- `GET /api/clusters/my` - Get current user's accessible clusters (USER/ADMIN)
+- `POST /api/clusters/{clusterId}/users/{userId}` - Assign user to cluster (ADMIN only)
+- `DELETE /api/clusters/{clusterId}/users/{userId}` - Remove user from cluster (ADMIN only)
+- `GET /api/clusters/{clusterId}/users` - Get users assigned to cluster (USER/ADMIN)
 
 For comprehensive cluster management API documentation including user assignment features, request/response examples, and TypeScript interfaces, see [Cluster Management API Documentation](docs/api/cluster-management.md).
 
@@ -1148,6 +1165,7 @@ For detailed architecture and design documentation, see:
 
 - [Frontend Architecture](docs/architecture/frontend-architecture.md) - React component architecture and patterns
 - [UI Components Architecture](docs/architecture/ui-components.md) - UI component design system and icon management
+- [Security Model](docs/architecture/security-model.md) - Authentication, authorization, and security implementation
 
 RabbitMQ Admin is a three-tier web application that provides a comprehensive administrative interface for managing RabbitMQ clusters. The application implements role-based access control with JWT authentication and follows modern web development practices.
 

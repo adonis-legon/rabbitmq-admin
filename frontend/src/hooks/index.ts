@@ -17,3 +17,5 @@ export { useDetailRefresh } from './useDetailRefresh';
 export { useDebouncedSearch } from './useDebouncedSearch';
 export { useStaleWhileRevalidate } from './useStaleWhileRevalidate';
 export { useCacheStats } from './useCacheStats';
+export { useWriteOperationNotifications } from './useWriteOperationNotifications';
+export { useWriteOperationState, useMultipleWriteOperations } from './useWriteOperationState';

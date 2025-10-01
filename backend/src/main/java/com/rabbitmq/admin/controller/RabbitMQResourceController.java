@@ -3,12 +3,13 @@ package com.rabbitmq.admin.controller;
 import com.rabbitmq.admin.dto.*;
 import com.rabbitmq.admin.security.UserPrincipal;
 import com.rabbitmq.admin.service.RabbitMQResourceService;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -20,10 +21,12 @@ import java.util.UUID;
  * Controller for RabbitMQ resource management endpoints.
  * Provides paginated access to connections, channels, exchanges, and queues
  * with proper security and validation.
+ * Requires USER or ADMINISTRATOR role for access.
  */
 @RestController
 @RequestMapping("/api/rabbitmq/{clusterId}/resources")
 @Validated
+@PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
 public class RabbitMQResourceController {
 
         private static final Logger logger = LoggerFactory.getLogger(RabbitMQResourceController.class);
@@ -264,6 +267,481 @@ public class RabbitMQResourceController {
                 } catch (Exception error) {
                         logger.error("Failed to get bindings for queue {} in vhost {} in cluster {}: {}",
                                         queueName, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Create a new exchange in the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param request   the exchange creation request
+         * @param principal the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @PutMapping("/exchanges")
+        public ResponseEntity<Void> createExchange(
+                        @PathVariable UUID clusterId,
+                        @RequestBody @Valid CreateExchangeRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                logger.debug("Creating exchange {} of type {} in vhost {} for cluster {} by user {}",
+                                request.getName(), request.getType(), request.getVhost(), clusterId,
+                                principal.getUsername());
+
+                try {
+                        resourceService.createExchange(clusterId, request, principal.getUser()).block();
+                        logger.debug("Successfully created exchange {} in vhost {} for cluster {}",
+                                        request.getName(), request.getVhost(), clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to create exchange {} in vhost {} for cluster {}: {}",
+                                        request.getName(), request.getVhost(), clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Delete an exchange from the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name (URL encoded)
+         * @param name      the exchange name (URL encoded)
+         * @param ifUnused  whether to delete only if unused (optional)
+         * @param principal the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @DeleteMapping("/exchanges/{vhost}/{name}")
+        public ResponseEntity<Void> deleteExchange(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String name,
+                        @RequestParam(required = false) Boolean ifUnused,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded exchange name
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        name = java.net.URLDecoder.decode(name, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Deleting exchange {} in vhost {} for cluster {} by user {} (ifUnused: {})",
+                                name, vhost, clusterId, principal.getUsername(), ifUnused);
+
+                try {
+                        resourceService.deleteExchange(clusterId, vhost, name, ifUnused, principal.getUser()).block();
+                        logger.debug("Successfully deleted exchange {} in vhost {} for cluster {}",
+                                        name, vhost, clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to delete exchange {} in vhost {} for cluster {}: {}",
+                                        name, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Create a new queue in the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param request   the queue creation request
+         * @param principal the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @PutMapping("/queues")
+        public ResponseEntity<Void> createQueue(
+                        @PathVariable UUID clusterId,
+                        @RequestBody @Valid CreateQueueRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                logger.debug("Creating queue {} in vhost {} for cluster {} by user {}",
+                                request.getName(), request.getVhost(), clusterId, principal.getUsername());
+
+                try {
+                        resourceService.createQueue(clusterId, request, principal.getUser()).block();
+                        logger.debug("Successfully created queue {} in vhost {} for cluster {}",
+                                        request.getName(), request.getVhost(), clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to create queue {} in vhost {} for cluster {}: {}",
+                                        request.getName(), request.getVhost(), clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Delete a queue from the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name (URL encoded)
+         * @param name      the queue name (URL encoded)
+         * @param ifEmpty   whether to delete only if empty (optional)
+         * @param ifUnused  whether to delete only if unused (optional)
+         * @param principal the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @DeleteMapping("/queues/{vhost}/{name}")
+        public ResponseEntity<Void> deleteQueue(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String name,
+                        @RequestParam(required = false) Boolean ifEmpty,
+                        @RequestParam(required = false) Boolean ifUnused,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded queue name
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        name = java.net.URLDecoder.decode(name, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Deleting queue {} in vhost {} for cluster {} by user {} (ifEmpty: {}, ifUnused: {})",
+                                name, vhost, clusterId, principal.getUsername(), ifEmpty, ifUnused);
+
+                try {
+                        resourceService.deleteQueue(clusterId, vhost, name, ifEmpty, ifUnused, principal.getUser())
+                                        .block();
+                        logger.debug("Successfully deleted queue {} in vhost {} for cluster {}",
+                                        name, vhost, clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to delete queue {} in vhost {} for cluster {}: {}",
+                                        name, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Purge all messages from a queue in the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name (URL encoded)
+         * @param name      the queue name (URL encoded)
+         * @param principal the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @DeleteMapping("/queues/{vhost}/{name}/contents")
+        public ResponseEntity<Void> purgeQueue(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String name,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded queue name
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        name = java.net.URLDecoder.decode(name, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Purging queue {} in vhost {} for cluster {} by user {}",
+                                name, vhost, clusterId, principal.getUsername());
+
+                try {
+                        resourceService.purgeQueue(clusterId, vhost, name, principal.getUser()).block();
+                        logger.debug("Successfully purged queue {} in vhost {} for cluster {}",
+                                        name, vhost, clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to purge queue {} in vhost {} for cluster {}: {}",
+                                        name, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Create a binding from an exchange to a queue in the specified RabbitMQ
+         * cluster.
+         * 
+         * @param clusterId   the cluster connection ID
+         * @param vhost       the virtual host name (URL encoded)
+         * @param source      the source exchange name (URL encoded)
+         * @param destination the destination queue name (URL encoded)
+         * @param request     the binding creation request
+         * @param principal   the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @PostMapping("/bindings/{vhost}/e/{source}/q/{destination}")
+        public ResponseEntity<Void> createExchangeToQueueBinding(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String source,
+                        @PathVariable String destination,
+                        @RequestBody @Valid CreateBindingRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded names
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        source = java.net.URLDecoder.decode(source, java.nio.charset.StandardCharsets.UTF_8);
+                        destination = java.net.URLDecoder.decode(destination, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Creating binding from exchange {} to queue {} with routing key {} in vhost {} for cluster {} by user {}",
+                                source, destination, request.getRoutingKey(), vhost, clusterId,
+                                principal.getUsername());
+
+                try {
+                        resourceService.createBinding(clusterId, vhost, source, destination, "q", request,
+                                        principal.getUser()).block();
+                        logger.debug("Successfully created binding from exchange {} to queue {} in vhost {} for cluster {}",
+                                        source, destination, vhost, clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to create binding from exchange {} to queue {} in vhost {} for cluster {}: {}",
+                                        source, destination, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Create a binding from an exchange to another exchange in the specified
+         * RabbitMQ cluster.
+         * 
+         * @param clusterId   the cluster connection ID
+         * @param vhost       the virtual host name (URL encoded)
+         * @param source      the source exchange name (URL encoded)
+         * @param destination the destination exchange name (URL encoded)
+         * @param request     the binding creation request
+         * @param principal   the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @PostMapping("/bindings/{vhost}/e/{source}/e/{destination}")
+        public ResponseEntity<Void> createExchangeToExchangeBinding(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String source,
+                        @PathVariable String destination,
+                        @RequestBody @Valid CreateBindingRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded names
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        source = java.net.URLDecoder.decode(source, java.nio.charset.StandardCharsets.UTF_8);
+                        destination = java.net.URLDecoder.decode(destination, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Creating binding from exchange {} to exchange {} with routing key {} in vhost {} for cluster {} by user {}",
+                                source, destination, request.getRoutingKey(), vhost, clusterId,
+                                principal.getUsername());
+
+                try {
+                        resourceService.createBinding(clusterId, vhost, source, destination, "e", request,
+                                        principal.getUser()).block();
+                        logger.debug("Successfully created binding from exchange {} to exchange {} in vhost {} for cluster {}",
+                                        source, destination, vhost, clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to create binding from exchange {} to exchange {} in vhost {} for cluster {}: {}",
+                                        source, destination, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Publish a message to an exchange in the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name (URL encoded)
+         * @param exchange  the exchange name (URL encoded)
+         * @param request   the message publishing request
+         * @param principal the authenticated user
+         * @return ResponseEntity with publish response indicating if message was routed
+         */
+        @PostMapping("/exchanges/{vhost}/{exchange}/publish")
+        public ResponseEntity<PublishResponse> publishMessage(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String exchange,
+                        @RequestBody @Valid PublishMessageRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded exchange name
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        exchange = java.net.URLDecoder.decode(exchange, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Publishing message to exchange {} in vhost {} for cluster {} by user {}",
+                                exchange, vhost, clusterId, principal.getUsername());
+
+                try {
+                        PublishResponse result = resourceService.publishMessage(clusterId, vhost, exchange, request,
+                                        principal.getUser());
+
+                        logger.debug("Successfully published message to exchange {} in vhost {} for cluster {} (routed: {})",
+                                        exchange, vhost, clusterId, result != null ? result.getRouted() : null);
+                        return ResponseEntity.ok(result);
+                } catch (Exception error) {
+                        logger.error("Failed to publish message to exchange {} in vhost {} for cluster {}: {}",
+                                        exchange, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Publish a message directly to a queue using the default exchange in the
+         * specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name (URL encoded)
+         * @param queue     the queue name (URL encoded) - used as routing key
+         * @param request   the message publishing request
+         * @param principal the authenticated user
+         * @return ResponseEntity with publish response indicating if message was routed
+         */
+        @PostMapping("/queues/{vhost}/{queue}/publish")
+        public ResponseEntity<PublishResponse> publishToQueue(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String queue,
+                        @RequestBody @Valid PublishMessageRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded queue name
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        queue = java.net.URLDecoder.decode(queue, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Publishing message to queue {} in vhost {} for cluster {} by user {}",
+                                queue, vhost, clusterId, principal.getUsername());
+
+                try {
+                        // Create a new request with the queue name as routing key for default exchange
+                        PublishMessageRequest queueRequest = new PublishMessageRequest(
+                                        queue, // Use queue name as routing key
+                                        request.getProperties(),
+                                        request.getPayload(),
+                                        request.getPayloadEncoding());
+
+                        PublishResponse result = resourceService.publishMessage(clusterId, vhost, "", queueRequest,
+                                        principal.getUser());
+                        logger.debug("Successfully published message to queue {} in vhost {} for cluster {} (routed: {})",
+                                        queue, vhost, clusterId, result != null ? result.getRouted() : null);
+                        return ResponseEntity.ok(result);
+                } catch (Exception error) {
+                        logger.error("Failed to publish message to queue {} in vhost {} for cluster {}: {}",
+                                        queue, vhost, clusterId, error.getMessage());
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Get messages from a queue in the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name (base64 encoded)
+         * @param queue     the queue name (URL encoded)
+         * @param request   the message retrieval request
+         * @param principal the authenticated user
+         * @return ResponseEntity with list of messages
+         */
+        @PostMapping("/queues/{vhost}/{queue}/get")
+        public ResponseEntity<List<MessageResponseDto>> getMessages(
+                        @PathVariable UUID clusterId,
+                        @PathVariable String vhost,
+                        @PathVariable String queue,
+                        @RequestBody @Valid GetMessagesRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                // Decode base64-encoded vhost and URL-encoded queue name
+                try {
+                        vhost = new String(java.util.Base64.getDecoder().decode(vhost),
+                                        java.nio.charset.StandardCharsets.UTF_8);
+                        queue = java.net.URLDecoder.decode(queue, java.nio.charset.StandardCharsets.UTF_8);
+                } catch (Exception e) {
+                        logger.error("Failed to decode path variables: {}", e.getMessage());
+                        return ResponseEntity.badRequest().build();
+                }
+
+                logger.debug("Getting {} messages from queue {} in vhost {} for cluster {} by user {} (ackmode: {}, encoding: {})",
+                                request.getCount(), queue, vhost, clusterId, principal.getUsername(),
+                                request.getAckmode(), request.getEncoding());
+
+                try {
+                        List<MessageDto> messages = resourceService
+                                        .getMessages(clusterId, vhost, queue, request, principal.getUser());
+
+                        // Convert to response DTOs with camelCase field names
+                        List<MessageResponseDto> result = messages.stream()
+                                        .map(MessageResponseDto::fromMessageDto)
+                                        .collect(java.util.stream.Collectors.toList());
+
+                        logger.debug("Successfully returned {} messages from queue {} in vhost {} for cluster {}",
+                                        result.size(), queue, vhost, clusterId);
+                        return ResponseEntity.ok(result);
+                } catch (Exception error) {
+                        logger.error("Failed to get messages from queue {} in vhost {} for cluster {}: {}",
+                                        queue, vhost, clusterId, error.getMessage(), error);
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
+        /**
+         * Create a shovel to move messages from one queue to another in the specified
+         * RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param request   the shovel creation request
+         * @param principal the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @PostMapping("/shovels")
+        public ResponseEntity<Void> createShovel(
+                        @PathVariable UUID clusterId,
+                        @Valid @RequestBody CreateShovelRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                logger.debug("Creating shovel {} in vhost {} from {} to {} for cluster {} by user {}",
+                                request.getName(), request.getVhost(), request.getSourceQueue(),
+                                request.getDestinationQueue(), clusterId, principal.getUsername());
+
+                try {
+                        resourceService.createShovel(clusterId, request, principal.getUser()).block();
+                        logger.debug("Successfully created shovel {} in vhost {} for cluster {}",
+                                        request.getName(), request.getVhost(), clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to create shovel {} in vhost {} for cluster {}: {}",
+                                        request.getName(), request.getVhost(), clusterId, error.getMessage());
+
+                        // Check if error is due to shovel plugin not enabled
+                        String errorMessage = error.getMessage();
+                        if (errorMessage != null
+                                        && (errorMessage.contains("404") || errorMessage.contains("not found"))) {
+                                logger.warn("Shovel plugin might not be enabled in RabbitMQ cluster {}", clusterId);
+                                return ResponseEntity.status(503).build(); // Service Unavailable
+                        }
+
                         return ResponseEntity.status(500).build();
                 }
         }

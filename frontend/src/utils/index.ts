@@ -15,3 +15,4 @@ export {
 } from './errorUtils';
 export * from './validation';
 export * from './resourceCache';
+export * from './notificationUtils';

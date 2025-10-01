@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 
 /**
  * REST controller for cluster connection management operations.
+ * Read operations: USER and ADMINISTRATOR roles
+ * Write operations: ADMINISTRATOR role only
  */
 @RestController
 @RequestMapping("/api/clusters")
@@ -35,7 +37,7 @@ public class ClusterController {
      * Get all cluster connections
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<ClusterConnectionResponse>> getAllClusterConnections() {
         List<ClusterConnection> clusters = clusterConnectionService.getAllClusterConnections();
         List<ClusterConnectionResponse> responses = clusters.stream()
@@ -48,7 +50,7 @@ public class ClusterController {
      * Get active cluster connections only
      */
     @GetMapping("/active")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<ClusterConnectionResponse>> getActiveClusterConnections() {
         List<ClusterConnection> clusters = clusterConnectionService.getActiveClusterConnections();
         List<ClusterConnectionResponse> responses = clusters.stream()
@@ -62,7 +64,7 @@ public class ClusterController {
      * Get cluster connection by ID
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<ClusterConnectionResponse> getClusterConnectionById(@PathVariable UUID id) {
         ClusterConnection cluster = clusterConnectionService.getClusterConnectionById(id);
         return ResponseEntity.ok(ClusterConnectionResponse.fromClusterConnection(cluster));
@@ -185,7 +187,7 @@ public class ClusterController {
      * Get users assigned to a specific cluster connection
      */
     @GetMapping("/{clusterId}/users")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<UserResponse>> getUsersAssignedToCluster(@PathVariable UUID clusterId) {
         var users = clusterConnectionService.getUsersAssignedToCluster(clusterId);
         List<UserResponse> userResponses = users.stream()
@@ -198,7 +200,7 @@ public class ClusterController {
      * Get users not assigned to a specific cluster connection
      */
     @GetMapping("/{clusterId}/users/unassigned")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<UserResponse>> getUsersNotAssignedToCluster(@PathVariable UUID clusterId) {
         var users = clusterConnectionService.getUsersNotAssignedToCluster(clusterId);
         List<UserResponse> userResponses = users.stream()
@@ -211,7 +213,7 @@ public class ClusterController {
      * Check if cluster name exists
      */
     @GetMapping("/exists/{name}")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<Boolean> checkClusterNameExists(@PathVariable String name) {
         boolean exists = clusterConnectionService.clusterNameExists(name);
         return ResponseEntity.ok(exists);
@@ -221,7 +223,7 @@ public class ClusterController {
      * Get cluster connections for a specific user
      */
     @GetMapping("/by-user/{userId}")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<ClusterConnectionResponse>> getClusterConnectionsForUser(@PathVariable UUID userId) {
         List<ClusterConnection> clusters = clusterConnectionService.getClusterConnectionsForUser(userId);
         List<ClusterConnectionResponse> responses = clusters.stream()
@@ -234,7 +236,7 @@ public class ClusterController {
      * Get active cluster connections for a specific user
      */
     @GetMapping("/by-user/{userId}/active")
-    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<ClusterConnectionResponse>> getActiveClusterConnectionsForUser(
             @PathVariable UUID userId) {
         List<ClusterConnection> clusters = clusterConnectionService.getActiveClusterConnectionsForUser(userId);

@@ -79,9 +79,7 @@ const VirtualizedResourceTableComponent = <T extends Record<string, any>>({
       </Paper>
     );
   }
-
-  // TODO: This component requires react-window to be installed
-  // For now, return a placeholder that indicates the feature is not available
+  // Placeholder for virtualized table
   return (
     <Paper sx={{ p: 4, textAlign: "center" }}>
       <Alert severity="info" sx={{ mb: 2 }}>

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RabbitMQ Resource Management feature provides a comprehensive interface for browsing and monitoring RabbitMQ cluster resources. This read-only interface allows you to inspect connections, channels, exchanges, and queues from your assigned RabbitMQ clusters.
+The RabbitMQ Resource Management feature provides a comprehensive interface for browsing, monitoring, and managing RabbitMQ cluster resources. This interface allows you to inspect connections and channels, as well as create, modify, and delete exchanges, queues, create bindings, and publish messages to your assigned RabbitMQ clusters. Write operations are implemented in the backend for exchanges, queues, binding creation, and message publishing, with message consumption fully implemented. Frontend UI components are partially implemented: exchange creation dialog and queue creation dialog are available, with additional dialogs for binding creation, message publishing, and delete confirmations planned for future releases. Note that binding deletion is not currently supported via API.
 
 ## Getting Started
 
@@ -103,7 +103,7 @@ The application supports direct URL navigation to resource pages, enabling:
 
 ### RabbitMQ Management UI Access
 
-While the integrated resource browser provides comprehensive read-only access to RabbitMQ resources, you can also access the native RabbitMQ Management UI directly:
+While the integrated resource management interface provides comprehensive access to RabbitMQ resources including write operations, you can also access the native RabbitMQ Management UI directly for additional features:
 
 #### Accessing the Management UI
 
@@ -113,19 +113,25 @@ While the integrated resource browser provides comprehensive read-only access to
 
 #### When to Use Each Interface
 
-**Integrated Resource Browser (This Application)**:
+**Integrated Resource Management Interface (This Application)**:
 
-- **Read-only monitoring**: View connections, channels, exchanges, and queues
+- **Comprehensive resource management**: View, create, modify, and delete exchanges and queues; create bindings (deletion via native UI)
+- **Queue creation**: Create new queues with comprehensive configuration options including durability, auto-delete, exclusive settings, and custom arguments
+- **Exchange creation**: Create new exchanges with type selection, configuration options, and custom arguments
+- **Message publishing**: Publish messages to exchanges and queues with validation
+- **Message consumption**: Retrieve messages from queues with acknowledgment mode selection, encoding options, and comprehensive message display
 - **Filtered views**: Use search and filtering capabilities
 - **Consistent UI**: Unified interface across multiple clusters
 - **Mobile-friendly**: Responsive design for mobile and tablet access
+- **Built-in validation**: Comprehensive validation and error handling for all operations
 
 **Native RabbitMQ Management UI**:
 
-- **Full administrative access**: Create, modify, and delete resources
-- **Advanced features**: Queue purging, message publishing, policy management
-- **Real-time monitoring**: Live updates and detailed statistics
+- **Advanced administrative features**: Policy management, user management, permissions
+- **Message consumption**: Browse and consume messages from queues with comprehensive acknowledgment options
+- **Real-time monitoring**: Live updates and detailed statistics with charts
 - **Plugin management**: Access to RabbitMQ plugins and advanced configuration
+- **Cluster administration**: Node management and cluster-wide settings
 
 ### Resource List Interface
 
@@ -284,6 +290,47 @@ Queues store and deliver messages to consumers.
    - **Consumer Details**: Active consumers with channels and acknowledgment modes
    - **Queue Configuration**: Arguments, policies, and node assignment
    - **Bindings**: All exchange bindings that route messages to this queue
+
+#### Message Consumption
+
+The integrated interface provides comprehensive message consumption capabilities:
+
+**Accessing Message Consumption**:
+
+1. Navigate to the Queues page
+2. Select a queue with available messages
+3. Use the "Get Messages" action to retrieve messages
+
+**Message Retrieval Options**:
+
+- **Message Count**: Select 1-100 messages to retrieve using a slider control
+- **Acknowledgment Mode**: Choose how messages are handled:
+  - **Acknowledge & Requeue**: Remove messages and requeue them (for testing)
+  - **Acknowledge & Remove**: Remove messages permanently
+  - **Reject & Requeue**: Reject messages and requeue them
+  - **Reject & Remove**: Reject messages and remove permanently
+- **Encoding**: Select automatic detection or force Base64 encoding
+- **Truncate Limit**: Optional payload truncation (1-50,000 bytes)
+
+**Message Display Features**:
+
+- **Tabular Message View**: Messages displayed in an organized table format with expandable rows
+- **Message Overview**: Quick preview of message number, exchange, routing key, and encoding
+- **Expandable Details**: Click to expand each message for full payload and metadata
+- **Payload Display**: View message content with encoding detection and binary data handling
+- **Properties and Headers**: Comprehensive display of message metadata in organized sections
+- **Copy to Clipboard**: Easy copying of message payloads and properties with one-click buttons
+- **Binary Data Handling**: Proper display of binary content with encoding indicators and warnings
+- **Redelivery Status**: Visual chips indicating message redelivery status
+- **Encoding Information**: Clear indicators for payload encoding (auto-detected or Base64)
+
+**Message Information Displayed**:
+
+- **Message Content**: Full payload with encoding detection and binary handling
+- **Message Properties**: All AMQP properties including delivery mode, priority, timestamps
+- **Custom Headers**: User-defined message headers with type information
+- **Routing Information**: Exchange, routing key, and delivery details
+- **Queue Statistics**: Current queue depth and message position
 
 ## Features and Functionality
 
@@ -533,7 +580,7 @@ The application protects sensitive information:
 
 - **Use Bookmarks**: Bookmark frequently accessed resource pages using direct URLs (e.g., `/resources/queues`)
 - **Direct Navigation**: Use direct URLs to quickly access specific resource types
-- **Native Management UI**: Access the RabbitMQ Management UI directly via cluster URLs for full administrative features not available in the integrated interface
+- **Native Management UI**: Access the RabbitMQ Management UI directly via cluster URLs for advanced administrative features like policy management and message consumption
 - **Filter Strategically**: Use filters to focus on relevant resources
 - **Batch Operations**: Review multiple resources before taking action
 - **Context Switching**: Keep cluster context in mind when switching resources
