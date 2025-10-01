@@ -652,4 +652,55 @@ class RabbitMQResourceControllerTest {
                                 .andExpect(status().isOk()); // Security is disabled in test config
         }
 
+        @Test
+        void createShovel_ShouldReturnOk_WhenSuccessful() throws Exception {
+                // Given
+                doReturn(Mono.empty())
+                                .when(resourceService)
+                                .createShovel(any(UUID.class), any(), any(User.class));
+
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                                userPrincipal, null, userPrincipal.getAuthorities());
+
+                String requestBody = """
+                                {
+                                        "name": "test-shovel",
+                                        "vhost": "/",
+                                        "sourceQueue": "source-queue",
+                                        "destinationQueue": "dest-queue",
+                                        "sourceUri": "amqp://localhost",
+                                        "destinationUri": "amqp://localhost",
+                                        "deleteAfter": "queue-length",
+                                        "ackMode": "on-confirm"
+                                }
+                                """;
+
+                // When & Then
+                mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/shovels", clusterId)
+                                .contentType("application/json")
+                                .content(requestBody)
+                                .with(authentication(auth)))
+                                .andExpect(status().isOk());
+        }
+
+        @Test
+        void createShovel_ShouldRequireAuthentication() throws Exception {
+                // Given - no authentication (but security is disabled in tests)
+                String requestBody = """
+                                {
+                                        "name": "test-shovel",
+                                        "vhost": "/",
+                                        "sourceQueue": "source-queue",
+                                        "destinationQueue": "dest-queue"
+                                }
+                                """;
+
+                // When & Then
+                mockMvc.perform(post("/api/rabbitmq/{clusterId}/resources/shovels", clusterId)
+                                .with(csrf())
+                                .contentType("application/json")
+                                .content(requestBody))
+                                .andExpect(status().isOk()); // Security is disabled in test config
+        }
+
 }

@@ -167,6 +167,13 @@ export const useWriteOperationNotifications = () => {
         [info]
     );
 
+    const notifyShovelCreated = useCallback(
+        (shovelName: string, sourceQueue: string, destinationQueue: string) => {
+            notifySuccess('started', 'Message transfer', shovelName, `Moving messages from "${sourceQueue}" to "${destinationQueue}"`);
+        },
+        [notifySuccess]
+    );
+
     return {
         // Generic notifications
         notifySuccess,
@@ -183,5 +190,6 @@ export const useWriteOperationNotifications = () => {
         notifyBindingCreated,
         notifyMessagePublished,
         notifyMessagesRetrieved,
+        notifyShovelCreated,
     };
 };

@@ -14,7 +14,8 @@ import {
   PublishMessageRequest,
   GetMessagesRequest,
   PublishResponse,
-  Message
+  Message,
+  CreateShovelRequest
 } from '../../types/rabbitmq';
 
 export const rabbitmqResourcesApi = {
@@ -321,6 +322,22 @@ export const rabbitmqResourcesApi = {
       return response.data;
     } catch (error) {
       throw new Error(`Failed to get messages from queue: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  },
+
+  // Message Movement Operations
+  createShovel: async (
+    clusterId: string,
+    request: CreateShovelRequest
+  ): Promise<void> => {
+    try {
+      await apiClient.post(`/rabbitmq/${clusterId}/resources/shovels`, request);
+    } catch (error) {
+      // Check if error is due to shovel plugin not enabled (503 Service Unavailable)
+      if (error instanceof Error && error.message.includes('503')) {
+        throw new Error('Message transfer is not enabled in the RabbitMQ cluster. Please enable the rabbitmq_shovel plugin.');
+      }
+      throw new Error(`Failed to move messages: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 };

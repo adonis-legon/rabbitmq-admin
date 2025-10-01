@@ -1017,6 +1017,74 @@ public class RabbitMQResourceService {
         }
 
         /**
+         * Creates a shovel to move messages from one queue to another in the specified
+         * RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param request   the shovel creation request
+         * @param user      the current authenticated user
+         * @return Mono<Void> indicating completion
+         */
+        public Mono<Void> createShovel(UUID clusterId, CreateShovelRequest request, User user) {
+                logger.debug("Creating shovel {} in vhost {} from {} to {} for cluster {} by user {}",
+                                request.getName(), request.getVhost(), request.getSourceQueue(),
+                                request.getDestinationQueue(), clusterId, user.getUsername());
+
+                Instant startTime = Instant.now();
+                String path = String.format("/api/parameters/shovel/%s/%s",
+                                encodePathSegment(request.getVhost()),
+                                encodePathSegment(request.getName()));
+
+                // Create shovel configuration for RabbitMQ Management API
+                // Force URIs to localhost for local-only shovel operations with proper
+                // credentials
+                Map<String, Object> value = new HashMap<>();
+                value.put("src-protocol", "amqp091");
+                value.put("src-uri", "amqp://admin:admin@localhost");
+                value.put("src-queue", request.getSourceQueue());
+                value.put("dest-protocol", "amqp091");
+                value.put("dest-uri", "amqp://admin:admin@localhost");
+                value.put("dest-queue", request.getDestinationQueue());
+                value.put("ack-mode", request.getAckMode());
+                value.put("delete-after", request.getDeleteAfter());
+
+                // For parameters API, the body structure is different
+                Map<String, Object> body = new HashMap<>();
+                body.put("value", value);
+
+                // Record metrics and audit
+                metricsService.recordClusterAccess(clusterId);
+                metricsService.recordUserAccess(user.getUsername());
+
+                Map<String, Object> auditParams = Map.of(
+                                "shovelName", request.getName(),
+                                "vhost", request.getVhost(),
+                                "sourceQueue", request.getSourceQueue(),
+                                "destinationQueue", request.getDestinationQueue());
+
+                return proxyService.put(clusterId, path, body, Void.class, user)
+                                .doOnSuccess(result -> {
+                                        Duration duration = Duration.between(startTime, Instant.now());
+                                        auditService.logResourceAccess(user.getUsername(), clusterId, "shovels",
+                                                        "create",
+                                                        auditParams);
+                                        logger.debug("Successfully created shovel {} in vhost {} for cluster {} in {}ms",
+                                                        request.getName(), request.getVhost(), clusterId,
+                                                        duration.toMillis());
+                                })
+                                .doOnError(error -> {
+                                        Duration duration = Duration.between(startTime, Instant.now());
+                                        auditService.logResourceAccessFailure(user.getUsername(), clusterId, "shovels",
+                                                        "create",
+                                                        error.getMessage(), error.getClass().getSimpleName());
+                                        logger.error("Failed to create shovel {} in vhost {} for cluster {} after {}ms: {}",
+                                                        request.getName(), request.getVhost(), clusterId,
+                                                        duration.toMillis(),
+                                                        error.getMessage());
+                                });
+        }
+
+        /**
          * Creates audit parameters from pagination request.
          */
         private Map<String, Object> createAuditParameters(PaginationRequest request) {

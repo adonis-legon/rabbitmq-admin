@@ -28,6 +28,7 @@ import {
   GetApp as GetAppIcon,
   Clear as ClearIcon,
   Delete as DeleteIcon,
+  MoveToInbox as ShovelIcon,
 } from "@mui/icons-material";
 import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import {
@@ -46,6 +47,7 @@ import CreateQueueDialog from "./CreateQueueDialog";
 import CreateBindingDialog from "./CreateBindingDialog";
 import PublishMessageDialog from "./PublishMessageDialog";
 import GetMessagesDialog from "./GetMessagesDialog";
+import { CreateShovelDialog } from "./CreateShovelDialog";
 import DeleteConfirmationDialog, {
   DeleteOptions,
 } from "../common/DeleteConfirmationDialog";
@@ -91,6 +93,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
   const [publishMessageDialogOpen, setPublishMessageDialogOpen] =
     useState(false);
   const [getMessagesDialogOpen, setGetMessagesDialogOpen] = useState(false);
+  const [createShovelDialogOpen, setCreateShovelDialogOpen] = useState(false);
   const [deleteConfirmationDialogOpen, setDeleteConfirmationDialogOpen] =
     useState(false);
   const [purgeConfirmationDialogOpen, setPurgeConfirmationDialogOpen] =
@@ -267,6 +270,20 @@ export const QueuesList: React.FC<QueuesListProps> = ({
   const handleGetMessagesSuccess = useCallback(() => {
     // No need to refresh for message consumption
   }, []);
+
+  const handleCreateShovelOpen = useCallback(() => {
+    setCreateShovelDialogOpen(true);
+    handleActionMenuClose();
+  }, [handleActionMenuClose]);
+
+  const handleCreateShovelClose = useCallback(() => {
+    setCreateShovelDialogOpen(false);
+    setActionMenuQueue(null);
+  }, []);
+
+  const handleCreateShovelSuccess = useCallback(() => {
+    handleRefresh();
+  }, [handleRefresh]);
 
   const handlePurgeQueueOpen = useCallback(() => {
     setPurgeConfirmationDialogOpen(true);
@@ -711,6 +728,12 @@ export const QueuesList: React.FC<QueuesListProps> = ({
           </ListItemIcon>
           <ListItemText>Get Messages</ListItemText>
         </MenuItem>
+        <MenuItem onClick={handleCreateShovelOpen}>
+          <ListItemIcon>
+            <ShovelIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Move Messages</ListItemText>
+        </MenuItem>
         <MenuItem onClick={handlePurgeQueueOpen}>
           <ListItemIcon>
             <ClearIcon fontSize="small" />
@@ -774,6 +797,20 @@ export const QueuesList: React.FC<QueuesListProps> = ({
           }}
           onClose={handleGetMessagesClose}
           onSuccess={handleGetMessagesSuccess}
+        />
+      )}
+
+      {/* Move Messages Dialog */}
+      {actionMenuQueue && (
+        <CreateShovelDialog
+          open={createShovelDialogOpen}
+          clusterId={clusterId}
+          sourceQueue={{
+            name: actionMenuQueue.name,
+            vhost: actionMenuQueue.vhost,
+          }}
+          onClose={handleCreateShovelClose}
+          onSuccess={handleCreateShovelSuccess}
         />
       )}
 

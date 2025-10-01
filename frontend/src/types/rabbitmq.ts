@@ -231,6 +231,18 @@ export interface Message {
   messageCount?: number;
 }
 
+// Shovel Types
+export interface CreateShovelRequest {
+  name: string;
+  vhost: string;
+  sourceQueue: string;
+  destinationQueue: string;
+  sourceUri?: string;
+  destinationUri?: string;
+  deleteAfter?: 'queue-length' | 'never';
+  ackMode?: 'on-confirm' | 'on-publish' | 'no-ack';
+}
+
 // Error Types
 export interface ResourceError {
   type: 'network' | 'authentication' | 'authorization' | 'cluster_unavailable' | 'api_error';

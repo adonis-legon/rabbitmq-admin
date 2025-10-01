@@ -498,4 +498,44 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
             );
         });
     });
+
+    describe('Shovel Operations', () => {
+        it('should create shovel successfully', async () => {
+            const request = {
+                name: 'test-shovel',
+                vhost: '/',
+                sourceQueue: 'source-queue',
+                destinationQueue: 'dest-queue',
+                sourceUri: 'amqp://localhost',
+                destinationUri: 'amqp://localhost',
+                deleteAfter: 'queue-length' as const,
+                ackMode: 'on-confirm' as const
+            };
+
+            mockApiClient.post.mockResolvedValue(createMockResponse(undefined));
+
+            await rabbitmqResourcesApi.createShovel(clusterId, request);
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                `/rabbitmq/${clusterId}/resources/shovels`,
+                request
+            );
+        });
+
+        it('should handle shovel plugin not enabled error', async () => {
+            const request = {
+                name: 'test-shovel',
+                vhost: '/',
+                sourceQueue: 'source-queue',
+                destinationQueue: 'dest-queue'
+            };
+
+            const error = new Error('Request failed with status code 503');
+            mockApiClient.post.mockRejectedValue(error);
+
+            await expect(rabbitmqResourcesApi.createShovel(clusterId, request))
+                .rejects
+                .toThrow('Shovel plugin is not enabled in the RabbitMQ cluster. Please enable the rabbitmq_shovel plugin.');
+        });
+    });
 });

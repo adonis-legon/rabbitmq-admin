@@ -706,4 +706,44 @@ public class RabbitMQResourceController {
                 }
         }
 
+        /**
+         * Create a shovel to move messages from one queue to another in the specified
+         * RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param request   the shovel creation request
+         * @param principal the authenticated user
+         * @return ResponseEntity indicating success or failure
+         */
+        @PostMapping("/shovels")
+        public ResponseEntity<Void> createShovel(
+                        @PathVariable UUID clusterId,
+                        @Valid @RequestBody CreateShovelRequest request,
+                        @AuthenticationPrincipal UserPrincipal principal) {
+
+                logger.debug("Creating shovel {} in vhost {} from {} to {} for cluster {} by user {}",
+                                request.getName(), request.getVhost(), request.getSourceQueue(),
+                                request.getDestinationQueue(), clusterId, principal.getUsername());
+
+                try {
+                        resourceService.createShovel(clusterId, request, principal.getUser()).block();
+                        logger.debug("Successfully created shovel {} in vhost {} for cluster {}",
+                                        request.getName(), request.getVhost(), clusterId);
+                        return ResponseEntity.ok().build();
+                } catch (Exception error) {
+                        logger.error("Failed to create shovel {} in vhost {} for cluster {}: {}",
+                                        request.getName(), request.getVhost(), clusterId, error.getMessage());
+
+                        // Check if error is due to shovel plugin not enabled
+                        String errorMessage = error.getMessage();
+                        if (errorMessage != null
+                                        && (errorMessage.contains("404") || errorMessage.contains("not found"))) {
+                                logger.warn("Shovel plugin might not be enabled in RabbitMQ cluster {}", clusterId);
+                                return ResponseEntity.status(503).build(); // Service Unavailable
+                        }
+
+                        return ResponseEntity.status(500).build();
+                }
+        }
+
 }
