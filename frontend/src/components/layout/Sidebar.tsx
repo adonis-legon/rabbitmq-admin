@@ -89,6 +89,12 @@ const navigationItems: NavigationItem[] = [
         path: ROUTES.CLUSTERS,
         adminOnly: true,
       },
+      {
+        text: "Audits",
+        icon: AppIcons.audit,
+        path: ROUTES.AUDIT,
+        adminOnly: true,
+      },
     ],
   },
 ];

@@ -11,6 +11,7 @@ import {
   DnsRounded as ClusterIcon,
   Settings as ManagementIcon,
   Pets as RabbitIcon,
+  History as HistoryIcon,
 } from "@mui/icons-material";
 
 // Centralized icon definitions for consistent usage across the app
@@ -33,6 +34,7 @@ export const AppIcons = {
   management: <ManagementIcon />,
   users: <PeopleIcon />,
   clusters: <ClusterIcon />, // Changed from StorageIcon to better represent cluster infrastructure
+  audit: <HistoryIcon />, // Audit/history icon for audit records
 } as const;
 
 // Helper function to get icon with consistent sizing

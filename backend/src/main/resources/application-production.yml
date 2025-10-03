@@ -101,6 +101,12 @@ app:
     health:
       check-interval-minutes: 5
       timeout-seconds: 15
+  audit:
+    write-operations:
+      enabled: ${AUDIT_WRITE_OPERATIONS_ENABLED:true} # Enable by default in production
+      retention-days: ${AUDIT_RETENTION_DAYS:365} # Longer retention in production
+      batch-size: ${AUDIT_BATCH_SIZE:50} # Smaller batches for production
+      async-processing: ${AUDIT_ASYNC_PROCESSING:true}
 
 # Production RabbitMQ Resource Management Configuration
 # Custom configuration properties handled by RabbitMQResourceProperties class

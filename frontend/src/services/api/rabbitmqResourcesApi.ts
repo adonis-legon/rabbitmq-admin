@@ -335,7 +335,7 @@ export const rabbitmqResourcesApi = {
     } catch (error) {
       // Check if error is due to shovel plugin not enabled (503 Service Unavailable)
       if (error instanceof Error && error.message.includes('503')) {
-        throw new Error('Message transfer is not enabled in the RabbitMQ cluster. Please enable the rabbitmq_shovel plugin.');
+        throw new Error('Shovel plugin is not enabled in the RabbitMQ cluster. Please enable the rabbitmq_shovel plugin.');
       }
       throw new Error(`Failed to move messages: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

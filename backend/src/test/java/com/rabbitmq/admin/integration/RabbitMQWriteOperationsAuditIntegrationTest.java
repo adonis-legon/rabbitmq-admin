@@ -95,7 +95,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                         // Given
                         CreateExchangeRequest request = createExchangeRequest("test-exchange", "direct", "/");
 
-                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), eq(request),
+                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
                                         any(User.class)))
                                         .thenReturn(Mono.empty());
 
@@ -107,7 +108,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                                         .andExpect(status().isOk());
 
                         // Then - Verify service was called (audit logging happens in service layer)
-                        verify(rabbitMQResourceService).createExchange(eq(testCluster.getId()), eq(request),
+                        verify(rabbitMQResourceService).createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
                                         any(User.class));
                 }
 
@@ -147,7 +149,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                         CreateBindingRequest request = createBindingRequest("test.routing.key");
 
                         when(rabbitMQResourceService.createBinding(eq(testCluster.getId()), eq("/"),
-                                        eq(source), eq(destination), eq("q"), eq(request), any(User.class)))
+                                        eq(source), eq(destination), eq("q"), any(CreateBindingRequest.class),
+                                        any(User.class)))
                                         .thenReturn(Mono.empty());
 
                         // When
@@ -161,7 +164,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
 
                         // Then - Verify service was called with correct parameters
                         verify(rabbitMQResourceService).createBinding(eq(testCluster.getId()), eq("/"),
-                                        eq(source), eq(destination), eq("q"), eq(request), any(User.class));
+                                        eq(source), eq(destination), eq("q"), any(CreateBindingRequest.class),
+                                        any(User.class));
                 }
 
                 @Test
@@ -175,7 +179,7 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                         PublishResponse response = new PublishResponse(true);
 
                         when(rabbitMQResourceService.publishMessage(eq(testCluster.getId()), eq("/"),
-                                        eq(exchange), eq(request), any(User.class)))
+                                        eq(exchange), any(PublishMessageRequest.class), any(User.class)))
                                         .thenReturn(response);
 
                         // When
@@ -188,7 +192,7 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
 
                         // Then - Verify service was called with correct parameters
                         verify(rabbitMQResourceService).publishMessage(eq(testCluster.getId()), eq("/"),
-                                        eq(exchange), eq(request), any(User.class));
+                                        eq(exchange), any(PublishMessageRequest.class), any(User.class));
                 }
 
                 @Test
@@ -202,7 +206,7 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                         List<MessageDto> messages = Arrays.asList(createMessageDto("Hello", "test.key"));
 
                         when(rabbitMQResourceService.getMessages(eq(testCluster.getId()), eq("/"),
-                                        eq(queue), eq(request), any(User.class)))
+                                        eq(queue), any(GetMessagesRequest.class), any(User.class)))
                                         .thenReturn(messages);
 
                         // When
@@ -215,7 +219,7 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
 
                         // Then - Verify service was called with correct parameters
                         verify(rabbitMQResourceService).getMessages(eq(testCluster.getId()), eq("/"),
-                                        eq(queue), eq(request), any(User.class));
+                                        eq(queue), any(GetMessagesRequest.class), any(User.class));
                 }
         }
 
@@ -230,7 +234,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                         // Given
                         CreateExchangeRequest request = createExchangeRequest("test-exchange", "direct", "/");
 
-                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), eq(request),
+                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
                                         any(User.class)))
                                         .thenReturn(Mono.empty());
 
@@ -243,7 +248,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
 
                         // Then - Verify service was called (metrics collection happens in service
                         // layer)
-                        verify(rabbitMQResourceService).createExchange(eq(testCluster.getId()), eq(request),
+                        verify(rabbitMQResourceService).createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
                                         any(User.class));
                 }
 
@@ -254,7 +260,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                         // Given
                         CreateQueueRequest request = createQueueRequest("test-queue", "/");
 
-                        when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), eq(request), any(User.class)))
+                        when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), any(CreateQueueRequest.class),
+                                        any(User.class)))
                                         .thenReturn(Mono.error(new RuntimeException("RabbitMQ API error")));
 
                         // When
@@ -266,7 +273,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
 
                         // Then - Verify service was called (error metrics collection happens in service
                         // layer)
-                        verify(rabbitMQResourceService).createQueue(eq(testCluster.getId()), eq(request),
+                        verify(rabbitMQResourceService).createQueue(eq(testCluster.getId()),
+                                        any(CreateQueueRequest.class),
                                         any(User.class));
                 }
 
@@ -370,10 +378,11 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                         CreateExchangeRequest exchangeRequest = createExchangeRequest("test-exchange", "direct", "/");
                         CreateQueueRequest queueRequest = createQueueRequest("test-queue", "/");
 
-                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()), eq(exchangeRequest),
+                        when(rabbitMQResourceService.createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
                                         any(User.class)))
                                         .thenReturn(Mono.empty());
-                        when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), eq(queueRequest),
+                        when(rabbitMQResourceService.createQueue(eq(testCluster.getId()), any(CreateQueueRequest.class),
                                         any(User.class)))
                                         .thenReturn(Mono.empty());
 
@@ -391,9 +400,11 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
                                         .andExpect(status().isOk());
 
                         // Then - Verify both operations were logged through service calls
-                        verify(rabbitMQResourceService).createExchange(eq(testCluster.getId()), eq(exchangeRequest),
+                        verify(rabbitMQResourceService).createExchange(eq(testCluster.getId()),
+                                        any(CreateExchangeRequest.class),
                                         any(User.class));
-                        verify(rabbitMQResourceService).createQueue(eq(testCluster.getId()), eq(queueRequest),
+                        verify(rabbitMQResourceService).createQueue(eq(testCluster.getId()),
+                                        any(CreateQueueRequest.class),
                                         any(User.class));
                 }
 
@@ -415,7 +426,8 @@ class RabbitMQWriteOperationsAuditIntegrationTest extends IntegrationTestBase {
 
                         // Then - Verify service was called (cluster validation happens in service
                         // layer)
-                        verify(rabbitMQResourceService).createExchange(eq(nonExistentClusterId), eq(request),
+                        verify(rabbitMQResourceService).createExchange(eq(nonExistentClusterId),
+                                        any(CreateExchangeRequest.class),
                                         any(User.class));
                 }
         }

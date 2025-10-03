@@ -172,15 +172,6 @@
         </resources>
         
         <plugins>
-            <!-- Maven Surefire Plugin - exclude debug tests from regular test runs -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M9</version>
-                <configuration>
-                    <excludedGroups>debug</excludedGroups>
-                </configuration>
-            </plugin>
             
             <!-- Build frontend and copy assets before backend build (only during package phase) -->
             <plugin>
@@ -278,6 +269,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
+                    <excludedGroups>debug</excludedGroups>
                     <forkedProcessExitTimeoutInSeconds>120</forkedProcessExitTimeoutInSeconds>
                     <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
                     <systemPropertyVariables>
@@ -286,7 +278,7 @@
                         <testcontainers.checks.disable>true</testcontainers.checks.disable>
                         <java.awt.headless>true</java.awt.headless>
                     </systemPropertyVariables>
-                    <argLine>-Xmx4096m -XX:+UseG1GC -XX:+DisableExplicitGC -XX:MaxMetaspaceSize=512m -Djava.awt.headless=true</argLine>
+                    <argLine>-Xmx4096m -XX:+UseG1GC -XX:+DisableExplicitGC -XX:MaxMetaspaceSize=512m</argLine>
                     <shutdown>kill</shutdown>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>

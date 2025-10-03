@@ -1,0 +1,539 @@
+import React, { useState, useCallback } from "react";
+import {
+  Box,
+  Typography,
+  Chip,
+  Tooltip,
+  IconButton,
+  Collapse,
+  Card,
+  CardContent,
+  Alert,
+  Button,
+} from "@mui/material";
+import {
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  CheckCircle as SuccessIcon,
+  Error as ErrorIcon,
+  Warning as PartialIcon,
+  Person as UserIcon,
+  Storage as ClusterIcon,
+  Category as ResourceIcon,
+  Schedule as TimeIcon,
+  Info as InfoIcon,
+} from "@mui/icons-material";
+import { GridColDef, GridRowParams, GridSortModel } from "@mui/x-data-grid";
+import {
+  AuditRecord,
+  AuditOperationType,
+  AuditOperationStatus,
+} from "../../types/audit";
+import { ResourceError } from "../../types/rabbitmq";
+import ResourceTable from "../resources/shared/ResourceTable";
+import TimestampToggle from "../common/TimestampToggle";
+import {
+  formatTimestamp,
+  formatTimestampForTable,
+  getRelativeTime,
+  DEFAULT_TIMESTAMP_OPTIONS,
+} from "../../utils/timestampUtils";
+
+export interface AuditRecordsListProps {
+  /** Array of audit records to display */
+  data: AuditRecord[];
+  /** Whether data is currently loading */
+  loading?: boolean;
+  /** Error state for the audit records */
+  error?: ResourceError | null;
+  /** Total number of records (for pagination) */
+  totalRows?: number;
+  /** Current page number (0-based) */
+  page?: number;
+  /** Number of items per page */
+  pageSize?: number;
+  /** Available page size options */
+  pageSizeOptions?: number[];
+  /** Callback when page changes */
+  onPageChange?: (page: number) => void;
+  /** Callback when page size changes */
+  onPageSizeChange?: (pageSize: number) => void;
+  /** Callback when sort changes */
+  onSortChange?: (sortModel: GridSortModel) => void;
+  /** Callback when row is clicked */
+  onRowClick?: (record: AuditRecord) => void;
+  /** Custom empty message */
+  emptyMessage?: string;
+  /** Table height */
+  height?: number | string;
+  /** Callback for retry action */
+  onRetry?: () => void;
+  /** Whether to show local time by default */
+  showLocalTime?: boolean;
+  /** Callback when timestamp display mode changes */
+  onTimestampModeChange?: (showLocal: boolean) => void;
+}
+
+const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
+  data,
+  loading = false,
+  error = null,
+  totalRows,
+  page = 0,
+  pageSize = 50,
+  pageSizeOptions = [25, 50, 100, 200],
+  onPageChange,
+  onPageSizeChange,
+  onSortChange,
+  onRowClick,
+  emptyMessage = "No audit records found",
+  height = 600,
+  onRetry,
+  showLocalTime = true,
+  onTimestampModeChange,
+}) => {
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [internalShowLocal, setInternalShowLocal] = useState(showLocalTime);
+
+  const handleRowExpand = useCallback((recordId: string) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(recordId)) {
+        newSet.delete(recordId);
+      } else {
+        newSet.add(recordId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleRowClick = useCallback(
+    (params: GridRowParams) => {
+      const record = params.row as AuditRecord;
+      if (onRowClick) {
+        onRowClick(record);
+      }
+    },
+    [onRowClick]
+  );
+
+  const handleTimestampModeChange = useCallback(
+    (showLocal: boolean) => {
+      setInternalShowLocal(showLocal);
+      if (onTimestampModeChange) {
+        onTimestampModeChange(showLocal);
+      }
+    },
+    [onTimestampModeChange]
+  );
+
+  // Format timestamp based on current display mode
+  const formatTimestampDisplay = useCallback(
+    (timestamp: string): string => {
+      return formatTimestamp(
+        timestamp,
+        internalShowLocal,
+        DEFAULT_TIMESTAMP_OPTIONS
+      );
+    },
+    [internalShowLocal]
+  );
+
+  // Format timestamp for table display with separate date and time
+  const formatTimestampForTableDisplay = useCallback(
+    (timestamp: string) => {
+      return formatTimestampForTable(
+        timestamp,
+        internalShowLocal,
+        DEFAULT_TIMESTAMP_OPTIONS
+      );
+    },
+    [internalShowLocal]
+  );
+
+  // Get status icon and color
+  const getStatusIcon = (status: AuditOperationStatus) => {
+    switch (status) {
+      case AuditOperationStatus.SUCCESS:
+        return <SuccessIcon fontSize="small" color="success" />;
+      case AuditOperationStatus.FAILURE:
+        return <ErrorIcon fontSize="small" color="error" />;
+      case AuditOperationStatus.PARTIAL:
+        return <PartialIcon fontSize="small" color="warning" />;
+      default:
+        return <InfoIcon fontSize="small" color="info" />;
+    }
+  };
+
+  const getStatusColor = (
+    status: AuditOperationStatus
+  ): "success" | "error" | "warning" | "info" => {
+    switch (status) {
+      case AuditOperationStatus.SUCCESS:
+        return "success";
+      case AuditOperationStatus.FAILURE:
+        return "error";
+      case AuditOperationStatus.PARTIAL:
+        return "warning";
+      default:
+        return "info";
+    }
+  };
+
+  // Format operation type for display
+  const formatOperationType = (operationType: AuditOperationType): string => {
+    return operationType
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  // Create detailed view for expanded row
+  const createDetailedView = (record: AuditRecord) => (
+    <Card sx={{ m: 1, backgroundColor: "grey.50" }}>
+      <CardContent>
+        <Typography variant="h6" gutterBottom>
+          Operation Details
+        </Typography>
+
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <UserIcon
+                fontSize="small"
+                sx={{ mr: 1, verticalAlign: "middle" }}
+              />
+              User Information
+            </Typography>
+            <Typography variant="body2">Username: {record.username}</Typography>
+            {record.clientIp && (
+              <Typography variant="body2">
+                IP Address: {record.clientIp}
+              </Typography>
+            )}
+            {record.userAgent && (
+              <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
+                User Agent: {record.userAgent}
+              </Typography>
+            )}
+          </Box>
+
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <ClusterIcon
+                fontSize="small"
+                sx={{ mr: 1, verticalAlign: "middle" }}
+              />
+              Cluster Information
+            </Typography>
+            <Typography variant="body2">
+              Cluster: {record.clusterName}
+            </Typography>
+          </Box>
+
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <ResourceIcon
+                fontSize="small"
+                sx={{ mr: 1, verticalAlign: "middle" }}
+              />
+              Resource Information
+            </Typography>
+            <Typography variant="body2">Type: {record.resourceType}</Typography>
+            <Typography variant="body2">Name: {record.resourceName}</Typography>
+          </Box>
+
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              <TimeIcon
+                fontSize="small"
+                sx={{ mr: 1, verticalAlign: "middle" }}
+              />
+              Timing Information
+            </Typography>
+            <Typography variant="body2">
+              Timestamp: {formatTimestampDisplay(record.timestamp)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {getRelativeTime(record.timestamp)}
+            </Typography>
+            {record.createdAt && record.createdAt !== record.timestamp && (
+              <Typography variant="body2">
+                Recorded: {formatTimestampDisplay(record.createdAt)}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+
+        {record.resourceDetails &&
+          Object.keys(record.resourceDetails).length > 0 && (
+            <Box sx={{ mt: 2 }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
+                Resource Details
+              </Typography>
+              <Box
+                component="pre"
+                sx={{
+                  backgroundColor: "grey.100",
+                  p: 1,
+                  borderRadius: 1,
+                  fontSize: "0.75rem",
+                  overflow: "auto",
+                  maxHeight: 200,
+                }}
+              >
+                {JSON.stringify(record.resourceDetails, null, 2)}
+              </Box>
+            </Box>
+          )}
+
+        {record.errorMessage && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" color="error" gutterBottom>
+              Error Details
+            </Typography>
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {record.errorMessage}
+            </Alert>
+          </Box>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const columns: GridColDef[] = [
+    {
+      field: "expand",
+      headerName: "",
+      width: 50,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleRowExpand(params.row.id);
+          }}
+          aria-label={`${
+            expandedRows.has(params.row.id) ? "Collapse" : "Expand"
+          } details for ${params.row.operationType}`}
+        >
+          {expandedRows.has(params.row.id) ? (
+            <ExpandLessIcon />
+          ) : (
+            <ExpandMoreIcon />
+          )}
+        </IconButton>
+      ),
+    },
+    {
+      field: "timestamp",
+      headerName: "Timestamp",
+      width: 180,
+      renderCell: (params) => {
+        const formatted = formatTimestampForTableDisplay(params.value);
+        const utcFormatted = formatTimestamp(
+          params.value,
+          false,
+          DEFAULT_TIMESTAMP_OPTIONS
+        );
+        const localFormatted = formatTimestamp(
+          params.value,
+          true,
+          DEFAULT_TIMESTAMP_OPTIONS
+        );
+
+        return (
+          <Tooltip
+            title={
+              <Box>
+                <Typography variant="body2">Local: {localFormatted}</Typography>
+                <Typography variant="body2">UTC: {utcFormatted}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {getRelativeTime(params.value)}
+                </Typography>
+              </Box>
+            }
+          >
+            <Box>
+              <Typography variant="body2" fontWeight="medium">
+                {formatted.date}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatted.time}
+              </Typography>
+            </Box>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      field: "username",
+      headerName: "User",
+      width: 120,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <UserIcon fontSize="small" color="action" />
+          <Typography variant="body2" fontWeight="medium">
+            {params.value}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "clusterName",
+      headerName: "Cluster",
+      width: 140,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <ClusterIcon fontSize="small" color="action" />
+          <Typography variant="body2">{params.value}</Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "operationType",
+      headerName: "Operation",
+      width: 160,
+      renderCell: (params) => (
+        <Chip
+          label={formatOperationType(params.value)}
+          size="small"
+          variant="outlined"
+          color="primary"
+        />
+      ),
+    },
+    {
+      field: "resourceType",
+      headerName: "Resource Type",
+      width: 120,
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ textTransform: "capitalize" }}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "resourceName",
+      headerName: "Resource",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Tooltip title={params.value}>
+          <Typography
+            variant="body2"
+            fontWeight="medium"
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {params.value}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      width: 120,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {getStatusIcon(params.value)}
+          <Chip
+            label={params.value.charAt(0) + params.value.slice(1).toLowerCase()}
+            color={getStatusColor(params.value)}
+            size="small"
+            variant="outlined"
+          />
+        </Box>
+      ),
+    },
+  ];
+
+  // Format data for display with expanded row support
+  const formattedData = data.map((record) => ({
+    ...record,
+    id: record.id, // Use record ID for DataGrid
+  }));
+
+  return (
+    <Box>
+      {/* Timestamp Display Mode Toggle */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <TimestampToggle
+          showLocal={internalShowLocal}
+          onChange={handleTimestampModeChange}
+          size="small"
+          disabled={loading}
+        />
+      </Box>
+
+      {error && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          action={
+            error.retryable &&
+            onRetry && (
+              <Button color="inherit" size="small" onClick={onRetry}>
+                Retry
+              </Button>
+            )
+          }
+        >
+          <Typography variant="body2" fontWeight="medium">
+            {error.message}
+          </Typography>
+          {error.details && (
+            <Typography variant="caption" display="block">
+              {error.details}
+            </Typography>
+          )}
+        </Alert>
+      )}
+
+      <ResourceTable
+        data={formattedData}
+        columns={columns}
+        loading={loading}
+        error={null}
+        totalRows={totalRows}
+        page={page}
+        pageSize={pageSize}
+        pageSizeOptions={pageSizeOptions}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        onSortChange={onSortChange}
+        onRowClick={handleRowClick}
+        getRowId={(row) => row.id}
+        emptyMessage={emptyMessage}
+        height={height}
+        disableRowSelectionOnClick={true}
+      />
+
+      {/* Expanded row details */}
+      {formattedData.map((record) => (
+        <Collapse key={`${record.id}-details`} in={expandedRows.has(record.id)}>
+          {expandedRows.has(record.id) && createDetailedView(record)}
+        </Collapse>
+      ))}
+    </Box>
+  );
+};
+
+export default AuditRecordsList;

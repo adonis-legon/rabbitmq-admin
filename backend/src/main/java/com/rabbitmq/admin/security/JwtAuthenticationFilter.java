@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,6 +43,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestPath = request.getRequestURI();
         logger.debug("JWT Filter processing request: {} {}", request.getMethod(), requestPath);
 
+        // Extract and set client IP for audit logging
+        setClientIpInMDC(request);
+
+        // Extract and set user agent for audit logging
+        setUserAgentInMDC(request);
+
         try {
             String jwt = getJwtFromRequest(request);
             logger.debug("JWT token present: {}", jwt != null);
@@ -74,7 +81,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             logger.error("Could not set user authentication in security context for path: " + requestPath, ex);
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            // Clean up MDC to prevent memory leaks
+            MDC.remove("clientIp");
+            MDC.remove("userAgent");
+        }
     }
 
     /**
@@ -86,5 +99,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    /**
+     * Extract client IP address from request headers and set in MDC for audit
+     * logging
+     */
+    private void setClientIpInMDC(HttpServletRequest request) {
+        String clientIp = null;
+
+        // Check X-Forwarded-For header first (for proxied requests)
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (StringUtils.hasText(xForwardedFor)) {
+            // X-Forwarded-For can contain multiple IPs, take the first one
+            clientIp = xForwardedFor.split(",")[0].trim();
+        }
+
+        // Fallback to X-Real-IP header
+        if (!StringUtils.hasText(clientIp)) {
+            clientIp = request.getHeader("X-Real-IP");
+        }
+
+        // Fallback to remote address
+        if (!StringUtils.hasText(clientIp)) {
+            clientIp = request.getRemoteAddr();
+        }
+
+        if (StringUtils.hasText(clientIp)) {
+            MDC.put("clientIp", clientIp);
+        }
+    }
+
+    /**
+     * Extract User-Agent header and set in MDC for audit logging
+     */
+    private void setUserAgentInMDC(HttpServletRequest request) {
+        String userAgent = request.getHeader("User-Agent");
+        if (StringUtils.hasText(userAgent)) {
+            MDC.put("userAgent", userAgent);
+        }
     }
 }

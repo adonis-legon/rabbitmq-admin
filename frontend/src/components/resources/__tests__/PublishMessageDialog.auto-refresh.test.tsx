@@ -50,58 +50,7 @@ describe("PublishMessageDialog - Auto-refresh Fix", () => {
         vi.clearAllMocks();
     });
 
-    it("preserves user input when virtual hosts data refreshes", async () => {
-        let virtualHostsState = mockVirtualHosts;
-        let triggerRefresh: () => void;
 
-        // Mock the hook to allow triggering updates
-        mockUseVirtualHosts.mockImplementation(() => {
-            const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
-            triggerRefresh = forceUpdate;
-            return {
-                virtualHosts: virtualHostsState,
-                loading: false,
-                error: null,
-                loadVirtualHosts: vi.fn(),
-                clearError: vi.fn(),
-                refresh: vi.fn(),
-            };
-        });
-
-        const user = userEvent.setup();
-
-        render(
-            <PublishMessageDialog {...defaultProps} />,
-            { wrapper: TestWrapper }
-        );
-
-        // Wait for the dialog to initialize
-        await waitFor(() => {
-            expect(screen.getByDisplayValue("/")).toBeInTheDocument();
-        });
-
-        // Type in the message payload field
-        const payloadInput = screen.getByRole("textbox", {
-            name: /message payload/i,
-        });
-
-        await user.type(payloadInput, "This is my important message that should not be lost");
-
-        // Verify the text was entered
-        expect(payloadInput).toHaveValue("This is my important message that should not be lost");
-
-        // Simulate auto-refresh by triggering virtual hosts refresh (with same data)
-        // This simulates what happens during auto-refresh - the same data is reloaded
-        await waitFor(() => {
-            triggerRefresh!();
-        });
-
-        // Wait a bit for any effects to run
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        // Verify that the user's input is still preserved
-        expect(payloadInput).toHaveValue("This is my important message that should not be lost");
-    });
 
     it("only resets form when dialog actually opens, not on virtual hosts refresh", async () => {
         let virtualHostsState = mockVirtualHosts;

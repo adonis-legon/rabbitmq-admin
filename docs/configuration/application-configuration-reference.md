@@ -11,6 +11,7 @@ The application configuration is organized into several main sections:
 - **Core Application**: Basic Spring Boot and database configuration
 - **Security**: Authentication, authorization, and security settings
 - **Resource Management**: RabbitMQ resource browsing and management features
+- **Audit System**: Write operations audit logging and configuration
 - **Monitoring**: Health checks, metrics, and performance monitoring
 - **Logging**: Application and audit logging configuration
 
@@ -427,6 +428,99 @@ rabbitmq:
         mask-sensitive-values: true
         mask-character: "*"
 ```
+
+## Audit System Configuration
+
+The audit system provides comprehensive tracking of all write operations performed on RabbitMQ clusters. This system is configurable and can be enabled or disabled based on organizational requirements.
+
+### Write Operations Audit Configuration
+
+```yaml
+app:
+  audit:
+    write-operations:
+      # Enable/disable audit logging for write operations
+      enabled: ${AUDIT_WRITE_OPERATIONS_ENABLED:false}
+
+      # Number of days to retain audit records before cleanup
+      retention-days: ${AUDIT_RETENTION_DAYS:90}
+
+      # Batch size for processing audit records
+      batch-size: ${AUDIT_BATCH_SIZE:100}
+
+      # Whether to process audit records asynchronously
+      async-processing: ${AUDIT_ASYNC_PROCESSING:true}
+```
+
+**Environment Variables:**
+
+- `AUDIT_WRITE_OPERATIONS_ENABLED`: Enable/disable audit logging (default: false)
+- `AUDIT_RETENTION_DAYS`: Retention period in days (default: 90)
+- `AUDIT_BATCH_SIZE`: Processing batch size (default: 100)
+- `AUDIT_ASYNC_PROCESSING`: Enable asynchronous processing (default: true)
+
+### Audit Configuration Properties
+
+The audit system uses the `AuditConfigurationProperties` class for type-safe configuration:
+
+**Property Details:**
+
+- **enabled**: Controls whether write operations are audited
+
+  - Type: Boolean (required)
+  - Default: false
+  - Validation: Must not be null
+
+- **retention-days**: Number of days to retain audit records
+
+  - Type: Integer
+  - Default: 90
+  - Range: 1 to 36,500 (100 years)
+  - Validation: Must be at least 1
+
+- **batch-size**: Batch size for processing audit records
+
+  - Type: Integer
+  - Default: 100
+  - Range: 1 to 10,000
+  - Validation: Must be at least 1
+
+- **async-processing**: Whether to process audit records asynchronously
+  - Type: Boolean (required)
+  - Default: true
+  - Validation: Must not be null
+
+### Audit System Features
+
+**Tracked Operations:**
+
+- Create/delete exchanges
+- Create/delete queues
+- Create/delete bindings
+- Publish messages
+- Purge queues
+- Move messages
+
+**Audit Record Information:**
+
+- User performing the operation
+- Target cluster
+- Operation type and details
+- Timestamp (UTC)
+- Success/failure status
+- Error messages (if applicable)
+- Client IP and user agent
+
+**Configuration Validation:**
+The system validates all configuration properties at startup and provides clear error messages for invalid configurations.
+
+**Runtime Configuration Changes:**
+The audit configuration supports runtime refresh using Spring Boot Actuator's refresh endpoint without requiring application restart.
+
+For detailed audit configuration examples and best practices, see:
+
+- [Audit Configuration Reference](audit-configuration-reference.md)
+- [Audit Configuration Examples](audit-configuration-examples.md)
 
 ## Monitoring Configuration
 

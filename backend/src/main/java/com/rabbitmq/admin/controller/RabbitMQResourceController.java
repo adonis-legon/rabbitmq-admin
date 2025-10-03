@@ -1,6 +1,8 @@
 package com.rabbitmq.admin.controller;
 
+import com.rabbitmq.admin.aspect.AuditWriteOperation;
 import com.rabbitmq.admin.dto.*;
+import com.rabbitmq.admin.model.AuditOperationType;
 import com.rabbitmq.admin.security.UserPrincipal;
 import com.rabbitmq.admin.service.RabbitMQResourceService;
 import jakarta.validation.Valid;
@@ -280,6 +282,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @PutMapping("/exchanges")
+        @AuditWriteOperation(operationType = AuditOperationType.CREATE_EXCHANGE, resourceType = "exchange", description = "Create a new exchange")
         public ResponseEntity<Void> createExchange(
                         @PathVariable UUID clusterId,
                         @RequestBody @Valid CreateExchangeRequest request,
@@ -312,6 +315,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @DeleteMapping("/exchanges/{vhost}/{name}")
+        @AuditWriteOperation(operationType = AuditOperationType.DELETE_EXCHANGE, resourceType = "exchange", description = "Delete an exchange")
         public ResponseEntity<Void> deleteExchange(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -353,6 +357,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @PutMapping("/queues")
+        @AuditWriteOperation(operationType = AuditOperationType.CREATE_QUEUE, resourceType = "queue", description = "Create a new queue")
         public ResponseEntity<Void> createQueue(
                         @PathVariable UUID clusterId,
                         @RequestBody @Valid CreateQueueRequest request,
@@ -385,6 +390,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @DeleteMapping("/queues/{vhost}/{name}")
+        @AuditWriteOperation(operationType = AuditOperationType.DELETE_QUEUE, resourceType = "queue", description = "Delete a queue")
         public ResponseEntity<Void> deleteQueue(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -406,17 +412,11 @@ public class RabbitMQResourceController {
                 logger.debug("Deleting queue {} in vhost {} for cluster {} by user {} (ifEmpty: {}, ifUnused: {})",
                                 name, vhost, clusterId, principal.getUsername(), ifEmpty, ifUnused);
 
-                try {
-                        resourceService.deleteQueue(clusterId, vhost, name, ifEmpty, ifUnused, principal.getUser())
-                                        .block();
-                        logger.debug("Successfully deleted queue {} in vhost {} for cluster {}",
-                                        name, vhost, clusterId);
-                        return ResponseEntity.ok().build();
-                } catch (Exception error) {
-                        logger.error("Failed to delete queue {} in vhost {} for cluster {}: {}",
-                                        name, vhost, clusterId, error.getMessage());
-                        return ResponseEntity.status(500).build();
-                }
+                resourceService.deleteQueue(clusterId, vhost, name, ifEmpty, ifUnused, principal.getUser())
+                                .block();
+                logger.debug("Successfully deleted queue {} in vhost {} for cluster {}",
+                                name, vhost, clusterId);
+                return ResponseEntity.ok().build();
         }
 
         /**
@@ -429,6 +429,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @DeleteMapping("/queues/{vhost}/{name}/contents")
+        @AuditWriteOperation(operationType = AuditOperationType.PURGE_QUEUE, resourceType = "queue", description = "Purge all messages from a queue")
         public ResponseEntity<Void> purgeQueue(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -473,6 +474,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @PostMapping("/bindings/{vhost}/e/{source}/q/{destination}")
+        @AuditWriteOperation(operationType = AuditOperationType.CREATE_BINDING_QUEUE, resourceType = "binding", description = "Create a binding from exchange to queue")
         public ResponseEntity<Void> createExchangeToQueueBinding(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -522,6 +524,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @PostMapping("/bindings/{vhost}/e/{source}/e/{destination}")
+        @AuditWriteOperation(operationType = AuditOperationType.CREATE_BINDING_EXCHANGE, resourceType = "binding", description = "Create a binding from exchange to exchange")
         public ResponseEntity<Void> createExchangeToExchangeBinding(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -569,6 +572,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity with publish response indicating if message was routed
          */
         @PostMapping("/exchanges/{vhost}/{exchange}/publish")
+        @AuditWriteOperation(operationType = AuditOperationType.PUBLISH_MESSAGE_EXCHANGE, resourceType = "message", description = "Publish a message to an exchange")
         public ResponseEntity<PublishResponse> publishMessage(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -615,6 +619,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity with publish response indicating if message was routed
          */
         @PostMapping("/queues/{vhost}/{queue}/publish")
+        @AuditWriteOperation(operationType = AuditOperationType.PUBLISH_MESSAGE_QUEUE, resourceType = "message", description = "Publish a message directly to a queue")
         public ResponseEntity<PublishResponse> publishToQueue(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -716,6 +721,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @PostMapping("/shovels")
+        @AuditWriteOperation(operationType = AuditOperationType.MOVE_MESSAGES_QUEUE, resourceType = "shovel", description = "Create a shovel to move messages between queues")
         public ResponseEntity<Void> createShovel(
                         @PathVariable UUID clusterId,
                         @Valid @RequestBody CreateShovelRequest request,
