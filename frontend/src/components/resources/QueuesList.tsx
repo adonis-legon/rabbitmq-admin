@@ -481,12 +481,12 @@ export const QueuesList: React.FC<QueuesListProps> = ({
       headerAlign: "center",
       renderCell: (params) => (
         <Tooltip
-          title={`Ready: ${params.row.messages_ready}, Unacked: ${params.row.messages_unacknowledged}`}
+          title={`Ready: ${params.row.messages_ready ?? 0}, Unacked: ${params.row.messages_unacknowledged ?? 0}`}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <MessagesIcon fontSize="small" color="action" />
             <Typography variant="body2" fontWeight="medium">
-              {params.value.toLocaleString()}
+              {(params.value ?? 0).toLocaleString()}
             </Typography>
           </Box>
         </Tooltip>

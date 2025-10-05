@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -95,6 +95,11 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [internalShowLocal, setInternalShowLocal] = useState(showLocalTime);
 
+  // Sync internal state with prop changes
+  useEffect(() => {
+    setInternalShowLocal(showLocalTime);
+  }, [showLocalTime]);
+
   const handleRowExpand = useCallback((recordId: string) => {
     setExpandedRows((prev) => {
       const newSet = new Set(prev);
@@ -139,17 +144,7 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
     [internalShowLocal]
   );
 
-  // Format timestamp for table display with separate date and time
-  const formatTimestampForTableDisplay = useCallback(
-    (timestamp: string) => {
-      return formatTimestampForTable(
-        timestamp,
-        internalShowLocal,
-        DEFAULT_TIMESTAMP_OPTIONS
-      );
-    },
-    [internalShowLocal]
-  );
+
 
   // Get status icon and color
   const getStatusIcon = (status: AuditOperationStatus) => {
@@ -311,7 +306,7 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
     </Card>
   );
 
-  const columns: GridColDef[] = [
+  const columns: GridColDef[] = useMemo(() => [
     {
       field: "expand",
       headerName: "",
@@ -326,9 +321,8 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
             event.stopPropagation();
             handleRowExpand(params.row.id);
           }}
-          aria-label={`${
-            expandedRows.has(params.row.id) ? "Collapse" : "Expand"
-          } details for ${params.row.operationType}`}
+          aria-label={`${expandedRows.has(params.row.id) ? "Collapse" : "Expand"
+            } details for ${params.row.operationType}`}
         >
           {expandedRows.has(params.row.id) ? (
             <ExpandLessIcon />
@@ -343,7 +337,11 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
       headerName: "Timestamp",
       width: 180,
       renderCell: (params) => {
-        const formatted = formatTimestampForTableDisplay(params.value);
+        const formatted = formatTimestampForTable(
+          params.value,
+          internalShowLocal,
+          DEFAULT_TIMESTAMP_OPTIONS
+        );
         const utcFormatted = formatTimestamp(
           params.value,
           false,
@@ -463,7 +461,12 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
         </Box>
       ),
     },
-  ];
+  ], [
+    expandedRows,
+    handleRowExpand,
+    internalShowLocal,
+    getStatusIcon
+  ]);
 
   // Format data for display with expanded row support
   const formattedData = data.map((record) => ({
@@ -508,6 +511,7 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
       )}
 
       <ResourceTable
+        key={`audit-table-${internalShowLocal ? 'local' : 'utc'}`}
         data={formattedData}
         columns={columns}
         loading={loading}

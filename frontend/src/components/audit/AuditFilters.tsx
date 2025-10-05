@@ -7,18 +7,20 @@ import {
   Select,
   MenuItem,
   Button,
-  Paper,
   IconButton,
   Grid,
   Typography,
-  Divider,
   Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   Clear as ClearIcon,
   FilterList as FilterIcon,
   Warning as WarningIcon,
+  ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import {
   AuditOperationType,
@@ -67,6 +69,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
   const [validationErrors, setValidationErrors] = useState<
     AuditFilterValidationError[]
   >([]);
+  const [expanded, setExpanded] = useState(false);
 
   // Update local filters when props change
   useEffect(() => {
@@ -204,280 +207,291 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
   };
 
   return (
-    <Paper sx={{ p: 3, mb: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-        <FilterIcon sx={{ mr: 1, color: "text.secondary" }} />
-        <Typography variant="h6" component="h2">
-          Audit Filters
-        </Typography>
-      </Box>
-
-      <Divider sx={{ mb: 3 }} />
-
-      {/* Validation Errors */}
-      {validationErrors.length > 0 && (
-        <Alert severity="error" sx={{ mb: 3 }} icon={<WarningIcon />}>
-          <Typography variant="subtitle2" gutterBottom>
-            Filter Validation Errors:
+    <Accordion
+      expanded={expanded}
+      onChange={(_, isExpanded) => setExpanded(isExpanded)}
+      sx={{ mb: 2 }}
+    >
+      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <FilterIcon sx={{ mr: 1, color: "text.secondary" }} />
+          <Typography variant="h6" component="h2">
+            Audit Filters
           </Typography>
-          <Box component="ul" sx={{ m: 0, pl: 2 }}>
-            {validationErrors.map((error, index) => (
-              <Typography key={index} variant="body2" component="li">
-                <strong>{error.field}:</strong> {error.message}
-              </Typography>
-            ))}
-          </Box>
-        </Alert>
-      )}
+        </Box>
+      </AccordionSummary>
 
-      <Grid container spacing={2}>
-        {/* Username Search */}
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            fullWidth
-            label="Username"
-            placeholder="Search by username..."
-            value={localFilters.username || ""}
-            onChange={(e) => handleFilterChange("username", e.target.value)}
-            disabled={disabled}
-            error={hasFieldError("username")}
-            helperText={getFieldError("username")}
-            inputProps={{
-              "aria-label": "Username filter",
-            }}
-            InputProps={{
-              startAdornment: (
-                <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
-              ),
-              endAdornment: localFilters.username && (
-                <IconButton
-                  size="small"
-                  onClick={() => handleClearField("username")}
-                  disabled={disabled}
-                  aria-label="Clear username filter"
-                >
-                  <ClearIcon />
-                </IconButton>
-              ),
-            }}
-          />
-        </Grid>
+      <AccordionDetails>
 
-        {/* Cluster Filter */}
-        <Grid item xs={12} sm={6} md={4}>
-          <FormControl fullWidth>
-            <InputLabel id="cluster-filter-label">Cluster</InputLabel>
-            <Select
-              labelId="cluster-filter-label"
-              value={localFilters.clusterName || ""}
-              onChange={(e) =>
-                handleFilterChange("clusterName", e.target.value)
-              }
-              label="Cluster"
-              disabled={disabled}
-            >
-              <MenuItem value="">
-                <em>All Clusters</em>
-              </MenuItem>
-              {clusters.map((cluster) => (
-                <MenuItem key={cluster.id} value={cluster.name}>
-                  {cluster.name}
-                </MenuItem>
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <Alert severity="error" sx={{ mb: 3 }} icon={<WarningIcon />}>
+            <Typography variant="subtitle2" gutterBottom>
+              Filter Validation Errors:
+            </Typography>
+            <Box component="ul" sx={{ m: 0, pl: 2 }}>
+              {validationErrors.map((error, index) => (
+                <Typography key={index} variant="body2" component="li">
+                  <strong>{error.field}:</strong> {error.message}
+                </Typography>
               ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Operation Type Filter */}
-        <Grid item xs={12} sm={6} md={4}>
-          <FormControl fullWidth>
-            <InputLabel id="operation-type-filter-label">
-              Operation Type
-            </InputLabel>
-            <Select
-              labelId="operation-type-filter-label"
-              value={localFilters.operationType || ""}
-              onChange={(e) =>
-                handleFilterChange("operationType", e.target.value)
-              }
-              label="Operation Type"
-              disabled={disabled}
-            >
-              <MenuItem value="">
-                <em>All Operations</em>
-              </MenuItem>
-              {operationTypeOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Operation Status Filter */}
-        <Grid item xs={12} sm={6} md={4}>
-          <FormControl fullWidth>
-            <InputLabel id="operation-status-filter-label">Status</InputLabel>
-            <Select
-              labelId="operation-status-filter-label"
-              value={localFilters.status || ""}
-              onChange={(e) => handleFilterChange("status", e.target.value)}
-              label="Status"
-              disabled={disabled}
-            >
-              <MenuItem value="">
-                <em>All Statuses</em>
-              </MenuItem>
-              {operationStatusOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        {/* Resource Name Search */}
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            fullWidth
-            label="Resource Name"
-            placeholder="Search by resource name..."
-            value={localFilters.resourceName || ""}
-            onChange={(e) => handleFilterChange("resourceName", e.target.value)}
-            disabled={disabled}
-            error={hasFieldError("resourceName")}
-            helperText={getFieldError("resourceName")}
-            InputProps={{
-              startAdornment: (
-                <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
-              ),
-              endAdornment: localFilters.resourceName && (
-                <IconButton
-                  size="small"
-                  onClick={() => handleClearField("resourceName")}
-                  disabled={disabled}
-                  aria-label="Clear resource name filter"
-                >
-                  <ClearIcon />
-                </IconButton>
-              ),
-            }}
-          />
-        </Grid>
-
-        {/* Resource Type Filter */}
-        <Grid item xs={12} sm={6} md={4}>
-          <TextField
-            fullWidth
-            label="Resource Type"
-            placeholder="e.g., exchange, queue, binding..."
-            value={localFilters.resourceType || ""}
-            onChange={(e) => handleFilterChange("resourceType", e.target.value)}
-            disabled={disabled}
-            error={hasFieldError("resourceType")}
-            helperText={getFieldError("resourceType")}
-            InputProps={{
-              startAdornment: (
-                <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
-              ),
-              endAdornment: localFilters.resourceType && (
-                <IconButton
-                  size="small"
-                  onClick={() => handleClearField("resourceType")}
-                  disabled={disabled}
-                  aria-label="Clear resource type filter"
-                >
-                  <ClearIcon />
-                </IconButton>
-              ),
-            }}
-          />
-        </Grid>
-
-        {/* Start Date */}
-        <Grid item xs={12} sm={6} md={3}>
-          <TextField
-            fullWidth
-            label="Start Date"
-            type="datetime-local"
-            value={formatDateForInput(localFilters.startTime)}
-            onChange={(e) =>
-              handleFilterChange(
-                "startTime",
-                formatDateFromInput(e.target.value)
-              )
-            }
-            disabled={disabled}
-            error={hasFieldError("startTime") || hasFieldError("dateRange")}
-            helperText={
-              getFieldError("startTime") || getFieldError("dateRange")
-            }
-            InputLabelProps={{
-              shrink: true,
-            }}
-            inputProps={{
-              max: formatDateForInput(localFilters.endTime) || undefined,
-            }}
-          />
-        </Grid>
-
-        {/* End Date */}
-        <Grid item xs={12} sm={6} md={3}>
-          <TextField
-            fullWidth
-            label="End Date"
-            type="datetime-local"
-            value={formatDateForInput(localFilters.endTime)}
-            onChange={(e) =>
-              handleFilterChange("endTime", formatDateFromInput(e.target.value))
-            }
-            disabled={disabled}
-            error={hasFieldError("endTime") || hasFieldError("dateRange")}
-            helperText={getFieldError("endTime") || getFieldError("dateRange")}
-            InputLabelProps={{
-              shrink: true,
-            }}
-            inputProps={{
-              min: formatDateForInput(localFilters.startTime) || undefined,
-            }}
-          />
-        </Grid>
-      </Grid>
-
-      {/* Action Buttons */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: 1,
-          mt: 3,
-          pt: 2,
-          borderTop: 1,
-          borderColor: "divider",
-        }}
-      >
-        {hasActiveFilters && (
-          <Button
-            variant="outlined"
-            onClick={handleReset}
-            disabled={disabled}
-            startIcon={<ClearIcon />}
-          >
-            Reset Filters
-          </Button>
+            </Box>
+          </Alert>
         )}
-        <Button
-          variant="contained"
-          onClick={handleApply}
-          disabled={disabled || validationErrors.length > 0}
-          startIcon={<FilterIcon />}
+
+        {/* Row 1: Username, Cluster, Operation Type, Status */}
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          {/* Username Search */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="Username"
+              placeholder="Search by username..."
+              value={localFilters.username || ""}
+              onChange={(e) => handleFilterChange("username", e.target.value)}
+              disabled={disabled}
+              error={hasFieldError("username")}
+              helperText={getFieldError("username")}
+              inputProps={{
+                "aria-label": "Username filter",
+              }}
+              InputProps={{
+                startAdornment: (
+                  <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
+                ),
+                endAdornment: localFilters.username && (
+                  <IconButton
+                    size="small"
+                    onClick={() => handleClearField("username")}
+                    disabled={disabled}
+                    aria-label="Clear username filter"
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                ),
+              }}
+            />
+          </Grid>
+
+          {/* Cluster Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel id="cluster-filter-label">Cluster</InputLabel>
+              <Select
+                labelId="cluster-filter-label"
+                value={localFilters.clusterName || ""}
+                onChange={(e) =>
+                  handleFilterChange("clusterName", e.target.value)
+                }
+                label="Cluster"
+                disabled={disabled}
+              >
+                <MenuItem value="">
+                  <em>All Clusters</em>
+                </MenuItem>
+                {clusters.map((cluster) => (
+                  <MenuItem key={cluster.id} value={cluster.name}>
+                    {cluster.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Operation Type Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel id="operation-type-filter-label">
+                Operation Type
+              </InputLabel>
+              <Select
+                labelId="operation-type-filter-label"
+                value={localFilters.operationType || ""}
+                onChange={(e) =>
+                  handleFilterChange("operationType", e.target.value)
+                }
+                label="Operation Type"
+                disabled={disabled}
+              >
+                <MenuItem value="">
+                  <em>All Operations</em>
+                </MenuItem>
+                {operationTypeOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Operation Status Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel id="operation-status-filter-label">Status</InputLabel>
+              <Select
+                labelId="operation-status-filter-label"
+                value={localFilters.status || ""}
+                onChange={(e) => handleFilterChange("status", e.target.value)}
+                label="Status"
+                disabled={disabled}
+              >
+                <MenuItem value="">
+                  <em>All Statuses</em>
+                </MenuItem>
+                {operationStatusOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+
+        {/* Row 2: Resource Name, Resource Type, Start Date, End Date */}
+        <Grid container spacing={2}>
+          {/* Resource Name Search */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="Resource Name"
+              placeholder="Search by resource name..."
+              value={localFilters.resourceName || ""}
+              onChange={(e) => handleFilterChange("resourceName", e.target.value)}
+              disabled={disabled}
+              error={hasFieldError("resourceName")}
+              helperText={getFieldError("resourceName")}
+              InputProps={{
+                startAdornment: (
+                  <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
+                ),
+                endAdornment: localFilters.resourceName && (
+                  <IconButton
+                    size="small"
+                    onClick={() => handleClearField("resourceName")}
+                    disabled={disabled}
+                    aria-label="Clear resource name filter"
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                ),
+              }}
+            />
+          </Grid>
+
+          {/* Resource Type Filter */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="Resource Type"
+              placeholder="e.g., exchange, queue, binding..."
+              value={localFilters.resourceType || ""}
+              onChange={(e) => handleFilterChange("resourceType", e.target.value)}
+              disabled={disabled}
+              error={hasFieldError("resourceType")}
+              helperText={getFieldError("resourceType")}
+              InputProps={{
+                startAdornment: (
+                  <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
+                ),
+                endAdornment: localFilters.resourceType && (
+                  <IconButton
+                    size="small"
+                    onClick={() => handleClearField("resourceType")}
+                    disabled={disabled}
+                    aria-label="Clear resource type filter"
+                  >
+                    <ClearIcon />
+                  </IconButton>
+                ),
+              }}
+            />
+          </Grid>
+
+          {/* Start Date */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="Start Date"
+              type="datetime-local"
+              value={formatDateForInput(localFilters.startTime)}
+              onChange={(e) =>
+                handleFilterChange(
+                  "startTime",
+                  formatDateFromInput(e.target.value)
+                )
+              }
+              disabled={disabled}
+              error={hasFieldError("startTime") || hasFieldError("dateRange")}
+              helperText={
+                getFieldError("startTime") || getFieldError("dateRange")
+              }
+              InputLabelProps={{
+                shrink: true,
+              }}
+              inputProps={{
+                max: formatDateForInput(localFilters.endTime) || undefined,
+              }}
+            />
+          </Grid>
+
+          {/* End Date */}
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="End Date"
+              type="datetime-local"
+              value={formatDateForInput(localFilters.endTime)}
+              onChange={(e) =>
+                handleFilterChange("endTime", formatDateFromInput(e.target.value))
+              }
+              disabled={disabled}
+              error={hasFieldError("endDate") || hasFieldError("dateRange")}
+              helperText={getFieldError("endDate") || getFieldError("dateRange")}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              inputProps={{
+                min: formatDateForInput(localFilters.startTime) || undefined,
+              }}
+            />
+          </Grid>
+        </Grid>
+
+        {/* Action Buttons */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 1,
+            mt: 3,
+            pt: 2,
+            borderTop: 1,
+            borderColor: "divider",
+          }}
         >
-          Apply Filters
-        </Button>
-      </Box>
-    </Paper>
+          {hasActiveFilters && (
+            <Button
+              variant="outlined"
+              onClick={handleReset}
+              disabled={disabled}
+              startIcon={<ClearIcon />}
+            >
+              Reset Filters
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            onClick={handleApply}
+            disabled={disabled || validationErrors.length > 0}
+            startIcon={<FilterIcon />}
+          >
+            Apply Filters
+          </Button>
+        </Box>
+      </AccordionDetails>
+    </Accordion>
   );
 };
 

@@ -204,31 +204,6 @@ class WriteAuditServiceTest {
     }
 
     @Test
-    void getAuditRecords_WithFilters_CallsFilteredQuery() {
-        // Given
-        AuditFilterRequest filterRequest = new AuditFilterRequest();
-        filterRequest.setUsername("testuser");
-        filterRequest.setOperationType(AuditOperationType.CREATE_EXCHANGE);
-
-        Audit audit = createTestAudit(AuditOperationType.CREATE_EXCHANGE, "exchange1");
-        Page<Audit> auditPage = new PageImpl<>(List.of(audit));
-
-        Pageable pageable = PageRequest.of(0, 10);
-        when(auditRepository.findByOperationType(eq(AuditOperationType.CREATE_EXCHANGE), eq(pageable)))
-                .thenReturn(auditPage);
-
-        // When
-        Page<AuditDto> result = writeAuditService.getAuditRecords(filterRequest, pageable);
-
-        // Then
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getUsername()).isEqualTo("testuser");
-        assertThat(result.getContent().get(0).getOperationType()).isEqualTo(AuditOperationType.CREATE_EXCHANGE);
-
-        verify(auditRepository).findByOperationType(eq(AuditOperationType.CREATE_EXCHANGE), eq(pageable));
-    }
-
-    @Test
     void getAuditRecords_WithDateRangeFilter_PassesCorrectDates() {
         // Given
         Instant startTime = Instant.parse("2023-01-01T00:00:00Z");

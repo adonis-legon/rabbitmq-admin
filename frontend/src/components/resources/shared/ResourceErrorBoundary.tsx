@@ -270,7 +270,9 @@ class ResourceErrorBoundary extends Component<Props, State> {
                 <Button
                   size="small"
                   startIcon={<BugReport />}
-                  onClick={() => console.log("Error details:", this.state)}
+                  onClick={() => {
+                    // Error details available in React DevTools
+                  }}
                   variant="text"
                 >
                   Log Error Details

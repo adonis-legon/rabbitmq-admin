@@ -3,6 +3,7 @@ import { AuditRecord, AuditFilterRequest, PagedResponse, AuditOperationType, Aud
 import { auditApi } from '../services/api/auditApi';
 import { auditCache } from '../utils/resourceCache';
 import { createAuditError, AuditError } from '../utils/auditErrorUtils';
+import { tokenService } from '../services/auth/tokenService';
 
 interface UseAuditRecordsState {
     data: PagedResponse<AuditRecord> | null;
@@ -85,20 +86,16 @@ export const useAuditRecords = (
             setLoading(true);
             setError(null);
 
+            // Validate authentication before making API call
+            if (!tokenService.hasValidToken()) {
+                throw new Error('Authentication required: No valid token available');
+            }
+
             // Store params for refresh functionality
             const params: LoadParams = { filterRequest, page, pageSize, sortBy, sortDirection };
             lastParamsRef.current = params;
 
-            // Check cache first
-            const cacheKey = generateCacheKey(params);
-            const cachedData = auditCache.get('audit', 'records', { key: cacheKey });
-
-            if (cachedData && typeof cachedData === 'object' && 'items' in cachedData && Array.isArray(cachedData.items)) {
-                setData(cachedData as PagedResponse<AuditRecord>);
-                setLoading(false);
-                return;
-            }
-
+            // Real API call - authentication race condition is now resolved
             const response = await auditApi.getAuditRecords(
                 filterRequest,
                 page,
@@ -107,8 +104,10 @@ export const useAuditRecords = (
                 sortDirection
             );
 
-            // Cache the response
-            auditCache.set('audit', 'records', response, { key: cacheKey });
+            // Cache the response if successful
+            const cacheKey = generateCacheKey(params);
+            auditCache.set('audit', 'records', cacheKey, response);
+
             setData(response);
         } catch (err: any) {
             console.error('Error loading audit records:', err);

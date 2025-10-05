@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
@@ -85,16 +85,30 @@ describe("AuditFilters", () => {
       expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
     });
 
-    it("renders action buttons", () => {
+    it("renders action buttons", async () => {
+      const user = userEvent.setup();
       renderAuditFilters();
+
+      // First expand the accordion to access the buttons
+      const accordionButton = screen.getByRole("button", {
+        name: /audit filters/i,
+      });
+      await user.click(accordionButton);
 
       expect(
         screen.getByRole("button", { name: /apply filters/i })
       ).toBeInTheDocument();
     });
 
-    it("shows reset button only when filters are active", () => {
+    it("shows reset button only when filters are active", async () => {
+      const user = userEvent.setup();
       const { rerender } = renderAuditFilters();
+
+      // First expand the accordion to access the buttons
+      const accordionButton = screen.getByRole("button", {
+        name: /audit filters/i,
+      });
+      await user.click(accordionButton);
 
       // No reset button when no filters
       expect(
@@ -102,12 +116,29 @@ describe("AuditFilters", () => {
       ).not.toBeInTheDocument();
 
       // Reset button appears when filters are active
-      rerender(
-        <AuditFilters {...defaultProps} filters={{ username: "test" }} />
+      await act(async () => {
+        rerender(
+          <AuditFilters {...defaultProps} filters={{ username: "test" }} />
+        );
+      });
+
+      // Need to expand accordion again after rerender
+      const accordionButtonAfterRerender = screen.getByRole("button", {
+        name: /audit filters/i,
+      });
+
+      await act(async () => {
+        await user.click(accordionButtonAfterRerender);
+      });
+
+      // Wait for accordion to expand and reset button to appear
+      await waitFor(
+        async () => {
+          const button = screen.getByRole("button", { name: /reset filters/i });
+          expect(button).toBeInTheDocument();
+        },
+        { timeout: 3000 }
       );
-      expect(
-        screen.getByRole("button", { name: /reset filters/i })
-      ).toBeInTheDocument();
     });
 
     it("renders cluster options correctly", async () => {
@@ -263,6 +294,22 @@ describe("AuditFilters", () => {
         },
       });
 
+      // First expand the accordion to access the buttons
+      const accordionButton = screen.getByRole("button", {
+        name: /audit filters/i,
+      });
+
+      await act(async () => {
+        await user.click(accordionButton);
+      });
+
+      // Wait for the accordion to expand and buttons to be available
+      await waitFor(async () => {
+        expect(screen.getByRole("button", {
+          name: /reset filters/i,
+        })).toBeInTheDocument();
+      });
+
       const resetButton = screen.getByRole("button", {
         name: /reset filters/i,
       });
@@ -279,6 +326,22 @@ describe("AuditFilters", () => {
       const onApply = vi.fn();
       renderAuditFilters({ onApply });
 
+      // First expand the accordion to access the buttons
+      const accordionButton = screen.getByRole("button", {
+        name: /audit filters/i,
+      });
+
+      await act(async () => {
+        await user.click(accordionButton);
+      });
+
+      // Wait for the accordion to expand and buttons to be available
+      await waitFor(async () => {
+        expect(screen.getByRole("button", {
+          name: /apply filters/i,
+        })).toBeInTheDocument();
+      });
+
       const applyButton = screen.getByRole("button", {
         name: /apply filters/i,
       });
@@ -289,8 +352,29 @@ describe("AuditFilters", () => {
   });
 
   describe("Disabled State", () => {
-    it("disables all inputs when disabled prop is true", () => {
+    it("disables all inputs when disabled prop is true", async () => {
+      const user = userEvent.setup();
       renderAuditFilters({ disabled: true });
+
+      // First expand the accordion to access the buttons
+      const accordionButton = screen.getByRole("button", {
+        name: /audit filters/i,
+      });
+
+      await act(async () => {
+        await user.click(accordionButton);
+      });
+
+      // Wait for the accordion to expand and buttons to be available
+      await waitFor(async () => {
+        expect(screen.getByRole("button", {
+          name: /apply filters/i,
+        })).toBeInTheDocument();
+      });
+
+      const applyButton = screen.getByRole("button", {
+        name: /apply filters/i,
+      });
 
       // TextField components should use toBeDisabled()
       expect(screen.getByLabelText(/username/i)).toBeDisabled();
@@ -298,9 +382,7 @@ describe("AuditFilters", () => {
       expect(screen.getByLabelText(/resource type/i)).toBeDisabled();
       expect(screen.getByLabelText(/start date/i)).toBeDisabled();
       expect(screen.getByLabelText(/end date/i)).toBeDisabled();
-      expect(
-        screen.getByRole("button", { name: /apply filters/i })
-      ).toBeDisabled();
+      expect(applyButton).toBeDisabled();
 
       // For MUI Select components, check aria-disabled instead of disabled attribute
       expect(screen.getByLabelText(/cluster/i)).toHaveAttribute("aria-disabled", "true");

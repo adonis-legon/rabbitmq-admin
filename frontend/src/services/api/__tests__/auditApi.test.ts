@@ -77,7 +77,7 @@ describe('auditApi', () => {
             const result = await auditApi.getAuditRecords();
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
-                '/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc'
+                '/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc'
             );
             expect(result).toEqual(mockPagedResponse);
         });
@@ -88,7 +88,7 @@ describe('auditApi', () => {
             const result = await auditApi.getAuditRecords({}, 2, 25, 'username', 'asc');
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
-                '/audit/records?page=2&pageSize=25&sortBy=username&sortDirection=asc'
+                '/audits?page=2&pageSize=25&sortBy=username&sortDirection=asc'
             );
             expect(result).toEqual(mockPagedResponse);
         });
@@ -109,7 +109,7 @@ describe('auditApi', () => {
 
             const result = await auditApi.getAuditRecords(filterRequest);
 
-            const expectedUrl = '/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
+            const expectedUrl = '/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
                 '&username=admin&clusterName=test-cluster&operationType=CREATE_EXCHANGE' +
                 '&status=SUCCESS&resourceName=test-exchange&resourceType=exchange' +
                 '&startTime=2023-10-01T00%3A00%3A00Z&endTime=2023-10-01T23%3A59%3A59Z';
@@ -129,7 +129,7 @@ describe('auditApi', () => {
 
             const result = await auditApi.getAuditRecords(filterRequest, 1, 100);
 
-            const expectedUrl = '/audit/records?page=1&pageSize=100&sortBy=timestamp&sortDirection=desc' +
+            const expectedUrl = '/audits?page=1&pageSize=100&sortBy=timestamp&sortDirection=desc' +
                 '&username=admin&operationType=DELETE_QUEUE&startTime=2023-10-01T00%3A00%3A00Z';
 
             expect(mockApiClient.get).toHaveBeenCalledWith(expectedUrl);
@@ -142,7 +142,7 @@ describe('auditApi', () => {
             const result = await auditApi.getAuditRecords({});
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
-                '/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc'
+                '/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc'
             );
             expect(result).toEqual(mockPagedResponse);
         });
@@ -158,7 +158,7 @@ describe('auditApi', () => {
 
             await auditApi.getAuditRecords(filterRequest);
 
-            const expectedUrl = '/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
+            const expectedUrl = '/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
                 '&username=user%40domain.com&clusterName=cluster+with+spaces&resourceName=queue%2Fwith%2Fslashes';
 
             expect(mockApiClient.get).toHaveBeenCalledWith(expectedUrl);
@@ -235,7 +235,7 @@ describe('auditApi', () => {
                 await auditApi.getAuditRecords({}, -1, 50);
 
                 expect(mockApiClient.get).toHaveBeenCalledWith(
-                    '/audit/records?page=-1&pageSize=50&sortBy=timestamp&sortDirection=desc'
+                    '/audits?page=-1&pageSize=50&sortBy=timestamp&sortDirection=desc'
                 );
             });
 
@@ -245,7 +245,7 @@ describe('auditApi', () => {
                 await auditApi.getAuditRecords({}, 0, 0);
 
                 expect(mockApiClient.get).toHaveBeenCalledWith(
-                    '/audit/records?page=0&pageSize=0&sortBy=timestamp&sortDirection=desc'
+                    '/audits?page=0&pageSize=0&sortBy=timestamp&sortDirection=desc'
                 );
             });
 
@@ -262,7 +262,7 @@ describe('auditApi', () => {
                 await auditApi.getAuditRecords(filterRequest);
 
                 // Empty strings should still be included in the URL
-                const expectedUrl = '/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
+                const expectedUrl = '/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
                     '&username=&clusterName=&resourceName=&resourceType=';
 
                 expect(mockApiClient.get).toHaveBeenCalledWith(expectedUrl);
@@ -282,7 +282,7 @@ describe('auditApi', () => {
                 await auditApi.getAuditRecords(filterRequest);
 
                 // Only defined values should be included in the URL
-                const expectedUrl = '/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
+                const expectedUrl = '/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
                     '&username=admin&operationType=CREATE_QUEUE';
 
                 expect(mockApiClient.get).toHaveBeenCalledWith(expectedUrl);
@@ -355,7 +355,7 @@ describe('auditApi', () => {
 
                 await auditApi.getAuditRecords(filterRequest);
 
-                const expectedUrl = '/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
+                const expectedUrl = '/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc' +
                     '&startTime=2023-10-01T12%3A30%3A45.123Z&endTime=2023-10-02T08%3A15%3A30.456Z';
 
                 expect(mockApiClient.get).toHaveBeenCalledWith(expectedUrl);
@@ -369,7 +369,7 @@ describe('auditApi', () => {
 
                     await auditApi.getAuditRecords({ operationType });
 
-                    const expectedUrl = `/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc&operationType=${operationType}`;
+                    const expectedUrl = `/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc&operationType=${operationType}`;
                     expect(mockApiClient.get).toHaveBeenCalledWith(expectedUrl);
                 }
             });
@@ -382,7 +382,7 @@ describe('auditApi', () => {
 
                     await auditApi.getAuditRecords({ status });
 
-                    const expectedUrl = `/audit/records?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc&status=${status}`;
+                    const expectedUrl = `/audits?page=0&pageSize=50&sortBy=timestamp&sortDirection=desc&status=${status}`;
                     expect(mockApiClient.get).toHaveBeenCalledWith(expectedUrl);
                 }
             });

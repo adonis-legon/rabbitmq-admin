@@ -162,10 +162,36 @@ public class WriteAuditService {
             return auditRepository.findAll(pageable);
         }
 
+        String username = filterRequest.getUsername();
+        String clusterName = filterRequest.getClusterName();
+        String resourceName = filterRequest.getResourceName();
+        String resourceType = filterRequest.getResourceType();
         AuditOperationType operationType = filterRequest.getOperationType();
         AuditOperationStatus status = filterRequest.getStatus();
         Instant startTime = filterRequest.getStartTime();
         Instant endTime = filterRequest.getEndTime();
+
+        // Apply filters in priority order - start with most specific filters first
+
+        // Username filter (most common filter)
+        if (username != null && !username.trim().isEmpty()) {
+            return auditRepository.findByUserUsernameContainingIgnoreCase(username.trim(), pageable);
+        }
+
+        // Cluster name filter
+        if (clusterName != null && !clusterName.trim().isEmpty()) {
+            return auditRepository.findByClusterNameContainingIgnoreCase(clusterName.trim(), pageable);
+        }
+
+        // Resource name filter
+        if (resourceName != null && !resourceName.trim().isEmpty()) {
+            return auditRepository.findByResourceNameContainingIgnoreCase(resourceName.trim(), pageable);
+        }
+
+        // Resource type filter
+        if (resourceType != null && !resourceType.trim().isEmpty()) {
+            return auditRepository.findByResourceTypeIgnoreCase(resourceType.trim(), pageable);
+        }
 
         // Use specific repository methods based on what filters are provided
         if (operationType != null && status != null) {

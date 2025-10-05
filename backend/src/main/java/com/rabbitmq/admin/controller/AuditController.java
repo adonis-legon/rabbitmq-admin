@@ -9,7 +9,7 @@ import com.rabbitmq.admin.service.WriteAuditService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,8 +27,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/audits")
-@PreAuthorize("hasRole('ADMINISTRATOR')")
-@ConditionalOnBean(WriteAuditService.class)
+@Validated
 public class AuditController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuditController.class);
@@ -50,6 +49,7 @@ public class AuditController {
      * @return paginated response containing audit records
      */
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     public ResponseEntity<PagedResponse<AuditDto>> getAudits(
             @Valid @ModelAttribute AuditFilterRequest filterRequest,
             @RequestParam(defaultValue = "0") int page,
@@ -58,6 +58,8 @@ public class AuditController {
             @RequestParam(defaultValue = "desc") String sortDirection) {
 
         try {
+            logger.info("AuditController.getAudits called");
+
             // Validate pagination parameters
             if (page < 0) {
                 throw new IllegalArgumentException("Page number must be non-negative");
@@ -109,15 +111,15 @@ public class AuditController {
     }
 
     /**
-     * Get audit configuration information.
+     * Get audit configuration details including enabled status and thresholds.
      * 
      * @return audit configuration details
      */
     @GetMapping("/config")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     public ResponseEntity<AuditConfigurationDto> getAuditConfiguration() {
         try {
             logger.debug("Retrieving audit configuration");
-
             AuditConfigurationDto config = writeAuditService.getAuditConfigurationDto();
             return ResponseEntity.ok(config);
 

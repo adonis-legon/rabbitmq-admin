@@ -17,6 +17,13 @@ vi.mock("../../../hooks/useAuditRecords");
 vi.mock("../../../hooks/useClusters");
 vi.mock("../../../hooks/useUsers");
 
+// Mock tokenService
+vi.mock("../../../services/auth/tokenService", () => ({
+  tokenService: {
+    hasValidToken: vi.fn(() => true),
+  },
+}));
+
 // Mock the child components
 vi.mock("../AuditFilters", () => {
   return {
@@ -193,12 +200,7 @@ describe("AuditPage", () => {
   it("renders audit page for admin user", () => {
     renderWithProviders(<AuditPage />);
 
-    expect(screen.getAllByText("Audit Records")[0]).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "View and filter all write operations performed on RabbitMQ clusters"
-      )
-    ).toBeInTheDocument();
+    expect(screen.getAllByText("Audits")[0]).toBeInTheDocument();
     expect(screen.getByTestId("audit-filters")).toBeInTheDocument();
     expect(screen.getByTestId("audit-records-list")).toBeInTheDocument();
   });
@@ -215,7 +217,7 @@ describe("AuditPage", () => {
 
     renderWithProviders(<AuditPage />);
 
-    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+    expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
   it("renders breadcrumbs correctly", () => {

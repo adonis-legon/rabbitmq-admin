@@ -5,7 +5,7 @@ export const ROUTES = {
   CLUSTERS: '/clusters',
   RABBITMQ: '/rabbitmq',
   PROFILE: '/profile',
-  AUDIT: '/audit',
+  AUDIT: '/audits',
   // Resource management routes
   RESOURCES: '/resources',
   RESOURCES_CONNECTIONS: '/resources/connections',

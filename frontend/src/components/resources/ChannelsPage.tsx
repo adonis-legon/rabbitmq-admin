@@ -7,10 +7,9 @@ import ChannelsList from "./ChannelsList";
 export const ChannelsPage: React.FC = () => {
   const { selectedCluster } = useClusterContext();
 
-  const handleChannelClick = (channel: RabbitMQChannel) => {
+  const handleChannelClick = (_channel: RabbitMQChannel) => {
     // Channel click is now handled by the ChannelsList component
     // This callback can be used for additional functionality if needed
-    console.log("Channel clicked:", channel.name);
   };
 
   if (!selectedCluster) {

@@ -64,7 +64,7 @@ export const auditApi = {
             }
 
             const response = await apiClient.get<PagedResponse<AuditRecord>>(
-                `/audit/records?${searchParams.toString()}`
+                `/audits?${searchParams.toString()}`
             );
 
             return response.data;

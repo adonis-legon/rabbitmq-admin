@@ -171,6 +171,10 @@ build_docker() {
 start_dev() {
     log "${BLUE}Starting local development environment...${NC}"
     
+    # Build Docker image manually to avoid buildx issues
+    log "Building Docker image..."
+    docker build -f docker/Dockerfile -t rabbitmq-admin:latest .
+    
     cd docker
     
     # Copy environment template if .env doesn't exist
@@ -179,8 +183,8 @@ start_dev() {
         log "${YELLOW}⚠${NC} Created .env from template"
     fi
     
-    # Build and start services
-    docker-compose up --build -d
+    # Start services with pre-built image
+    docker-compose up -d
     
     log "${GREEN}✓${NC} Development environment started"
     log "Application: http://localhost:8080"

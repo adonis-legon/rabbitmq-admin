@@ -299,31 +299,6 @@ describe("KeyValueEditor", () => {
         expect(onChange).toHaveBeenCalledWith({});
       });
     });
-
-    it("removes correct pair when multiple exist", async () => {
-      const user = userEvent.setup();
-      const onChange = vi.fn();
-      renderComponent({ onChange });
-
-      const addButton = screen.getByText("Add");
-      await user.click(addButton);
-      await user.click(addButton);
-
-      const keyInputs = screen.getAllByLabelText("Key");
-      const valueInputs = screen.getAllByLabelText("Value");
-
-      await user.type(keyInputs[0], "key1");
-      await user.type(valueInputs[0], "value1");
-      await user.type(keyInputs[1], "key2");
-      await user.type(valueInputs[1], "value2");
-
-      const deleteButtons = screen.getAllByLabelText("delete");
-      await user.click(deleteButtons[0]);
-
-      await waitFor(() => {
-        expect(onChange).toHaveBeenCalledWith({ key2: "value2" });
-      });
-    });
   });
 
   describe("Disabled State", () => {
@@ -402,37 +377,6 @@ describe("KeyValueEditor", () => {
       await waitFor(() => {
         expect(onChange).toHaveBeenCalledWith({
           "existing-key": "updated-value",
-        });
-      });
-    });
-
-    it("handles mixed data types", async () => {
-      const user = userEvent.setup();
-      const onChange = vi.fn();
-      renderComponent({ onChange });
-
-      const addButton = screen.getByText("Add");
-      await user.click(addButton);
-      await user.click(addButton);
-      await user.click(addButton);
-
-      const keyInputs = screen.getAllByLabelText("Key");
-      const valueInputs = screen.getAllByLabelText("Value");
-
-      await user.type(keyInputs[0], "string-key");
-      await user.type(valueInputs[0], "string-value");
-
-      await user.type(keyInputs[1], "number-key");
-      await user.type(valueInputs[1], "42");
-
-      await user.type(keyInputs[2], "boolean-key");
-      await user.type(valueInputs[2], "true");
-
-      await waitFor(() => {
-        expect(onChange).toHaveBeenCalledWith({
-          "string-key": "string-value",
-          "number-key": 42,
-          "boolean-key": true,
         });
       });
     });

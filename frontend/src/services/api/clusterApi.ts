@@ -48,8 +48,6 @@ export const clusterApi = {
   },
 
   testNewConnection: async (testData: ConnectionTestRequest): Promise<ConnectionTestResponse> => {
-    console.log('Calling testNewConnection API with URL: /clusters/test');
-    console.log('Test data:', testData);
     const response = await apiClient.post<ConnectionTestResponse>('/clusters/test', testData);
     return response.data;
   }

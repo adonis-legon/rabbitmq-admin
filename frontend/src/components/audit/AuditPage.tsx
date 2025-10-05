@@ -5,18 +5,19 @@ import {
   Alert,
   Paper,
   Button,
-  CircularProgress,
 } from "@mui/material";
 import {
-  History as HistoryIcon,
   Refresh as RefreshIcon,
 } from "@mui/icons-material";
+import { getIcon, IconSizes } from "../../utils/icons";
 import { GridSortModel } from "@mui/x-data-grid";
+// Authentication handled by AdminRoute wrapper
 import { useAuth } from "../auth/AuthProvider";
-import { UserRole } from "../../types/auth";
 import { useAuditRecords } from "../../hooks/useAuditRecords";
-import { useClusters } from "../../hooks/useClusters";
-import { useUsers } from "../../hooks/useUsers";
+// TEMPORARY: Commented out to test 401 theory
+// import { useClusters } from "../../hooks/useClusters";
+// import { useUsers } from "../../hooks/useUsers";
+import { tokenService } from "../../services/auth/tokenService";
 import { AuditFilterRequest } from "../../types/audit";
 import AuditFilters from "./AuditFilters";
 import AuditRecordsList from "./AuditRecordsList";
@@ -32,7 +33,9 @@ import {
 } from "../../utils/auditErrorUtils";
 
 export const AuditPage: React.FC = () => {
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  // Authentication is handled by AdminRoute wrapper, so no need to check here
+  // But we need to wait for authentication to be confirmed before making API calls
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // State for filters and pagination
   const [filters, setFilters] = useState<AuditFilterRequest>({});
@@ -57,24 +60,32 @@ export const AuditPage: React.FC = () => {
     autoRefresh: false, // Manual refresh for audit records
   });
 
-  const { clusters, loading: clustersLoading } = useClusters();
-  const { users, loading: usersLoading } = useUsers();
+  // TEMPORARY: Comment out auto-loading hooks to test 401 theory
+  // const { clusters, loading: clustersLoading } = useClusters();
+  // const { users, loading: usersLoading } = useUsers();
+  const clusters: any[] = [];
+  const users: any[] = [];
+  const clustersLoading = false;
+  const usersLoading = false;
 
-  // Load initial data
+  // Load initial data - wait for authentication before making API calls
   useEffect(() => {
-    if (isAuthenticated && user?.role === UserRole.ADMINISTRATOR) {
-      loadAuditRecords(filters, page, pageSize, sortBy, sortDirection);
+    const hasValidToken = tokenService.hasValidToken();
+
+    // Only load audit records if ALL conditions are met:
+    // 1. User is authenticated
+    // 2. Not in loading state  
+    // 3. User object exists
+    // 4. Valid token exists (not null and not expired)
+    // 5. User has ADMINISTRATOR role
+    if (isAuthenticated && !isLoading && user && hasValidToken && user.role === 'ADMINISTRATOR') {
+
+      // Double-check token one more time before making the call
+      if (tokenService.hasValidToken()) {
+        loadAuditRecords(filters, page, pageSize, sortBy, sortDirection);
+      }
     }
-  }, [
-    isAuthenticated,
-    user,
-    loadAuditRecords,
-    filters,
-    page,
-    pageSize,
-    sortBy,
-    sortDirection,
-  ]);
+  }, [loadAuditRecords, filters, page, pageSize, sortBy, sortDirection, isAuthenticated, isLoading, user]);
 
   // Handle filter changes
   const handleFiltersChange = useCallback((newFilters: AuditFilterRequest) => {
@@ -90,9 +101,14 @@ export const AuditPage: React.FC = () => {
 
   // Handle filter apply (for manual apply button)
   const handleFiltersApply = useCallback(() => {
+    // Only apply filters if authentication is ready
+    if (!isAuthenticated || isLoading || !user || user.role !== 'ADMINISTRATOR') {
+      return;
+    }
+
     setPage(0);
     loadAuditRecords(filters, 0, pageSize, sortBy, sortDirection);
-  }, [filters, pageSize, sortBy, sortDirection, loadAuditRecords]);
+  }, [filters, pageSize, sortBy, sortDirection, loadAuditRecords, isAuthenticated, user, isLoading]);
 
   // Handle pagination changes
   const handlePageChange = useCallback((newPage: number) => {
@@ -119,11 +135,21 @@ export const AuditPage: React.FC = () => {
 
   // Handle manual refresh
   const handleRefresh = useCallback(() => {
+    // Only refresh if authentication is ready
+    if (!isAuthenticated || !user || isLoading) {
+      return;
+    }
+
     refreshAuditRecords();
-  }, [refreshAuditRecords]);
+  }, [refreshAuditRecords, isAuthenticated, user, isLoading]);
 
   // Handle retry on error
   const handleRetry = useCallback(() => {
+    // Only retry if authentication is ready
+    if (!isAuthenticated || !user || isLoading) {
+      return;
+    }
+
     clearError();
     loadAuditRecords(filters, page, pageSize, sortBy, sortDirection);
   }, [
@@ -134,6 +160,9 @@ export const AuditPage: React.FC = () => {
     pageSize,
     sortBy,
     sortDirection,
+    isAuthenticated,
+    user,
+    isLoading,
   ]);
 
   // Handle timestamp display mode change
@@ -152,89 +181,70 @@ export const AuditPage: React.FC = () => {
   // auditError is already an AuditError from the hook, no need to convert
   const enhancedAuditError: AuditError | null = auditError;
 
-  // Show loading state while authentication is being checked
-  if (authLoading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // AdminRoute handles authentication loading, so no need for separate loading check
 
   // Breadcrumb items
   const breadcrumbItems = [
     {
       label: "Management",
+      icon: getIcon("management", {
+        fontSize: IconSizes.breadcrumb,
+        sx: { mr: 0.5 },
+      }),
     },
     {
-      label: "Audit Records",
-      icon: <HistoryIcon sx={{ mr: 1 }} />,
+      label: "Audits",
+      icon: getIcon("audit", {
+        fontSize: IconSizes.breadcrumb,
+        sx: { mr: 0.5 },
+      }),
     },
   ];
 
   return (
     <AdminRoute>
       <AuditErrorBoundary onRetry={handleRetry}>
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
           {/* Breadcrumbs */}
           <Breadcrumbs items={breadcrumbItems} />
 
-          {/* Page Header */}
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                mb: 2,
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <HistoryIcon
-                  sx={{ mr: 2, fontSize: 32, color: "primary.main" }}
-                />
-                <Box>
-                  <Typography variant="h4" component="h1" gutterBottom>
-                    Audit Records
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    View and filter all write operations performed on RabbitMQ
-                    clusters
-                  </Typography>
-                </Box>
-              </Box>
+          {/* Header */}
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={3}
+          >
+            <Typography variant="h4" component="h1">
+              Audits
+            </Typography>
+            <Box display="flex" gap={1}>
               <Button
                 variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={handleRefresh}
                 disabled={auditLoading}
-                sx={{ minWidth: 120 }}
               >
                 {auditLoading ? "Refreshing..." : "Refresh"}
               </Button>
             </Box>
+          </Box>
 
-            {/* Summary Information */}
-            {auditData && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography variant="body2">
-                  Showing {auditData.items.length} of {auditData.totalItems}{" "}
-                  audit records
-                  {auditData.totalPages > 1 && (
-                    <>
-                      {" "}
-                      (Page {page + 1} of {auditData.totalPages})
-                    </>
-                  )}
-                </Typography>
-              </Alert>
-            )}
-          </Paper>
+          {/* Summary Information */}
+          {auditData && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                Showing {auditData.items.length} of {auditData.totalItems}{" "}
+                audit records
+                {auditData.totalPages > 1 && (
+                  <>
+                    {" "}
+                    (Page {page + 1} of {auditData.totalPages})
+                  </>
+                )}
+              </Typography>
+            </Alert>
+          )}
 
           {/* Filter Validation Errors */}
           {filterValidationErrors.length > 0 && (

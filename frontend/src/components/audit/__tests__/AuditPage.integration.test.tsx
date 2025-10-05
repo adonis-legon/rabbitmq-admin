@@ -17,6 +17,13 @@ vi.mock("../../../hooks/useAuditRecords");
 vi.mock("../../../hooks/useClusters");
 vi.mock("../../../hooks/useUsers");
 
+// Mock tokenService
+vi.mock("../../../services/auth/tokenService", () => ({
+  tokenService: {
+    hasValidToken: vi.fn(() => true),
+  },
+}));
+
 const mockUseAuth = useAuth as any;
 const mockUseAuditRecords = useAuditRecords as any;
 const mockUseClusters = useClusters as any;
@@ -170,12 +177,7 @@ describe("AuditPage Integration Tests", () => {
     renderWithProviders(<AuditPage />);
 
     // Check page header
-    expect(screen.getByRole("heading", { name: "Audit Records" })).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "View and filter all write operations performed on RabbitMQ clusters"
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Audits" })).toBeInTheDocument();
 
     // Wait for the component to render
     await waitFor(() => {
@@ -339,7 +341,7 @@ describe("AuditPage Integration Tests", () => {
 
     // AdminRoute should handle redirect to login
     // In a real test, we'd need to mock the router navigation
-    expect(screen.queryByText("Audit Records")).not.toBeInTheDocument();
+    expect(screen.queryByText("Audits")).not.toBeInTheDocument();
   });
 
   it("integrates with filters correctly", async () => {
@@ -411,8 +413,8 @@ describe("AuditPage Integration Tests", () => {
     // Check breadcrumb structure
     expect(screen.getByText("RabbitMQ Admin")).toBeInTheDocument();
     expect(screen.getByText("Management")).toBeInTheDocument();
-    // Check breadcrumb contains Audit Records but use getAllByText since it appears in both breadcrumb and heading
-    expect(screen.getAllByText("Audit Records").length).toBeGreaterThan(0);
+    // Check breadcrumb contains Audits but use getAllByText since it appears in both breadcrumb and heading
+    expect(screen.getAllByText("Audits").length).toBeGreaterThan(0);
   });
 
   it("shows appropriate notes and help text", async () => {
@@ -435,7 +437,7 @@ describe("AuditPage Integration Tests", () => {
     renderWithProviders(<AuditPage />);
 
     // Check that main layout elements are present
-    const pageContainer = screen.getByRole("heading", { name: "Audit Records" }).closest("div");
+    const pageContainer = screen.getByRole("heading", { name: "Audits" }).closest("div");
     expect(pageContainer).toBeInTheDocument();
 
     // Check that responsive grid elements are present
