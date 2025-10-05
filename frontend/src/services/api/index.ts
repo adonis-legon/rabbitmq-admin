@@ -4,3 +4,4 @@ export * from './authApi';
 export * from './userApi';
 export * from './clusterApi';
 export * from './rabbitmqResourcesApi';
+export * from './auditApi';

@@ -489,6 +489,30 @@
       "type": "java.lang.Boolean",
       "description": "Enable JMX metrics export.",
       "defaultValue": true
+    },
+    {
+      "name": "app.audit.write-operations.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable or disable audit logging for write operations on RabbitMQ resources.",
+      "defaultValue": false
+    },
+    {
+      "name": "app.audit.write-operations.retention-days",
+      "type": "java.lang.Integer",
+      "description": "Number of days to retain audit records before they are eligible for cleanup.",
+      "defaultValue": 90
+    },
+    {
+      "name": "app.audit.write-operations.batch-size",
+      "type": "java.lang.Integer",
+      "description": "Batch size for processing audit records in bulk operations.",
+      "defaultValue": 100
+    },
+    {
+      "name": "app.audit.write-operations.async-processing",
+      "type": "java.lang.Boolean",
+      "description": "Enable asynchronous processing of audit records to improve performance.",
+      "defaultValue": true
     }
   ]
 }

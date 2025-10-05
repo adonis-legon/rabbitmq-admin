@@ -28,6 +28,7 @@ import {
   ExchangesPage,
   QueuesPage,
 } from "./components/resources";
+import { AuditPage } from "./components/audit";
 import { ROUTES } from "./utils/constants";
 
 // Sky blue theme as specified in requirements
@@ -176,6 +177,14 @@ function App() {
                                 element={
                                   <AdminRoute>
                                     <ClusterConnectionList />
+                                  </AdminRoute>
+                                }
+                              />
+                              <Route
+                                path={ROUTES.AUDIT}
+                                element={
+                                  <AdminRoute>
+                                    <AuditPage />
                                   </AdminRoute>
                                 }
                               />

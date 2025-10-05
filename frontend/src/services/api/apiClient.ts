@@ -4,6 +4,7 @@ import { tokenService } from '../auth/tokenService';
 import { tokenExpirationHandler } from '../tokenExpirationHandler';
 
 // API base URL - will be configured based on environment
+// Updated for Docker rebuild test - timestamp: 2025-10-04 01:30
 const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
 class ApiClient {
@@ -26,8 +27,42 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         const token = this.getToken();
+        const url = config.url || '';
+
+        // Define endpoints that don't require authentication
+        const publicEndpoints = [
+          '/auth/login',
+          '/auth/register',
+          '/auth/refresh',
+          '/health',
+          '/actuator'
+        ];
+
+        // Define auth endpoints that need tokens but should be allowed to proceed
+        // even if we can't immediately validate the token
+        const authEndpoints = ['/auth/me', '/auth/logout'];
+
+        // Check if this is a public endpoint
+        const isPublicEndpoint = publicEndpoints.some(endpoint => url.includes(endpoint));
+        const isAuthEndpoint = authEndpoints.some(endpoint => url.includes(endpoint));
+
+        if (isPublicEndpoint) {
+          return config;
+        }
+
+        if (isAuthEndpoint) {
+          // For auth endpoints, attach token if available but don't block if missing
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+          return config;
+        }
+
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+        } else {
+          console.error('🚫 [API CLIENT] No token available for protected endpoint:', url);
+          return Promise.reject(new Error('No authentication token available'));
         }
         return config;
       },
@@ -35,9 +70,7 @@ class ApiClient {
         console.error('Request interceptor error:', error);
         return Promise.reject(this.handleError(error));
       }
-    );
-
-    // Response interceptor to handle errors
+    );    // Response interceptor to handle errors
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
         return response;
@@ -164,4 +197,4 @@ class ApiClient {
 
 // Export singleton instance
 const apiClient = new ApiClient();
-export default apiClient;
+export default apiClient;// Force rebuild Sat Oct  4 01:20:00 -03 2025

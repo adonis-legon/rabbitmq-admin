@@ -65,6 +65,8 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithValidToken_ShouldSetAuthentication() throws Exception {
         // Given
         when(request.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1");
+        when(request.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
         when(tokenProvider.validateToken(validToken)).thenReturn(true);
         when(tokenProvider.getUserIdFromToken(validToken)).thenReturn(testUser.getId().toString());
         when(userDetailsService.loadUserById(testUser.getId())).thenReturn(UserPrincipal.create(testUser));
@@ -83,6 +85,8 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithInvalidToken_ShouldNotSetAuthentication() throws Exception {
         // Given
         when(request.getHeader("Authorization")).thenReturn("Bearer invalid.token");
+        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1");
+        when(request.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
         when(tokenProvider.validateToken("invalid.token")).thenReturn(false);
 
         // When
@@ -98,6 +102,8 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithNoToken_ShouldNotSetAuthentication() throws Exception {
         // Given
         when(request.getHeader("Authorization")).thenReturn(null);
+        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1");
+        when(request.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
 
         // When
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
@@ -113,6 +119,8 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithMalformedAuthHeader_ShouldNotSetAuthentication() throws Exception {
         // Given
         when(request.getHeader("Authorization")).thenReturn("InvalidHeader");
+        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1");
+        when(request.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
 
         // When
         jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
@@ -127,6 +135,8 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_WithException_ShouldContinueFilterChain() throws Exception {
         // Given
         when(request.getHeader("Authorization")).thenReturn("Bearer " + validToken);
+        when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1");
+        when(request.getHeader("User-Agent")).thenReturn("Mozilla/5.0");
         when(tokenProvider.validateToken(validToken)).thenThrow(new RuntimeException("Token validation error"));
 
         // When

@@ -112,7 +112,8 @@ public class SecurityConfig {
 
                         // Frontend routes (let React Router handle authentication)
                         .requestMatchers("/dashboard", "/dashboard/**", "/users", "/users/**", "/clusters",
-                                "/clusters/**", "/login", "/login/**", "/resources", "/resources/**")
+                                "/clusters/**", "/login", "/login/**", "/resources", "/resources/**",
+                                "/audits", "/audits/**")
                         .permitAll()
 
                         // Admin-only endpoints

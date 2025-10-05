@@ -22,11 +22,16 @@ public class ValidationConfig {
     /**
      * Enables method-level validation for @Validated annotated classes.
      * This allows validation of method parameters with constraints like @Min, @Max.
+     * Note: Configuration properties classes should not use @Validated to avoid
+     * CGLIB proxy issues.
      */
     @Bean
     public MethodValidationPostProcessor methodValidationPostProcessor(LocalValidatorFactoryBean validator) {
         MethodValidationPostProcessor processor = new MethodValidationPostProcessor();
         processor.setValidator(validator);
+        // Method validation only applies to @Validated classes, so removing @Validated
+        // from
+        // AuditConfigurationProperties should prevent validation issues
         return processor;
     }
 }

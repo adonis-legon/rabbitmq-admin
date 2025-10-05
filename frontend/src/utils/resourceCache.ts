@@ -189,3 +189,8 @@ export const bindingsCache = new ResourceCache({
     ttl: 10 * 60 * 1000, // 10 minutes for bindings (least dynamic)
     maxSize: 100,
 });
+
+export const auditCache = new ResourceCache({
+    ttl: 2 * 60 * 1000, // 2 minutes for audit records (moderately dynamic)
+    maxSize: 50,
+});

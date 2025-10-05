@@ -34,6 +34,12 @@ app:
     health:
       check-interval-minutes: 2
       timeout-seconds: 10
+  audit:
+    write-operations:
+      enabled: ${AUDIT_WRITE_OPERATIONS_ENABLED:false}
+      retention-days: ${AUDIT_RETENTION_DAYS:90}
+      batch-size: ${AUDIT_BATCH_SIZE:100}
+      async-processing: ${AUDIT_ASYNC_PROCESSING:true}
 
 # RabbitMQ Resource Management Configuration
 rabbitmq:

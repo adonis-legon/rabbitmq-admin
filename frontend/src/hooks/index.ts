@@ -19,3 +19,4 @@ export { useStaleWhileRevalidate } from './useStaleWhileRevalidate';
 export { useCacheStats } from './useCacheStats';
 export { useWriteOperationNotifications } from './useWriteOperationNotifications';
 export { useWriteOperationState, useMultipleWriteOperations } from './useWriteOperationState';
+export { useAuditRecords } from './useAuditRecords';

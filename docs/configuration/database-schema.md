@@ -11,6 +11,7 @@ The application uses PostgreSQL as the primary database with the following main 
 - **Users**: Application users with role-based access
 - **Cluster Connections**: RabbitMQ cluster connection configurations
 - **User Cluster Assignments**: Many-to-many relationship between users and clusters
+- **Audit Records**: Comprehensive audit trail for all write operations on RabbitMQ clusters
 
 ## Tables
 
@@ -117,6 +118,74 @@ CREATE TABLE user_cluster_assignments (
 - Foreign key to `users(id)` with CASCADE delete
 - Foreign key to `cluster_connections(id)` with CASCADE delete
 
+### audit_records
+
+Stores comprehensive audit trail for all write operations performed on RabbitMQ clusters.
+
+```sql
+CREATE TABLE audit_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    cluster_id UUID NOT NULL,
+    operation_type VARCHAR(50) NOT NULL CHECK (operation_type IN (
+        'CREATE_EXCHANGE',
+        'DELETE_EXCHANGE',
+        'CREATE_QUEUE',
+        'DELETE_QUEUE',
+        'PURGE_QUEUE',
+        'CREATE_BINDING_EXCHANGE',
+        'CREATE_BINDING_QUEUE',
+        'DELETE_BINDING',
+        'PUBLISH_MESSAGE_EXCHANGE',
+        'PUBLISH_MESSAGE_QUEUE',
+        'MOVE_MESSAGES_QUEUE'
+    )),
+    resource_type VARCHAR(100) NOT NULL,
+    resource_name VARCHAR(500) NOT NULL,
+    resource_details TEXT,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('SUCCESS', 'FAILURE', 'PARTIAL')),
+    error_message VARCHAR(1000),
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+    client_ip VARCHAR(45),
+    user_agent VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    -- Foreign key constraints
+    CONSTRAINT fk_audit_records_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_audit_records_cluster
+        FOREIGN KEY (cluster_id)
+        REFERENCES cluster_connections(id)
+        ON DELETE RESTRICT
+);
+```
+
+**Columns:**
+
+- `id`: Unique identifier (UUID)
+- `user_id`: Reference to the user who performed the operation
+- `cluster_id`: Reference to the cluster where the operation was performed
+- `operation_type`: Type of write operation (CREATE_EXCHANGE, DELETE_QUEUE, MOVE_MESSAGES_QUEUE, etc.)
+- `resource_type`: Type of resource affected (exchange, queue, binding, message)
+- `resource_name`: Name of the specific resource that was modified
+- `resource_details`: JSON string containing operation-specific details
+- `status`: Result status of the operation (SUCCESS, FAILURE, PARTIAL)
+- `error_message`: Error message if the operation failed
+- `timestamp`: UTC timestamp when the operation was performed
+- `client_ip`: IP address of the client that initiated the operation
+- `user_agent`: User agent string of the client
+- `created_at`: Timestamp when the audit record was created
+
+**Constraints:**
+
+- Primary key on `id`
+- Foreign key to `users(id)` with RESTRICT delete (preserves audit trail)
+- Foreign key to `cluster_connections(id)` with RESTRICT delete (preserves audit trail)
+- Check constraint on `operation_type` (must be one of the defined operation types)
+- Check constraint on `status` (must be SUCCESS, FAILURE, or PARTIAL)
+
 ## Relationships
 
 ### User-Cluster Assignment Relationship
@@ -128,6 +197,15 @@ The application implements a many-to-many relationship between users and cluster
 - **Assignment tracking**: Each assignment includes a timestamp for audit purposes
 - **Cascade deletion**: Deleting a user or cluster connection automatically removes related assignments
 - **Bidirectional integrity**: Assignment operations properly maintain both sides of the relationship to ensure data consistency
+
+### Audit Trail Relationship
+
+The audit system maintains a comprehensive record of all write operations:
+
+- **Audit records** reference both **users** and **cluster connections**
+- **RESTRICT deletion**: Users and clusters cannot be deleted if audit records exist
+- **Immutable records**: Audit entries are designed to be tamper-evident and permanent
+- **Operation tracking**: All write operations are captured with detailed context
 
 ### Entity Relationship Diagram
 
@@ -141,10 +219,23 @@ The application implements a many-to-many relationship between users and cluster
 │ password_hash   │         └──────────────────────────┘         │ username            │
 │ role            │                                              │ password_hash       │
 │ active          │                                              │ description         │
-│ created_at      │                                              │ active              │
-│ updated_at      │                                              │ created_at          │
-└─────────────────┘                                              │ updated_at          │
-                                                                 └─────────────────────┘
+│ created_at      │         ┌──────────────────────────┐         │ active              │
+│ updated_at      │         │    audit_records         │         │ created_at          │
+└─────────────────┘         ├──────────────────────────┤         │ updated_at          │
+         │                  │ id (PK)                  │         └─────────────────────┘
+         │                  │ user_id (FK)             │                      │
+         └─────────────────►│ cluster_id (FK)          │◄─────────────────────┘
+                            │ operation_type           │
+                            │ resource_type            │
+                            │ resource_name            │
+                            │ resource_details         │
+                            │ status                   │
+                            │ error_message            │
+                            │ timestamp                │
+                            │ client_ip                │
+                            │ user_agent               │
+                            │ created_at               │
+                            └──────────────────────────┘
 ```
 
 ## Indexes
@@ -177,6 +268,37 @@ CREATE INDEX idx_user_cluster_assignments_assigned_at ON user_cluster_assignment
 - `idx_user_cluster_assignments_cluster_id`: Optimize cluster-to-user lookups
 - `idx_user_cluster_assignments_assigned_at`: Support assignment history queries
 
+### Audit Indexes (V5 Migration)
+
+```sql
+-- Single column indexes for efficient filtering
+CREATE INDEX idx_audit_records_user_id ON audit_records(user_id);
+CREATE INDEX idx_audit_records_cluster_id ON audit_records(cluster_id);
+CREATE INDEX idx_audit_records_timestamp ON audit_records(timestamp);
+CREATE INDEX idx_audit_records_operation_type ON audit_records(operation_type);
+CREATE INDEX idx_audit_records_resource_name ON audit_records(resource_name);
+CREATE INDEX idx_audit_records_status ON audit_records(status);
+CREATE INDEX idx_audit_records_created_at ON audit_records(created_at);
+
+-- Composite indexes for common query patterns
+CREATE INDEX idx_audit_records_user_timestamp ON audit_records(user_id, timestamp);
+CREATE INDEX idx_audit_records_cluster_timestamp ON audit_records(cluster_id, timestamp);
+CREATE INDEX idx_audit_records_user_cluster_timestamp ON audit_records(user_id, cluster_id, timestamp);
+```
+
+**Audit Index Purposes:**
+
+- `idx_audit_records_user_id`: Filter audit records by user
+- `idx_audit_records_cluster_id`: Filter audit records by cluster
+- `idx_audit_records_timestamp`: Sort and filter by operation time
+- `idx_audit_records_operation_type`: Filter by operation type
+- `idx_audit_records_resource_name`: Search by resource name
+- `idx_audit_records_status`: Filter by operation status
+- `idx_audit_records_created_at`: Sort by audit record creation time
+- `idx_audit_records_user_timestamp`: Optimize user activity queries over time
+- `idx_audit_records_cluster_timestamp`: Optimize cluster activity queries over time
+- `idx_audit_records_user_cluster_timestamp`: Optimize complex filtering scenarios
+
 ## Data Migration History
 
 ### V1\_\_Initial_Schema.sql
@@ -203,6 +325,14 @@ CREATE INDEX idx_user_cluster_assignments_assigned_at ON user_cluster_assignment
 - Inserted default administrator user account
 - Provides initial access for application setup
 - Uses BCrypt hashed password for security
+
+### V5\_\_Audit_Records_Schema.sql
+
+- Created `audit_records` table for comprehensive write operation tracking
+- Added foreign key relationships to users and cluster_connections with RESTRICT deletion
+- Implemented check constraints for operation_type and status validation
+- Added comprehensive indexing strategy for efficient audit queries
+- Included detailed column comments for documentation
 
 ## Security Considerations
 
@@ -307,6 +437,124 @@ GROUP BY u.id, u.username
 ORDER BY assigned_clusters DESC, u.username;
 ```
 
+### Audit Record Queries
+
+```sql
+-- Get recent audit records with user and cluster information
+SELECT
+    ar.id,
+    u.username,
+    cc.name as cluster_name,
+    ar.operation_type,
+    ar.resource_type,
+    ar.resource_name,
+    ar.status,
+    ar.timestamp,
+    ar.error_message
+FROM audit_records ar
+JOIN users u ON ar.user_id = u.id
+JOIN cluster_connections cc ON ar.cluster_id = cc.id
+ORDER BY ar.timestamp DESC
+LIMIT 100;
+
+-- Get audit records for a specific user
+SELECT
+    ar.operation_type,
+    ar.resource_type,
+    ar.resource_name,
+    ar.status,
+    ar.timestamp,
+    cc.name as cluster_name
+FROM audit_records ar
+JOIN cluster_connections cc ON ar.cluster_id = cc.id
+WHERE ar.user_id = $1
+ORDER BY ar.timestamp DESC;
+
+-- Get audit records for a specific cluster
+SELECT
+    ar.operation_type,
+    ar.resource_type,
+    ar.resource_name,
+    ar.status,
+    ar.timestamp,
+    u.username
+FROM audit_records ar
+JOIN users u ON ar.user_id = u.id
+WHERE ar.cluster_id = $1
+ORDER BY ar.timestamp DESC;
+
+-- Get failed operations for investigation
+SELECT
+    ar.id,
+    u.username,
+    cc.name as cluster_name,
+    ar.operation_type,
+    ar.resource_name,
+    ar.error_message,
+    ar.timestamp,
+    ar.client_ip
+FROM audit_records ar
+JOIN users u ON ar.user_id = u.id
+JOIN cluster_connections cc ON ar.cluster_id = cc.id
+WHERE ar.status = 'FAILURE'
+ORDER BY ar.timestamp DESC;
+
+-- Get operation statistics by type
+SELECT
+    ar.operation_type,
+    COUNT(*) as total_operations,
+    COUNT(CASE WHEN ar.status = 'SUCCESS' THEN 1 END) as successful,
+    COUNT(CASE WHEN ar.status = 'FAILURE' THEN 1 END) as failed,
+    ROUND(
+        COUNT(CASE WHEN ar.status = 'SUCCESS' THEN 1 END) * 100.0 / COUNT(*), 2
+    ) as success_rate
+FROM audit_records ar
+WHERE ar.timestamp >= NOW() - INTERVAL '30 days'
+GROUP BY ar.operation_type
+ORDER BY total_operations DESC;
+
+-- Get user activity summary
+SELECT
+    u.username,
+    COUNT(ar.id) as total_operations,
+    COUNT(DISTINCT ar.cluster_id) as clusters_accessed,
+    COUNT(DISTINCT DATE(ar.timestamp)) as active_days,
+    MAX(ar.timestamp) as last_activity
+FROM users u
+LEFT JOIN audit_records ar ON u.id = ar.user_id
+WHERE u.active = true
+GROUP BY u.id, u.username
+ORDER BY total_operations DESC;
+
+-- Get audit records with filtering (example for API)
+SELECT
+    ar.id,
+    ar.user_id,
+    u.username,
+    ar.cluster_id,
+    cc.name as cluster_name,
+    ar.operation_type,
+    ar.resource_type,
+    ar.resource_name,
+    ar.resource_details,
+    ar.status,
+    ar.error_message,
+    ar.timestamp,
+    ar.client_ip,
+    ar.user_agent
+FROM audit_records ar
+JOIN users u ON ar.user_id = u.id
+JOIN cluster_connections cc ON ar.cluster_id = cc.id
+WHERE ($1::UUID IS NULL OR ar.user_id = $1)
+  AND ($2::UUID IS NULL OR ar.cluster_id = $2)
+  AND ($3::VARCHAR IS NULL OR ar.operation_type = $3)
+  AND ($4::VARCHAR IS NULL OR ar.resource_name ILIKE '%' || $4 || '%')
+  AND ($5::TIMESTAMP IS NULL OR ar.timestamp >= $5)
+  AND ($6::TIMESTAMP IS NULL OR ar.timestamp <= $6)
+ORDER BY ar.timestamp DESC
+LIMIT $7 OFFSET $8;
+```
+
 ## Maintenance and Monitoring
 
 ### Regular Maintenance Tasks
@@ -367,9 +615,12 @@ FROM user_cluster_assignments;
 - User accounts and authentication data
 - Cluster connection configurations (excluding passwords)
 - User-cluster assignment relationships
+- Audit records (for compliance and security investigations)
 
 ### Recovery Considerations
 
 - Passwords may need to be reset after recovery
 - Cluster connection tests should be performed after restore
 - User assignments should be verified for consistency
+- Audit record integrity should be validated after restore
+- Audit retention policies should be reviewed and reapplied

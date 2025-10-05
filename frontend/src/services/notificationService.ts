@@ -21,9 +21,9 @@ export const setGlobalNotificationService = (service: NotificationService) => {
 
 // Fallback implementation for when the service is not initialized
 const fallbackService: NotificationService = {
-  success: (message: string) => console.log('SUCCESS:', message),
+  success: (_message: string) => { },
   error: (message: string) => console.error('ERROR:', message),
-  info: (message: string) => console.info('INFO:', message),
+  info: (_message: string) => { },
   warning: (message: string) => console.warn('WARNING:', message),
 };
 

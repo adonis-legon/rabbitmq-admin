@@ -252,8 +252,7 @@ class TokenExpirationHandler {
     });
 
     // You could show a toast notification here
-    // For now, we'll just log it
-    console.warn(`Your session will expire in ${minutesUntilExpiry} minutes`);
+    // Session warning handled by event listeners
   }
 
   /**

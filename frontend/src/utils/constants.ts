@@ -5,6 +5,7 @@ export const ROUTES = {
   CLUSTERS: '/clusters',
   RABBITMQ: '/rabbitmq',
   PROFILE: '/profile',
+  AUDIT: '/audits',
   // Resource management routes
   RESOURCES: '/resources',
   RESOURCES_CONNECTIONS: '/resources/connections',
@@ -23,15 +24,16 @@ export const API_ENDPOINTS = {
   USERS: '/users',
   CLUSTERS: '/clusters',
   RABBITMQ: '/rabbitmq',
+  AUDIT: '/audit',
   // Resource management endpoints
   RESOURCES: {
     CONNECTIONS: (clusterId: string) => `/rabbitmq/${clusterId}/resources/connections`,
     CHANNELS: (clusterId: string) => `/rabbitmq/${clusterId}/resources/channels`,
     EXCHANGES: (clusterId: string) => `/rabbitmq/${clusterId}/resources/exchanges`,
     QUEUES: (clusterId: string) => `/rabbitmq/${clusterId}/resources/queues`,
-    EXCHANGE_BINDINGS: (clusterId: string, exchangeName: string) => 
+    EXCHANGE_BINDINGS: (clusterId: string, exchangeName: string) =>
       `/rabbitmq/${clusterId}/resources/exchanges/${encodeURIComponent(exchangeName)}/bindings`,
-    QUEUE_BINDINGS: (clusterId: string, queueName: string) => 
+    QUEUE_BINDINGS: (clusterId: string, queueName: string) =>
       `/rabbitmq/${clusterId}/resources/queues/${encodeURIComponent(queueName)}/bindings`
   }
 } as const;

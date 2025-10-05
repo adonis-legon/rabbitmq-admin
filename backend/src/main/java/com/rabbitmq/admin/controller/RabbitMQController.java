@@ -1,6 +1,8 @@
 package com.rabbitmq.admin.controller;
 
+import com.rabbitmq.admin.aspect.AuditWriteOperation;
 import com.rabbitmq.admin.dto.VirtualHostDto;
+import com.rabbitmq.admin.model.AuditOperationType;
 import com.rabbitmq.admin.security.UserPrincipal;
 import com.rabbitmq.admin.service.RabbitMQProxyService;
 import com.rabbitmq.admin.service.RabbitMQProxyService.RabbitMQProxyException;
@@ -122,6 +124,7 @@ public class RabbitMQController {
          * @return ResponseEntity with creation result
          */
         @PutMapping("/{clusterId}/queues/{vhost}/{queueName}")
+        @AuditWriteOperation(operationType = AuditOperationType.CREATE_QUEUE, resourceType = "queue", description = "Create or update a queue")
         public ResponseEntity<Object> createOrUpdateQueue(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,
@@ -152,6 +155,7 @@ public class RabbitMQController {
          * @return ResponseEntity with deletion result
          */
         @DeleteMapping("/{clusterId}/queues/{vhost}/{queueName}")
+        @AuditWriteOperation(operationType = AuditOperationType.DELETE_QUEUE, resourceType = "queue", description = "Delete a queue")
         public ResponseEntity<Void> deleteQueue(
                         @PathVariable UUID clusterId,
                         @PathVariable String vhost,

@@ -45,19 +45,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const initializeAuth = async () => {
     try {
-      if (tokenService.hasValidToken()) {
+      // First check if we have a token at all
+      const hasToken = tokenService.hasValidToken();
+
+      if (hasToken) {
+        // Try to get current user info
         const currentUser = await authService.getCurrentUser();
         if (currentUser) {
           setUser(currentUser);
         } else {
           // If getCurrentUser returns null, clear tokens
           tokenService.clearTokens();
+          setUser(null);
         }
+      } else {
+        // No valid token, clear any existing state
+        setUser(null);
       }
     } catch (error) {
       console.error("Failed to initialize auth:", error);
-      // Clear invalid tokens
-      tokenService.clearTokens();
+
+      // If error is 401, it means token is invalid - clear it
+      if ((error as any)?.status === 401 || (error as any)?.response?.status === 401) {
+        tokenService.clearTokens();
+      }
+
       setUser(null);
     } finally {
       setIsLoading(false);

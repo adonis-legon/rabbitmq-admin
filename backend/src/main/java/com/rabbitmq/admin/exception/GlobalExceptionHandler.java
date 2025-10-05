@@ -172,6 +172,24 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handle audit service exceptions
+     */
+    @ExceptionHandler(AuditServiceException.class)
+    public ResponseEntity<Map<String, Object>> handleAuditServiceException(
+            AuditServiceException ex, WebRequest request) {
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", Instant.now().toString());
+        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        response.put("error", "Internal Server Error");
+        response.put("message", ex.getMessage());
+        response.put("path", request.getDescription(false).replace("uri=", ""));
+
+        logger.error("Audit service exception: ", ex);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    /**
      * Handle user not found exceptions
      */
     @ExceptionHandler(UserNotFoundException.class)

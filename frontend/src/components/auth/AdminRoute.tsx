@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from './AuthProvider';
 import { UserRole } from '../../types/auth';
 import { ROUTES } from '../../utils/constants';
+import { tokenService } from '../../services/auth/tokenService';
 import { Box, Typography, Paper, Alert } from '@mui/material';
 import { Lock as LockIcon } from '@mui/icons-material';
 
@@ -27,8 +28,23 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     );
   }
 
+  // If we have a valid token in localStorage but user is not set yet, show loading
+  // This prevents premature redirects during page refresh
+  if (!user && tokenService.hasValidToken()) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="200px"
+      >
+        <Typography>Loading...</Typography>
+      </Box>
+    );
+  }
+
   // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 

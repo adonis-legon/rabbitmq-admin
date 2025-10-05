@@ -16,6 +16,15 @@ spring:
 server:
   port: 8080
 
+# Docker application configuration
+app:
+  audit:
+    write-operations:
+      enabled: ${AUDIT_WRITE_OPERATIONS_ENABLED:false}
+      retention-days: ${AUDIT_RETENTION_DAYS:90}
+      batch-size: ${AUDIT_BATCH_SIZE:100}
+      async-processing: ${AUDIT_ASYNC_PROCESSING:true}
+
 logging:
   level:
     "[com.rabbitmq.admin]": INFO
