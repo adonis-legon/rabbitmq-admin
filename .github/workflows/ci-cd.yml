@@ -140,8 +140,8 @@ jobs:
   build-jar:
     name: Build JAR
     runs-on: ubuntu-latest
-    needs: unit-test
-    if: always() && needs.unit-test.result == 'success'
+    needs: [unit-test, integration-test]
+    if: always() && (needs.unit-test.result == 'success' && (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped'))
 
     steps:
       - name: Checkout code
@@ -186,8 +186,8 @@ jobs:
   build-docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: unit-test
-    if: always() && needs.unit-test.result == 'success' && github.event_name == 'push'
+    needs: [unit-test, integration-test]
+    if: always() && (needs.unit-test.result == 'success' && (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped')) && github.event_name == 'push'
 
     steps:
       - name: Checkout code
@@ -236,7 +236,7 @@ jobs:
   push-docker:
     name: Push to Docker Hub
     runs-on: ubuntu-latest
-    needs: [unit-test, build-docker]
+    needs: build-docker
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && vars.DOCKER_USERNAME != ''
 
     steps:
