@@ -119,8 +119,8 @@ export interface AuditFilterRequest {
     /** Filter by resource name (partial match, case-insensitive) */
     resourceName?: string;
 
-    /** Filter by resource type (partial match, case-insensitive) */
-    resourceType?: string;
+    /** Filter by resource type (exact match, multiple values allowed) */
+    resourceType?: string | string[];
 
     /** Filter by operations performed after this time (ISO 8601 format) */
     startTime?: string;

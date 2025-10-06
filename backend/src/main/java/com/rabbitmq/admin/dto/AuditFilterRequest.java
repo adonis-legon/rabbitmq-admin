@@ -33,7 +33,7 @@ public class AuditFilterRequest {
     private String resourceName;
 
     @JsonProperty("resourceType")
-    @Size(max = 100, message = "Resource type filter must not exceed 100 characters")
+    @Size(max = 500, message = "Resource type filter must not exceed 500 characters")
     private String resourceType;
 
     @JsonProperty("startTime")

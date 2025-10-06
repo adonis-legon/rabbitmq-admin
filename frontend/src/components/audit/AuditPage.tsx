@@ -14,8 +14,8 @@ import { GridSortModel } from "@mui/x-data-grid";
 // Authentication handled by AdminRoute wrapper
 import { useAuth } from "../auth/AuthProvider";
 import { useAuditRecords } from "../../hooks/useAuditRecords";
+import { useClusters } from "../../hooks/useClusters";
 // TEMPORARY: Commented out to test 401 theory
-// import { useClusters } from "../../hooks/useClusters";
 // import { useUsers } from "../../hooks/useUsers";
 import { tokenService } from "../../services/auth/tokenService";
 import { AuditFilterRequest } from "../../types/audit";
@@ -60,12 +60,11 @@ export const AuditPage: React.FC = () => {
     autoRefresh: false, // Manual refresh for audit records
   });
 
-  // TEMPORARY: Comment out auto-loading hooks to test 401 theory
-  // const { clusters, loading: clustersLoading } = useClusters();
+  // Load clusters available to the current admin user
+  const { clusters, loading: clustersLoading } = useClusters();
+  // TEMPORARY: Commented out users hook to test 401 theory  
   // const { users, loading: usersLoading } = useUsers();
-  const clusters: any[] = [];
   const users: any[] = [];
-  const clustersLoading = false;
   const usersLoading = false;
 
   // Load initial data - wait for authentication before making API calls
