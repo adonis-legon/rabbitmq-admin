@@ -8,8 +8,8 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./src/setupTests.ts'],
-        testTimeout: 5000, // Very short timeout for CI
-        hookTimeout: 3000, // Very short hook timeout
+        testTimeout: 10000, // Reasonable timeout for CI
+        hookTimeout: 5000, // Reasonable hook timeout
         // Force exit after tests complete
         forceRerunTriggers: ['**/package.json/**', '**/vitest.config.*/**'],
         // Maximum parallel execution for CI
@@ -21,8 +21,8 @@ export default defineConfig({
                 minThreads: 2,
             },
         },
-        // Aggressive performance optimizations for CI
-        isolate: false, // Disable isolation for speed
+        // Performance optimizations for CI with stability
+        isolate: true, // Enable isolation for test stability
         coverage: {
             enabled: false, // Never run coverage in CI
         },
