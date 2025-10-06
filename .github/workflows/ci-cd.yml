@@ -85,8 +85,6 @@ jobs:
             -DfailIfNoTests=false
         timeout-minutes: 10
 
-
-
   # Integration Test Job - Only runs on main branch
   integration-test:
     name: Run Integration Tests
