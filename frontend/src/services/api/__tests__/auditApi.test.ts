@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import { AxiosResponse } from 'axios';
 import { auditApi } from '../auditApi';
 import apiClient from '../apiClient';
@@ -27,6 +27,10 @@ const createMockResponse = <T>(data: T): AxiosResponse<T> => ({
 describe('auditApi', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    afterAll(() => {
+        vi.restoreAllMocks();
     });
 
     describe('getAuditRecords', () => {

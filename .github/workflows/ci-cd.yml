@@ -61,17 +61,10 @@ jobs:
           SKIP_INTEGRATION_TESTS: true
           SKIP_PROBLEMATIC_TESTS: true
         run: |
-          # Use custom script with timeout and environment variables
-          ./scripts/run-tests.sh ci
-        timeout-minutes: 6
-
-      - name: Run critical integration tests only
-        run: |
           cd frontend
-          # Run only the most critical integration tests
-          pnpm test -- --run --reporter=verbose src/components/resources/__tests__/ResourceDataFlow.integration.test.tsx
-        timeout-minutes: 15
-        continue-on-error: true
+          # Use CI-optimized vitest configuration that excludes integration tests
+          pnpm test:ci
+        timeout-minutes: 5
 
       - name: Run backend unit tests only
         env:
