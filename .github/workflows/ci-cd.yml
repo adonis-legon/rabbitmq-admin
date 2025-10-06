@@ -73,38 +73,19 @@ jobs:
         timeout-minutes: 15
         continue-on-error: true
 
-      - name: Start services for TestContainers
-        run: |
-          # Start Docker daemon
-          sudo systemctl start docker
-          sudo chmod 666 /var/run/docker.sock
-
-          # Verify Docker is working
-          docker info
-          docker ps
-
-          # Pre-pull required images to avoid timeouts
-          docker pull postgres:15-alpine
-
       - name: Run backend unit tests
         env:
           JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
           MAVEN_OPTS: "-Xmx2048m -XX:+UseG1GC"
         run: |
-          # Run unit tests (excluding integration tests)
-          mvn test -pl backend -Pci -Dspring.profiles.active=test
+          # Run unit tests only, exclude all integration tests explicitly
+          mvn test -pl backend \
+            -Dspring.profiles.active=test \
+            -Dtest='!com.rabbitmq.admin.integration.*,!**/*IntegrationTest,!**/*EndToEndTest' \
+            -Dsurefire.excludes='**/integration/**,**/*IntegrationTest.java,**/*EndToEndTest.java'
         timeout-minutes: 15
 
-      - name: Run critical integration tests
-        env:
-          JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
-          MAVEN_OPTS: "-Xmx2048m -XX:+UseG1GC"
-          TESTCONTAINERS_RYUK_DISABLED: false
-        run: |
-          # Run only critical integration tests to reduce CI time
-          mvn test -pl backend -Dtest="**/RabbitMQResourceControllerTest" -Dspring.profiles.active=integration-test
-        timeout-minutes: 20
-        continue-on-error: true
+
 
   # Integration Test Job - Only runs on main branch
   integration-test:

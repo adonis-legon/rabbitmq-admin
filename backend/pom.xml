@@ -291,6 +291,8 @@
                     </includes>
                     <excludes>
                         <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/*EndToEndTest.java</exclude>
+                        <exclude>**/integration/**</exclude>
                     </excludes>
                     <environmentVariables>
                         <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
