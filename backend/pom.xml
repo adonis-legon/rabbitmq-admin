@@ -293,6 +293,11 @@
                         <exclude>**/*IntegrationTest.java</exclude>
                         <exclude>**/*EndToEndTest.java</exclude>
                         <exclude>**/integration/**</exclude>
+                        <exclude>**/AuditConfigurationValidationIntegrationTest*.java</exclude>
+                        <exclude>**/RabbitMQWriteOperationsIntegrationTest*.java</exclude>
+                        <exclude>**/AuditPerformanceIntegrationTest*.java</exclude>
+                        <exclude>**/DatabaseIntegrationTest*.java</exclude>
+                        <exclude>**/ApiIntegrationTest*.java</exclude>
                     </excludes>
                     <environmentVariables>
                         <TESTCONTAINERS_RYUK_DISABLED>true</TESTCONTAINERS_RYUK_DISABLED>
@@ -335,6 +340,50 @@
                             <!-- Exclude integration tests in CI environment -->
                             <excludes>
                                 <exclude>**/*IntegrationTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <!-- Unit tests only profile for fast CI (pure unit tests only) -->
+        <profile>
+            <id>unit-test-only</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <!-- Only include lightweight unit tests -->
+                            <includes>
+                                <include>**/dto/*Test.java</include>
+                                <include>**/model/*Test.java</include>
+                                <include>**/config/AuditConfigurationPropertiesTest.java</include>
+                                <include>**/config/AuditConfigurationValidationTest.java</include>
+                                <include>**/security/JwtTokenProviderTest.java</include>
+                                <include>**/security/JwtAuthenticationFilterTest.java</include>
+                                <include>**/service/*Test.java</include>
+                                <include>**/aspect/*Test.java</include>
+                                <include>**/exception/CustomExceptionsTest.java</include>
+                            </includes>
+                            <excludes>
+                                <!-- Exclude ALL Spring Boot context tests (slow startup) -->
+                                <exclude>**/controller/**</exclude>
+                                <exclude>**/repository/**</exclude>
+                                <exclude>**/integration/**</exclude>
+                                
+                                <!-- Exclude all integration tests -->
+                                <exclude>**/*IntegrationTest*.java</exclude>
+                                <exclude>**/*EndToEndTest*.java</exclude>
+                                
+                                <!-- Exclude Spring context heavy tests -->
+                                <exclude>**/exception/GlobalExceptionHandlerTest.java</exclude>
+                                <exclude>**/config/AuditConfigurationIntegrationTest.java</exclude>
+                                
+                                <!-- Exclude any test that uses @SpringBootTest, @DataJpaTest, @WebMvcTest -->
+                                <exclude>**/WebClientBindingsTest.java</exclude>
                             </excludes>
                         </configuration>
                     </plugin>

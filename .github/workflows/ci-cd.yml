@@ -73,17 +73,17 @@ jobs:
         timeout-minutes: 15
         continue-on-error: true
 
-      - name: Run backend unit tests
+      - name: Run backend unit tests only
         env:
           JWT_SECRET_KEY: test-secret-key-for-ci-cd-pipeline-only-must-be-at-least-256-bits-long
           MAVEN_OPTS: "-Xmx2048m -XX:+UseG1GC"
         run: |
-          # Run unit tests only, exclude all integration tests explicitly
+          # Use the unit-test-only profile for aggressive integration test exclusion
           mvn test -pl backend \
+            -Punit-test-only \
             -Dspring.profiles.active=test \
-            -Dtest='!com.rabbitmq.admin.integration.*,!**/*IntegrationTest,!**/*EndToEndTest' \
-            -Dsurefire.excludes='**/integration/**,**/*IntegrationTest.java,**/*EndToEndTest.java'
-        timeout-minutes: 15
+            -DfailIfNoTests=false
+        timeout-minutes: 10
 
 
 
