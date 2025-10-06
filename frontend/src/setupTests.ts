@@ -37,4 +37,6 @@ beforeAll(() => {
 // Clean up after each test
 afterEach(() => {
     cleanup();
+    // Clear all mocks after each test to prevent cross-test pollution
+    vi.clearAllMocks();
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import { AxiosResponse } from 'axios';
 import { rabbitmqResourcesApi } from '../rabbitmqResourcesApi';
 import apiClient from '../apiClient';
@@ -36,6 +36,10 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
         vi.clearAllMocks();
     });
 
+    afterAll(() => {
+        vi.restoreAllMocks();
+    });
+
     describe('Virtual Hosts', () => {
         it('should get virtual hosts successfully', async () => {
             const mockVirtualHosts: VirtualHost[] = [
@@ -69,7 +73,7 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
             const error = new Error('API Error');
             mockApiClient.get.mockRejectedValue(error);
 
-            await expect(rabbitmqResourcesApi.getVirtualHosts(clusterId)).rejects.toThrow('API Error');
+            await expect(rabbitmqResourcesApi.getVirtualHosts(clusterId)).rejects.toThrow('Failed to fetch virtual hosts: API Error');
             expect(mockApiClient.get).toHaveBeenCalledWith(`/rabbitmq/${clusterId}/vhosts`);
         });
     });
@@ -133,7 +137,7 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
             const error = new Error('Exchange creation failed');
             mockApiClient.put.mockRejectedValue(error);
 
-            await expect(rabbitmqResourcesApi.createExchange(clusterId, request)).rejects.toThrow('Exchange creation failed');
+            await expect(rabbitmqResourcesApi.createExchange(clusterId, request)).rejects.toThrow('Failed to create exchange: Exchange creation failed');
         });
     });
 
@@ -207,7 +211,7 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
             const error = new Error('Queue creation failed');
             mockApiClient.put.mockRejectedValue(error);
 
-            await expect(rabbitmqResourcesApi.createQueue(clusterId, request)).rejects.toThrow('Queue creation failed');
+            await expect(rabbitmqResourcesApi.createQueue(clusterId, request)).rejects.toThrow('Failed to create queue: Queue creation failed');
         });
     });
 
@@ -282,7 +286,7 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
                     'destination',
                     request
                 )
-            ).rejects.toThrow('Binding creation failed');
+            ).rejects.toThrow('Failed to create exchange-to-queue binding: Binding creation failed');
         });
     });
 
@@ -399,7 +403,7 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
 
             await expect(
                 rabbitmqResourcesApi.publishMessage(clusterId, vhost, 'exchange', request)
-            ).rejects.toThrow('Message publishing failed');
+            ).rejects.toThrow('Failed to publish message to exchange: Message publishing failed');
         });
 
         it('should handle message retrieval error', async () => {
@@ -412,7 +416,7 @@ describe('rabbitmqResourcesApi - Write Operations', () => {
 
             await expect(
                 rabbitmqResourcesApi.getMessages(clusterId, vhost, 'queue', request)
-            ).rejects.toThrow('Message retrieval failed');
+            ).rejects.toThrow('Failed to get messages from queue: Message retrieval failed');
         });
     });
 

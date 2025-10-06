@@ -22,7 +22,7 @@ export default defineConfig({
       },
     },
     // Performance optimizations
-    isolate: false, // Disable isolation for faster execution
+    isolate: true, // Enable isolation for proper test separation
     coverage: {
       enabled: false, // Disable coverage in CI for speed
     },
