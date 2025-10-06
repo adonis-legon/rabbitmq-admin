@@ -287,7 +287,7 @@ class AuditFilterRequestTest {
     void validation_WithTooLongResourceType_FailsValidation() {
         // Given
         AuditFilterRequest filter = new AuditFilterRequest();
-        filter.setResourceType("a".repeat(101)); // Exceeds 100 character limit
+        filter.setResourceType("a".repeat(501)); // Exceeds 500 character limit
 
         // When
         Set<ConstraintViolation<AuditFilterRequest>> violations = validator.validate(filter);
@@ -295,7 +295,7 @@ class AuditFilterRequestTest {
         // Then
         assertThat(violations).hasSize(1);
         assertThat(violations.iterator().next().getMessage())
-                .contains("Resource type filter must not exceed 100 characters");
+                .contains("Resource type filter must not exceed 500 characters");
     }
 
     @Test

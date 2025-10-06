@@ -379,13 +379,13 @@ describe("AuditFilters", () => {
       // TextField components should use toBeDisabled()
       expect(screen.getByLabelText(/username/i)).toBeDisabled();
       expect(screen.getByLabelText(/resource name/i)).toBeDisabled();
-      expect(screen.getByLabelText(/resource type/i)).toBeDisabled();
       expect(screen.getByLabelText(/start date/i)).toBeDisabled();
       expect(screen.getByLabelText(/end date/i)).toBeDisabled();
       expect(applyButton).toBeDisabled();
 
       // For MUI Select components, check aria-disabled instead of disabled attribute
       expect(screen.getByLabelText(/cluster/i)).toHaveAttribute("aria-disabled", "true");
+      expect(screen.getByLabelText(/resource type/i)).toHaveAttribute("aria-disabled", "true");
       expect(screen.getByLabelText(/operation type/i)).toHaveAttribute("aria-disabled", "true");
       expect(screen.getByLabelText(/status/i)).toHaveAttribute("aria-disabled", "true");
     });

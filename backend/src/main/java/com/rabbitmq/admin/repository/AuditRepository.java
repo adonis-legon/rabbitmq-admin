@@ -89,6 +89,15 @@ public interface AuditRepository extends JpaRepository<Audit, UUID> {
     Page<Audit> findByResourceTypeIgnoreCase(String resourceType, Pageable pageable);
 
     /**
+     * Find audit records by multiple resource types (case-insensitive).
+     * 
+     * @param resourceTypes the list of resource types to filter by
+     * @param pageable      pagination information
+     * @return page of audit records for the specified resource types
+     */
+    Page<Audit> findByResourceTypeInIgnoreCase(java.util.List<String> resourceTypes, Pageable pageable);
+
+    /**
      * Find audit records by user ID.
      * 
      * @param userId   the user ID to filter by

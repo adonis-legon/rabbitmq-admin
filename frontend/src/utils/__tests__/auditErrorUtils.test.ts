@@ -370,7 +370,7 @@ describe("auditErrorUtils", () => {
                 username: "a".repeat(101), // Over 100 characters
                 clusterName: "b".repeat(101),
                 resourceName: "c".repeat(501), // Over 500 characters
-                resourceType: "d".repeat(101),
+                resourceType: "d".repeat(501), // Over 500 characters (updated from 101 to 501)
             };
 
             const errors = validateAuditFilters(filters);

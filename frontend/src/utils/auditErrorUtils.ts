@@ -351,12 +351,17 @@ export const validateAuditFilters = (filters: any): AuditFilterValidationError[]
         });
     }
 
-    if (filters.resourceType && filters.resourceType.length > 100) {
-        errors.push({
-            field: "resourceType",
-            message: "Resource type filter is too long (maximum 100 characters)",
-            value: filters.resourceType,
-        });
+    if (filters.resourceType) {
+        const resourceTypeStr = Array.isArray(filters.resourceType)
+            ? filters.resourceType.join(',')
+            : filters.resourceType;
+        if (resourceTypeStr.length > 500) {
+            errors.push({
+                field: "resourceType",
+                message: "Resource type filter is too long (maximum 500 characters)",
+                value: filters.resourceType,
+            });
+        }
     }
 
     return errors;

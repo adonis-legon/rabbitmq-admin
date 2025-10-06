@@ -188,9 +188,20 @@ public class WriteAuditService {
             return auditRepository.findByResourceNameContainingIgnoreCase(resourceName.trim(), pageable);
         }
 
-        // Resource type filter
+        // Resource type filter - handle comma-separated values
         if (resourceType != null && !resourceType.trim().isEmpty()) {
-            return auditRepository.findByResourceTypeIgnoreCase(resourceType.trim(), pageable);
+            // Split by comma and clean up the values
+            java.util.List<String> resourceTypes = java.util.Arrays.asList(resourceType.split(","))
+                    .stream()
+                    .map(String::trim)
+                    .filter(type -> !type.isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+
+            if (resourceTypes.size() == 1) {
+                return auditRepository.findByResourceTypeIgnoreCase(resourceTypes.get(0), pageable);
+            } else if (resourceTypes.size() > 1) {
+                return auditRepository.findByResourceTypeInIgnoreCase(resourceTypes, pageable);
+            }
         }
 
         // Use specific repository methods based on what filters are provided

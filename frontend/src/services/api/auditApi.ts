@@ -54,7 +54,11 @@ export const auditApi = {
                 searchParams.append('resourceName', filterRequest.resourceName);
             }
             if (filterRequest.resourceType !== undefined) {
-                searchParams.append('resourceType', filterRequest.resourceType);
+                if (Array.isArray(filterRequest.resourceType)) {
+                    searchParams.append('resourceType', filterRequest.resourceType.join(','));
+                } else {
+                    searchParams.append('resourceType', filterRequest.resourceType);
+                }
             }
             if (filterRequest.startTime !== undefined) {
                 searchParams.append('startTime', filterRequest.startTime);

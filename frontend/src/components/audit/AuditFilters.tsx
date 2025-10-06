@@ -14,6 +14,10 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Chip,
+  OutlinedInput,
+  ListItemText,
+  Checkbox,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -33,6 +37,14 @@ import {
   validateAuditFilters,
   AuditFilterValidationError,
 } from "../../utils/auditErrorUtils";
+
+// Common RabbitMQ resource types for filtering
+const RESOURCE_TYPES = [
+  { value: "exchange", label: "Exchange" },
+  { value: "queue", label: "Queue" },
+  { value: "binding", label: "Binding" },
+  { value: "message", label: "Message" },
+] as const;
 
 export interface AuditFiltersProps {
   /** Current filter values */
@@ -93,7 +105,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
         clearTimeout(searchTimeout);
       }
     };
-  }, [localFilters.username, localFilters.resourceName]);
+  }, [localFilters.username, localFilters.resourceName, localFilters.resourceType]);
 
   const handleFilterChange = (field: keyof AuditFilterRequest, value: any) => {
     const newFilters = { ...localFilters, [field]: value || undefined };
@@ -113,6 +125,7 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
     if (
       field !== "username" &&
       field !== "resourceName" &&
+      field !== "resourceType" &&
       errors.length === 0
     ) {
       onFiltersChange(newFilters);
@@ -382,31 +395,51 @@ const AuditFilters: React.FC<AuditFiltersProps> = ({
 
           {/* Resource Type Filter */}
           <Grid item xs={12} sm={6} md={3}>
-            <TextField
-              fullWidth
-              label="Resource Type"
-              placeholder="e.g., exchange, queue, binding..."
-              value={localFilters.resourceType || ""}
-              onChange={(e) => handleFilterChange("resourceType", e.target.value)}
-              disabled={disabled}
-              error={hasFieldError("resourceType")}
-              helperText={getFieldError("resourceType")}
-              InputProps={{
-                startAdornment: (
-                  <SearchIcon sx={{ color: "text.secondary", mr: 1 }} />
-                ),
-                endAdornment: localFilters.resourceType && (
-                  <IconButton
-                    size="small"
-                    onClick={() => handleClearField("resourceType")}
-                    disabled={disabled}
-                    aria-label="Clear resource type filter"
-                  >
-                    <ClearIcon />
-                  </IconButton>
-                ),
-              }}
-            />
+            <FormControl fullWidth>
+              <InputLabel id="resource-type-filter-label">Resource Type</InputLabel>
+              <Select
+                labelId="resource-type-filter-label"
+                multiple
+                value={Array.isArray(localFilters.resourceType) ? localFilters.resourceType : (localFilters.resourceType ? [localFilters.resourceType] : [])}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const selectedTypes = typeof value === 'string' ? [value] : value;
+                  handleFilterChange("resourceType", selectedTypes.length > 0 ? selectedTypes : undefined);
+                }}
+                input={<OutlinedInput label="Resource Type" />}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {(selected as string[]).map((value) => {
+                      const resourceType = RESOURCE_TYPES.find(rt => rt.value === value);
+                      return (
+                        <Chip
+                          key={value}
+                          label={resourceType?.label || value}
+                          size="small"
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+                disabled={disabled}
+                error={hasFieldError("resourceType")}
+              >
+                <MenuItem value="">
+                  <em>All Resource Types</em>
+                </MenuItem>
+                {RESOURCE_TYPES.map((resourceType) => (
+                  <MenuItem key={resourceType.value} value={resourceType.value}>
+                    <Checkbox
+                      checked={Array.isArray(localFilters.resourceType)
+                        ? localFilters.resourceType.includes(resourceType.value)
+                        : localFilters.resourceType === resourceType.value
+                      }
+                    />
+                    <ListItemText primary={resourceType.label} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
 
           {/* Start Date */}

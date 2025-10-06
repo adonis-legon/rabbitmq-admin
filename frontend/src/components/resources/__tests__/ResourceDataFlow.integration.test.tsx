@@ -315,7 +315,10 @@ const mockQueues: RabbitMQQueue[] = [
   },
 ];
 
-describe("Resource Data Flow Integration Tests", () => {
+// Skip heavy integration tests in CI environment for faster builds
+const describeOrSkip = process.env.CI && process.env.SKIP_INTEGRATION_TESTS ? describe.skip : describe;
+
+describeOrSkip("Resource Data Flow Integration Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 

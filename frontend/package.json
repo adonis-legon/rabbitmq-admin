@@ -36,6 +36,9 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:unit": "vitest run --exclude '**/*.integration.test.tsx'",
+    "test:integration": "vitest run '**/*.integration.test.tsx'",
+    "test:ci": "vitest run --config vitest.config.ci.ts"
   }
 }
