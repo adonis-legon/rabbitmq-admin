@@ -24,8 +24,8 @@ env:
   NODE_VERSION: 20
 
 permissions:
-  contents: write    # Required for creating releases
-  packages: write    # Required for publishing Docker images
+  contents: write # Required for creating releases
+  packages: write # Required for publishing Docker images
 
 jobs:
   # Fast Test Job - Unit tests only
@@ -316,7 +316,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
-          files: ./artifacts/rabbitmq-admin-backend-${{ steps.version.outputs.version }}.jar
+          files: ./artifacts/rabbitmq-admin-${{ steps.version.outputs.version }}.jar
           body: |
             ## RabbitMQ Admin ${{ github.ref_name }}
 
@@ -337,7 +337,7 @@ jobs:
             **Standalone JAR:**
             Download the JAR file from the assets below and run:
             ```bash
-            java -jar rabbitmq-admin-backend-${{ steps.version.outputs.version }}.jar
+            java -jar rabbitmq-admin-${{ steps.version.outputs.version }}.jar
             ```
 
             ### 📋 Requirements

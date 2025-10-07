@@ -249,6 +249,7 @@
                 </executions>
                 <configuration>
                     <mainClass>com.rabbitmq.admin.RabbitMQAdminApplication</mainClass>
+                    <finalName>rabbitmq-admin-${project.version}</finalName>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
