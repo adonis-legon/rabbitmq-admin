@@ -271,16 +271,7 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 ./radmin-cli version sync       # Sync versions across components
 ```
 
-#### Release Commands
 
-```bash
-./radmin-cli release create           # Create new release using version from pom.xml
-./radmin-cli release create <version> # Create new release with specific version
-./radmin-cli release list             # List existing releases  
-./radmin-cli release list --verbose   # List releases with detailed information
-./radmin-cli release status           # Check workflow status for latest release
-./radmin-cli release status <tag>     # Check workflow status for specific release
-```
 
 #### Utility Commands
 
@@ -1155,7 +1146,7 @@ This project uses a unified versioning system where the main `pom.xml` serves as
 - **Docker**: Images tagged with project version
 - **CI/CD**: Artifacts named with version numbers
 
-### Changing Version
+### Changing Version & Automated Releases
 
 ```bash
 # Update version in main pom.xml
@@ -1164,11 +1155,21 @@ mvn versions:set -DnewVersion=2.0.0
 # Sync to all components
 ./radmin-cli version sync
 
-# Commit changes
+# Commit and push to main branch
 git add .
 git commit -m "chore: bump version to 2.0.0"
-git tag v2.0.0
+git push origin main
+
+# 🚀 Automatic Release Process:
+# When a version change is detected in main branch:
+# 1. Creates git tag (v2.0.0)
+# 2. Builds JAR file (rabbitmq-admin-2.0.0.jar)
+# 3. Builds and pushes Docker image (alegon/rabbitmq-admin:2.0.0)
+# 4. Creates GitHub release with JAR asset
+# 5. Updates latest Docker tag (alegon/rabbitmq-admin:latest)
 ```
+
+**✨ No manual release commands needed!** Simply merge version changes to main branch and the CI/CD pipeline automatically creates releases.
 
 ## 🏛️ Architecture & Design
 

@@ -60,11 +60,6 @@ show_help() {
     echo "  version                   Show current version"
     echo "  version sync              Sync versions across all components"
     echo ""
-    echo -e "${GREEN}Release Commands:${NC}"
-    echo "  release create VERSION    Create and push new release tag"
-    echo "  release list              List recent releases"
-    echo "  release status            Check latest release status"
-    echo ""
     echo -e "${GREEN}Utility Commands:${NC}"
     echo "  help                      Show this help message"
     echo ""
@@ -155,33 +150,6 @@ case $COMMAND in
             *)
                 log "${RED}✗${NC} Unknown deploy subcommand: $SUBCOMMAND"
                 echo "Available: run, stop, logs, status"
-                exit 1
-                ;;
-        esac
-        ;;
-    release)
-        case $SUBCOMMAND in
-            create)
-                shift 2
-                ./scripts/release.sh create "$@"
-                ;;
-            list)
-                shift 2
-                ./scripts/release.sh list "$@"
-                ;;
-            status)
-                shift 2
-                ./scripts/release.sh status "$@"
-                ;;
-            "")
-                log "${RED}✗${NC} Release command requires a subcommand"
-                echo "Available: create VERSION, list, status"
-                echo "Use '$0 help' for more information"
-                exit 1
-                ;;
-            *)
-                log "${RED}✗${NC} Unknown release subcommand: $SUBCOMMAND"
-                echo "Available: create, list, status"
                 exit 1
                 ;;
         esac
