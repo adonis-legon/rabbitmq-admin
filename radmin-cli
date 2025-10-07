@@ -114,8 +114,8 @@ set_version() {
     # 1. Update root pom.xml (main version)
     log "${CYAN}1. Updating root pom.xml...${NC}"
     if [ -f "pom.xml" ]; then
-        # Update project version specifically (after artifactId and before packaging)
-        sed -i.bak "/<artifactId>rabbitmq-admin<\/artifactId>/,/<packaging>/{s|<version>[^<]*</version>|<version>$NEW_VERSION</version>|;}" pom.xml
+        # Update project version specifically - only within the first 10 lines after groupId
+        sed -i.bak "1,20s|<groupId>com.rabbitmq</groupId>|<groupId>com.rabbitmq</groupId>|;1,20{/<artifactId>rabbitmq-admin<\/artifactId>/{n;s|<version>[^<]*</version>|<version>$NEW_VERSION</version>|;}}" pom.xml
         rm -f pom.xml.bak
         echo "   ✓ Root pom.xml updated"
     else
