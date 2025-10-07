@@ -58,6 +58,7 @@ show_help() {
     echo ""
     echo -e "${GREEN}Version Commands:${NC}"
     echo "  version                   Show current version"
+    echo "  version set <version>     Set new version across all components"
     echo "  version sync              Sync versions across all components"
     echo ""
     echo -e "${GREEN}Utility Commands:${NC}"
@@ -89,6 +90,79 @@ show_help() {
 sync_versions() {
     log "${BLUE}Syncing versions from main pom.xml...${NC}"
     ./scripts/sync-versions.sh
+}
+
+set_version() {
+    local NEW_VERSION="0.1.0"
+    
+    if [ -z "$NEW_VERSION" ]; then
+        log "${RED}✗${NC} Error: No version specified"
+        echo "Usage: $0 version set <new-version>"
+        echo "Example: $0 version set 0.1.6"
+        exit 1
+    fi
+    
+    # Validate version format (basic semver check)
+    if ! echo "$NEW_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$'; then
+        log "${RED}✗${NC} Error: Invalid version format. Use semantic versioning (e.g., 0.1.6, 1.0.0-SNAPSHOT)"
+        exit 1
+    fi
+    
+    log "${BLUE}Setting version to ${YELLOW}$NEW_VERSION${NC}..."
+    echo
+    
+    # 1. Update root pom.xml (main version)
+    log "${CYAN}1. Updating root pom.xml...${NC}"
+    if [ -f "pom.xml" ]; then
+        # Update project version specifically (after artifactId and before packaging)
+        sed -i.bak "/<artifactId>rabbitmq-admin<\/artifactId>/,/<packaging>/{s|<version>[^<]*</version>|<version>$NEW_VERSION</version>|;}" pom.xml
+        rm -f pom.xml.bak
+        echo "   ✓ Root pom.xml updated"
+    else
+        log "${RED}✗${NC} Error: pom.xml not found"
+        exit 1
+    fi
+    
+    # 2. Update backend pom.xml (parent version)
+    log "${CYAN}2. Updating backend/pom.xml...${NC}"
+    if [ -f "backend/pom.xml" ]; then
+        # Update parent version in backend pom
+        sed -i.bak "s|<parent>|<parent>|;/<parent>/,/<\/parent>/{s|<version>[^<]*</version>|<version>$NEW_VERSION</version>|;}" backend/pom.xml
+        rm -f backend/pom.xml.bak
+        echo "   ✓ Backend pom.xml updated"
+    else
+        log "${YELLOW}⚠${NC} Warning: backend/pom.xml not found"
+    fi
+    
+    # 3. Update frontend pom.xml (parent version)
+    log "${CYAN}3. Updating frontend/pom.xml...${NC}"
+    if [ -f "frontend/pom.xml" ]; then
+        # Update parent version in frontend pom
+        sed -i.bak "s|<parent>|<parent>|;/<parent>/,/<\/parent>/{s|<version>[^<]*</version>|<version>$NEW_VERSION</version>|;}" frontend/pom.xml
+        rm -f frontend/pom.xml.bak
+        echo "   ✓ Frontend pom.xml updated"
+    else
+        log "${YELLOW}⚠${NC} Warning: frontend/pom.xml not found"
+    fi
+    
+    # 4. Update CLI version
+    log "${CYAN}4. Updating CLI version...${NC}"
+    sed -i.bak "s/VERSION=\".*\"/VERSION=\"$NEW_VERSION\"/" "$0"
+    rm -f "${0}.bak"
+    echo "   ✓ CLI version updated"
+    
+    # 5. Sync all other components
+    log "${CYAN}5. Syncing versions across all components...${NC}"
+    sync_versions
+    
+    echo
+    log "${GREEN}✓ Version successfully updated to $NEW_VERSION${NC}"
+    echo
+    log "${YELLOW}Next steps:${NC}"
+    echo "  1. Review changes: git status"
+    echo "  2. Commit changes: git add . && git commit -m \"bump: version $NEW_VERSION\""
+    echo "  3. Push and merge to main to trigger automated release"
+    echo
 }
 
 # Parse command
@@ -156,6 +230,9 @@ case $COMMAND in
         ;;
     version)
         case $SUBCOMMAND in
+            set)
+                set_version "$3"
+                ;;
             sync)
                 sync_versions
                 ;;
@@ -171,7 +248,7 @@ case $COMMAND in
                 ;;
             *)
                 log "${RED}✗${NC} Unknown version subcommand: $SUBCOMMAND"
-                echo "Available: sync, show (default)"
+                echo "Available: set <version>, sync, show (default)"
                 exit 1
                 ;;
         esac
