@@ -23,6 +23,10 @@ env:
   JAVA_VERSION: 21
   NODE_VERSION: 20
 
+permissions:
+  contents: write    # Required for creating releases
+  packages: write    # Required for publishing Docker images
+
 jobs:
   # Fast Test Job - Unit tests only
   unit-test:
