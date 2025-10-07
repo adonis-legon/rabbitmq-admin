@@ -65,8 +65,8 @@ FROM gcr.io/distroless/java21-debian12:nonroot
 # Set working directory
 WORKDIR /app
 
-# Copy the built jar from build stage
-COPY --from=build /app/backend/target/*.jar app.jar
+# Copy the built jar from build stage (use the Spring Boot executable JAR - exclude the backend-specific jar)
+COPY --from=build /app/backend/target/rabbitmq-admin-[0-9]*.jar app.jar
 
 # Distroless images already run as non-root user
 # No need for user management or package installation
