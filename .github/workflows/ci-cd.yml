@@ -290,6 +290,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        if: github.ref == 'refs/heads/main' # Only update description on main branch
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ vars.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
+          short-description: "A comprehensive web application for managing RabbitMQ clusters with authentication, authorization, and multi-cluster support."
+          readme-filepath: ./README.md
+
   # Create GitHub Release
   auto-release:
     name: Auto Release on Version Change
