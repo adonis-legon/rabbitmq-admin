@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 # Project info
 PROJECT_NAME="RabbitMQ Admin"
-VERSION="0.1.1"
+VERSION="0.1.0"
 
 log() {
     echo -e "$(date '+%Y-%m-%d %H:%M:%S') - $1"
@@ -93,7 +93,7 @@ sync_versions() {
 }
 
 set_version() {
-    local NEW_VERSION="0.1.1"
+    local NEW_VERSION="$1"
     
     if [ -z "$NEW_VERSION" ]; then
         log "${RED}✗${NC} Error: No version specified"
@@ -156,7 +156,8 @@ set_version() {
     
     # 4. Update CLI version
     log "${CYAN}4. Updating CLI version...${NC}"
-    sed -i.bak "s/VERSION=\".*\"/VERSION=\"$NEW_VERSION\"/" "$0"
+    # Update only the main VERSION variable near the top of the file (line 18 typically)
+    sed -i.bak "1,30s/^VERSION=\".*\"/VERSION=\"$NEW_VERSION\"/" "$0"
     rm -f "${0}.bak"
     echo "   ✓ CLI version updated"
     
