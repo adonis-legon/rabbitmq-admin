@@ -271,6 +271,17 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 ./radmin-cli version sync       # Sync versions across components
 ```
 
+#### Release Commands
+
+```bash
+./radmin-cli release create           # Create new release using version from pom.xml
+./radmin-cli release create <version> # Create new release with specific version
+./radmin-cli release list             # List existing releases  
+./radmin-cli release list --verbose   # List releases with detailed information
+./radmin-cli release status           # Check workflow status for latest release
+./radmin-cli release status <tag>     # Check workflow status for specific release
+```
+
 #### Utility Commands
 
 ```bash

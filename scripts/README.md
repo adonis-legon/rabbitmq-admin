@@ -40,6 +40,13 @@ This directory contains the core automation scripts for the RabbitMQ Admin proje
 
 - **`sync-versions.sh`** - Synchronize versions across all components from main pom.xml
 
+### Release Management
+
+- **`release.sh`** - Comprehensive release automation script
+  - `release.sh create [version]` - Create new release (uses POM version if not specified)
+  - `release.sh list [--verbose]` - List existing releases
+  - `release.sh status [<tag>]` - Check workflow status for release
+
 ## Usage
 
 **Recommended**: Use the main CLI tool instead of calling these scripts directly:
