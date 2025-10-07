@@ -1,6 +1,32 @@
 # RabbitMQ Admin
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/alegon/rabbitmq-admin)](https://hub.docker.com/r/alegon/rabbitmq-admin)
+[![Docker Image Size](https://img.shields.io/docker/image-size/alegon/rabbitmq-admin)](https://hub.docker.com/r/alegon/rabbitmq-admin)
+[![GitHub](https://img.shields.io/github/license/adonis-legon/rabbitmq-admin)](https://github.com/adonis-legon/rabbitmq-admin)
+
 A comprehensive web application for managing RabbitMQ clusters with authentication, authorization, and multi-cluster support.
+
+## 🐳 Quick Docker Start
+
+```bash
+# Pull and run the latest version
+docker pull alegon/rabbitmq-admin:latest
+
+# Run with Docker Compose (recommended)
+curl -o docker-compose.yml https://raw.githubusercontent.com/adonis-legon/rabbitmq-admin/main/docker/docker-compose.yml
+docker-compose up -d
+
+# Or run standalone
+docker run -d \
+  --name rabbitmq-admin \
+  -p 8080:8080 \
+  -e DB_URL=jdbc:postgresql://your-db:5432/rabbitmqadmin \
+  -e DB_USERNAME=your-db-user \
+  -e DB_PASSWORD=your-db-password \
+  alegon/rabbitmq-admin:latest
+```
+
+**Default Access**: http://localhost:8080 (admin/admin123)
 
 ## 📑 Table of Contents
 
