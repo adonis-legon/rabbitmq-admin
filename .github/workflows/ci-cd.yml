@@ -226,7 +226,6 @@ jobs:
         with:
           images: ${{ steps.docker_config.outputs.image_name }}
           tags: |
-            type=ref,event=branch
             type=raw,value=${{ steps.docker_config.outputs.version }}
             type=raw,value=latest,enable={{is_default_branch}}
 
@@ -246,8 +245,8 @@ jobs:
   push-docker:
     name: Push to Docker Hub
     runs-on: ubuntu-latest
-    needs: build-jar
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && vars.DOCKER_USERNAME != '' && needs.build-jar.result == 'success'
+    needs: build-docker
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && vars.DOCKER_USERNAME != '' && needs.build-docker.result == 'success'
 
     steps:
       - name: Checkout code
@@ -281,7 +280,6 @@ jobs:
         with:
           images: ${{ vars.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
             type=raw,value=${{ steps.version.outputs.version }}
             type=raw,value=latest,enable={{is_default_branch}}
 
