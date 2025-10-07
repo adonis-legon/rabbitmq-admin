@@ -93,7 +93,7 @@ sync_versions() {
 }
 
 set_version() {
-    local NEW_VERSION="0.1.0"
+    local NEW_VERSION="$1"
     
     if [ -z "$NEW_VERSION" ]; then
         log "${RED}✗${NC} Error: No version specified"
@@ -114,9 +114,18 @@ set_version() {
     # 1. Update root pom.xml (main version)
     log "${CYAN}1. Updating root pom.xml...${NC}"
     if [ -f "pom.xml" ]; then
-        # Update project version specifically (after artifactId and before packaging)
-        sed -i.bak "/<artifactId>rabbitmq-admin<\/artifactId>/,/<packaging>/{s|<version>[^<]*</version>|<version>$NEW_VERSION</version>|;}" pom.xml
-        rm -f pom.xml.bak
+        # Update project version specifically using line numbers (more reliable)
+        # Find the line with project version and update it
+        awk -v new_version="$NEW_VERSION" '
+        /<groupId>com\.rabbitmq<\/groupId>/ { in_project=1 }
+        in_project && /<artifactId>rabbitmq-admin<\/artifactId>/ { next_is_version=1; print; next }
+        in_project && next_is_version && /<version>/ { 
+            gsub(/<version>[^<]*<\/version>/, "<version>" new_version "</version>")
+            next_is_version=0
+            in_project=0
+        }
+        { print }
+        ' pom.xml > pom.xml.tmp && mv pom.xml.tmp pom.xml
         echo "   ✓ Root pom.xml updated"
     else
         log "${RED}✗${NC} Error: pom.xml not found"
@@ -147,7 +156,8 @@ set_version() {
     
     # 4. Update CLI version
     log "${CYAN}4. Updating CLI version...${NC}"
-    sed -i.bak "s/VERSION=\".*\"/VERSION=\"$NEW_VERSION\"/" "$0"
+    # Update only the main VERSION variable near the top of the file (line 18 typically)
+    sed -i.bak "1,30s/^VERSION=\".*\"/VERSION=\"$NEW_VERSION\"/" "$0"
     rm -f "${0}.bak"
     echo "   ✓ CLI version updated"
     
