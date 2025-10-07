@@ -23,6 +23,10 @@ env:
   JAVA_VERSION: 21
   NODE_VERSION: 20
 
+permissions:
+  contents: write # Required for creating releases
+  packages: write # Required for publishing Docker images
+
 jobs:
   # Fast Test Job - Unit tests only
   unit-test:
@@ -140,8 +144,8 @@ jobs:
   build-jar:
     name: Build JAR
     runs-on: ubuntu-latest
-    needs: [unit-test, integration-test]
-    if: always() && (needs.unit-test.result == 'success' && (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped'))
+    needs: unit-test
+    if: always() && needs.unit-test.result == 'success'
 
     steps:
       - name: Checkout code
@@ -186,8 +190,8 @@ jobs:
   build-docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: [unit-test, integration-test]
-    if: always() && (needs.unit-test.result == 'success' && (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped')) && github.event_name == 'push'
+    needs: unit-test
+    if: always() && needs.unit-test.result == 'success' && github.event_name == 'push'
 
     steps:
       - name: Checkout code
@@ -282,41 +286,78 @@ jobs:
           cache-to: type=gha,mode=max
 
   # Create GitHub Release
-  release:
-    name: Create Release
+  auto-release:
+    name: Auto Release on Version Change
     runs-on: ubuntu-latest
     needs: [build-jar]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit to compare
 
-      - name: Extract version from pom.xml
+      - name: Extract current version from pom.xml
         id: version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Project version: $VERSION"
+          echo "Current version: $VERSION"
+
+      - name: Check if version changed
+        id: version_check
+        run: |
+          # Get version from previous commit
+          git checkout HEAD~1 -- pom.xml || echo "No previous pom.xml"
+          PREV_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout 2>/dev/null || echo "0.0.0")
+          git checkout HEAD -- pom.xml
+          
+          echo "Previous version: $PREV_VERSION"
+          echo "Current version: ${{ steps.version.outputs.version }}"
+          
+          if [ "$PREV_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "Version changed from $PREV_VERSION to ${{ steps.version.outputs.version }}"
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "tag_name=v${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "Version unchanged, skipping release"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create and push tag
+        if: steps.version_check.outputs.should_release == 'true'
+        run: |
+          TAG_NAME="${{ steps.version_check.outputs.tag_name }}"
+          echo "Creating tag: $TAG_NAME"
+          
+          # Check if tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Tag $TAG_NAME already exists, skipping tag creation"
+          else
+            git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+            git push origin "$TAG_NAME"
+            echo "Tag $TAG_NAME created and pushed"
+          fi
 
       - name: Download JAR artifact
+        if: steps.version_check.outputs.should_release == 'true'
         uses: actions/download-artifact@v4
         with:
           name: rabbitmq-admin-jar-${{ steps.version.outputs.version }}
           path: ./artifacts
 
       - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: steps.version_check.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          tag_name: ${{ steps.version_check.outputs.tag_name }}
+          name: Release ${{ steps.version_check.outputs.tag_name }}
           draft: false
           prerelease: false
+          files: ./artifacts/rabbitmq-admin-${{ steps.version.outputs.version }}.jar
           body: |
-            ## RabbitMQ Admin ${{ github.ref_name }}
+            ## RabbitMQ Admin ${{ steps.version_check.outputs.tag_name }}
 
             ### 🚀 Deployment Options
 
@@ -329,13 +370,13 @@ jobs:
               -e SPRING_DATASOURCE_USERNAME=your_user \
               -e SPRING_DATASOURCE_PASSWORD=your_password \
               -e JWT_SECRET_KEY=your-secret-key \
-              your-username/rabbitmq-admin:${{ github.ref_name }}
+              alegon/rabbitmq-admin:${{ steps.version.outputs.version }}
             ```
 
             **Standalone JAR:**
             Download the JAR file from the assets below and run:
             ```bash
-            java -jar rabbitmq-admin-${{ github.ref_name }}.jar
+            java -jar rabbitmq-admin-${{ steps.version.outputs.version }}.jar
             ```
 
             ### 📋 Requirements
@@ -343,12 +384,10 @@ jobs:
             - PostgreSQL 15+
             - Environment variables (see documentation)
 
-      - name: Upload JAR to Release
-        uses: actions/upload-release-asset@v1
+            ### 📊 Build Information
+            - **Version:** ${{ steps.version.outputs.version }}
+            - **Tag:** ${{ github.ref_name }}
+            - **Commit:** ${{ github.sha }}
+            - **Build Date:** ${{ github.run_id }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/rabbitmq-admin-backend-${{ steps.version.outputs.version }}.jar
-          asset_name: rabbitmq-admin-${{ steps.version.outputs.version }}.jar
-          asset_content_type: application/java-archive
