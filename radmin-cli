@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 # Project info
 PROJECT_NAME="RabbitMQ Admin"
-VERSION="0.1.0"
+VERSION="0.1.1"
 
 log() {
     echo -e "$(date '+%Y-%m-%d %H:%M:%S') - $1"
@@ -93,7 +93,7 @@ sync_versions() {
 }
 
 set_version() {
-    local NEW_VERSION="0.1.0"
+    local NEW_VERSION="0.1.1"
     
     if [ -z "$NEW_VERSION" ]; then
         log "${RED}✗${NC} Error: No version specified"
@@ -114,9 +114,18 @@ set_version() {
     # 1. Update root pom.xml (main version)
     log "${CYAN}1. Updating root pom.xml...${NC}"
     if [ -f "pom.xml" ]; then
-        # Update project version specifically - only within the first 10 lines after groupId
-        sed -i.bak "1,20s|<groupId>com.rabbitmq</groupId>|<groupId>com.rabbitmq</groupId>|;1,20{/<artifactId>rabbitmq-admin<\/artifactId>/{n;s|<version>[^<]*</version>|<version>$NEW_VERSION</version>|;}}" pom.xml
-        rm -f pom.xml.bak
+        # Update project version specifically using line numbers (more reliable)
+        # Find the line with project version and update it
+        awk -v new_version="$NEW_VERSION" '
+        /<groupId>com\.rabbitmq<\/groupId>/ { in_project=1 }
+        in_project && /<artifactId>rabbitmq-admin<\/artifactId>/ { next_is_version=1; print; next }
+        in_project && next_is_version && /<version>/ { 
+            gsub(/<version>[^<]*<\/version>/, "<version>" new_version "</version>")
+            next_is_version=0
+            in_project=0
+        }
+        { print }
+        ' pom.xml > pom.xml.tmp && mv pom.xml.tmp pom.xml
         echo "   ✓ Root pom.xml updated"
     else
         log "${RED}✗${NC} Error: pom.xml not found"
