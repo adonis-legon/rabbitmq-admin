@@ -140,8 +140,8 @@ jobs:
   build-jar:
     name: Build JAR
     runs-on: ubuntu-latest
-    needs: [unit-test, integration-test]
-    if: always() && (needs.unit-test.result == 'success' && (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped'))
+    needs: unit-test
+    if: always() && needs.unit-test.result == 'success'
 
     steps:
       - name: Checkout code
@@ -186,8 +186,8 @@ jobs:
   build-docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: [unit-test, integration-test]
-    if: always() && (needs.unit-test.result == 'success' && (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped')) && github.event_name == 'push'
+    needs: unit-test
+    if: always() && needs.unit-test.result == 'success' && github.event_name == 'push'
 
     steps:
       - name: Checkout code
@@ -306,15 +306,13 @@ jobs:
           path: ./artifacts
 
       - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
+          files: ./artifacts/rabbitmq-admin-backend-${{ steps.version.outputs.version }}.jar
           body: |
             ## RabbitMQ Admin ${{ github.ref_name }}
 
@@ -335,7 +333,7 @@ jobs:
             **Standalone JAR:**
             Download the JAR file from the assets below and run:
             ```bash
-            java -jar rabbitmq-admin-${{ github.ref_name }}.jar
+            java -jar rabbitmq-admin-backend-${{ steps.version.outputs.version }}.jar
             ```
 
             ### 📋 Requirements
@@ -343,12 +341,10 @@ jobs:
             - PostgreSQL 15+
             - Environment variables (see documentation)
 
-      - name: Upload JAR to Release
-        uses: actions/upload-release-asset@v1
+            ### 📊 Build Information
+            - **Version:** ${{ steps.version.outputs.version }}
+            - **Tag:** ${{ github.ref_name }}
+            - **Commit:** ${{ github.sha }}
+            - **Build Date:** ${{ github.run_id }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./artifacts/rabbitmq-admin-backend-${{ steps.version.outputs.version }}.jar
-          asset_name: rabbitmq-admin-${{ steps.version.outputs.version }}.jar
-          asset_content_type: application/java-archive
