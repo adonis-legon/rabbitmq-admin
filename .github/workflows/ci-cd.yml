@@ -1,13 +1,5 @@
 name: Build and Publish
 
-# OPTIMIZATION STRATEGY:
-# - Split tests into unit (fast) and integration (slow) jobs
-# - Run unit tests on all pushes, integration tests only on main branch
-# - Skip problematic/slow tests in CI environment
-# - Use aggressive timeouts to prevent hanging
-# - Fail fast on multiple test failures
-# - Reduced memory allocation for faster startup
-
 on:
   # Run on pushes to main branch (direct pushes or merges)
   push:
