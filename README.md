@@ -267,8 +267,9 @@ The project includes a unified CLI tool `radmin-cli` (RabbitMQ Admin CLI) for al
 #### Version Commands
 
 ```bash
-./radmin-cli version            # Show current version
-./radmin-cli version sync       # Sync versions across components
+./radmin-cli version                # Show current version
+./radmin-cli version set <version>  # Set new version across all components
+./radmin-cli version sync           # Sync versions across components
 ```
 
 
@@ -1131,7 +1132,13 @@ This project uses a unified versioning system where the main `pom.xml` serves as
 ### Version Commands
 
 ```bash
-# Sync all component versions from main pom.xml
+# Show current version information
+./radmin-cli version
+
+# Set new version across all components (automated)
+./radmin-cli version set 2.0.0  # Updates pom.xml, backend, CLI, and syncs all
+
+# Manual sync (usually not needed)
 ./radmin-cli version sync
 
 # Build with version tagging (automatically syncs versions)
@@ -1148,6 +1155,20 @@ This project uses a unified versioning system where the main `pom.xml` serves as
 
 ### Changing Version & Automated Releases
 
+#### **🚀 New Streamlined Process (Recommended)**
+
+```bash
+# Single command to update everything
+./radmin-cli version set 2.0.0
+
+# Commit and push to main branch
+git add .
+git commit -m "bump: version 2.0.0"
+git push origin main
+```
+
+#### **📝 Manual Process (Alternative)**
+
 ```bash
 # Update version in main pom.xml
 mvn versions:set -DnewVersion=2.0.0
@@ -1159,17 +1180,19 @@ mvn versions:set -DnewVersion=2.0.0
 git add .
 git commit -m "chore: bump version to 2.0.0"
 git push origin main
-
-# 🚀 Automatic Release Process:
-# When a version change is detected in main branch:
-# 1. Creates git tag (v2.0.0)
-# 2. Builds JAR file (rabbitmq-admin-2.0.0.jar)
-# 3. Builds and pushes Docker image (alegon/rabbitmq-admin:2.0.0)
-# 4. Creates GitHub release with JAR asset
-# 5. Updates latest Docker tag (alegon/rabbitmq-admin:latest)
 ```
 
-**✨ No manual release commands needed!** Simply merge version changes to main branch and the CI/CD pipeline automatically creates releases.
+#### **🤖 Automatic Release Process**
+
+When a version change is detected in main branch:
+1. **Creates git tag** (v2.0.0)
+2. **Builds JAR file** (rabbitmq-admin-2.0.0.jar) 
+3. **Builds optimized Docker image** (~3min instead of ~17min)
+4. **Pushes to Docker Hub** (alegon/rabbitmq-admin:2.0.0)
+5. **Creates GitHub release** with JAR asset
+6. **Updates latest tag** (alegon/rabbitmq-admin:latest)
+
+**✨ No manual release commands needed!** Simply use `./radmin-cli version set <version>` and merge to main branch.
 
 ## 🏛️ Architecture & Design
 

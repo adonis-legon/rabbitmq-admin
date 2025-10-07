@@ -4,8 +4,10 @@ Simple Docker setup for RabbitMQ Admin.
 
 ## Files
 
-- `Dockerfile` - Multi-stage build for the application
+- `Dockerfile` - Multi-stage build for local development
+- `Dockerfile.release` - Optimized build for CI/CD releases (uses pre-built JAR)
 - `docker-compose.yml` - Local development with database
+- `docker-compose.prod.yml` - Production deployment configuration
 - `.env.example` - Environment variables template
 - `init-db.sql` - Database initialization script
 
