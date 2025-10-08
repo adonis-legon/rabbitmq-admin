@@ -17,7 +17,7 @@ set -e
 APP_URL="${APP_URL:-http://localhost:8080}"
 RABBITMQ_URL="${RABBITMQ_URL:-http://localhost:15672}"
 RABBITMQ_USER="${RABBITMQ_USER:-admin}"
-RABBITMQ_PASS="${RABBITMQ_PASS:-admin123}"
+RABBITMQ_PASS="${RABBITMQ_PASS:-admin123!}"
 TEST_USER="${TEST_USER:-admin}"
 TEST_PASS="${TEST_PASS:-admin}"
 

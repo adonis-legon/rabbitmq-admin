@@ -161,8 +161,19 @@ set_version() {
     rm -f "${0}.bak"
     echo "   ✓ CLI version updated"
     
-    # 5. Sync all other components
-    log "${CYAN}5. Syncing versions across all components...${NC}"
+    # 5. Update Docker README version
+    log "${CYAN}5. Updating README-docker.md version...${NC}"
+    if [ -f "README-docker.md" ]; then
+        # Update the current version tag in the Available Tags section
+        sed -i.bak "s|- \`[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\` - Current version|- \`$NEW_VERSION\` - Current version|" README-docker.md
+        rm -f README-docker.md.bak
+        echo "   ✓ Docker README version updated"
+    else
+        log "${YELLOW}⚠${NC} Warning: README-docker.md not found"
+    fi
+    
+    # 6. Sync all other components
+    log "${CYAN}6. Syncing versions across all components...${NC}"
     sync_versions
     
     echo

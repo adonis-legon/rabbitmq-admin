@@ -24,7 +24,7 @@ docker run -d \
   alegon/rabbitmq-admin:latest
 ```
 
-**Default Access**: http://localhost:8080 (admin/admin123)
+**Default Access**: http://localhost:8080 (admin/admin123!)
 
 ## 🚀 Features
 
@@ -63,7 +63,7 @@ docker run -d \
 ## 🔐 Default Credentials
 
 - **Username**: `admin`
-- **Password**: `admin123`
+- **Password**: `admin123!`
 
 *Change these immediately in production!*
 
@@ -111,8 +111,7 @@ volumes:
 ## 🏷️ Available Tags
 
 - `latest` - Latest stable release
-- `0.1.2` - Current version
-- `main` - Development builds
+- `0.1.0` - Current version
 
 ## 📊 Health Checks
 

@@ -22,6 +22,13 @@ if [ -f "frontend/package.json" ]; then
     rm -f frontend/package.json.bak
 fi
 
+# Update Docker README version
+if [ -f "README-docker.md" ]; then
+    echo "Updating README-docker.md version to $MAIN_VERSION"
+    sed -i.bak "s|- \`[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\` - Current version|- \`$MAIN_VERSION\` - Current version|" README-docker.md
+    rm -f README-docker.md.bak
+fi
+
 # Verify versions are in sync
 echo ""
 echo "Version verification:"
@@ -30,6 +37,11 @@ echo "Main pom.xml: $MAIN_VERSION"
 if [ -f "frontend/package.json" ]; then
     FRONTEND_VERSION=$(grep '"version"' frontend/package.json | sed 's/.*"version": "\(.*\)".*/\1/')
     echo "Frontend package.json: $FRONTEND_VERSION"
+fi
+
+if [ -f "README-docker.md" ]; then
+    DOCKER_README_VERSION=$(grep -o '`[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*` - Current version' README-docker.md | grep -o '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*')
+    echo "Docker README: $DOCKER_README_VERSION"
 fi
 
 echo ""
