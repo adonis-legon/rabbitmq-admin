@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 
 # Project info
 PROJECT_NAME="RabbitMQ Admin"
-VERSION="0.1.0"
+VERSION="0.1.1"
 
 log() {
     echo -e "$(date '+%Y-%m-%d %H:%M:%S') - $1"
