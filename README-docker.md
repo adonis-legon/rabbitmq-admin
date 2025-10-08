@@ -111,7 +111,7 @@ volumes:
 ## 🏷️ Available Tags
 
 - `latest` - Latest stable release
-- `0.1.1` - Current version
+- `0.1.0` - Current version
 
 ## 📊 Health Checks
 
