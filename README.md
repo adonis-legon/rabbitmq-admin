@@ -26,7 +26,7 @@ docker run -d \
   alegon/rabbitmq-admin:latest
 ```
 
-**Default Access**: http://localhost:8080 (admin/admin123)
+**Default Access**: http://localhost:8080 (admin/admin123!)
 
 ## 📑 Table of Contents
 

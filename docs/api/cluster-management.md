@@ -182,7 +182,7 @@ Creates a new cluster connection with optional user assignments.
   "name": "Development Cluster",
   "apiUrl": "http://localhost:15672",
   "username": "admin",
-  "password": "admin123",
+  "password": "admin123!",
   "description": "Local development cluster",
   "active": true,
   "assignedUserIds": ["user-123", "user-456"]
@@ -301,7 +301,7 @@ Tests connectivity to a RabbitMQ Management API with provided credentials.
 {
   "apiUrl": "http://localhost:15672",
   "username": "admin",
-  "password": "admin123"
+  "password": "admin123!"
 }
 ```
 
@@ -876,7 +876,7 @@ curl -X POST \
   -d '{
     "apiUrl": "http://localhost:15672",
     "username": "admin",
-    "password": "admin123"
+    "password": "admin123!"
   }' \
   http://localhost:8080/api/clusters/test
 
