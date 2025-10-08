@@ -298,8 +298,8 @@ jobs:
           username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: ${{ vars.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
-          short-description: "A comprehensive web application for managing RabbitMQ clusters with authentication, authorization, and multi-cluster support."
-          readme-filepath: ./README.md
+          short-description: "Web application for managing RabbitMQ clusters with auth and multi-cluster support."
+          readme-filepath: ./README-docker.md
           enable-url-completion: true # Enable better URL handling
         env:
           DOCKERHUB_USERNAME: ${{ vars.DOCKER_USERNAME }}
