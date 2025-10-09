@@ -36,6 +36,11 @@ This directory contains the core automation scripts for the RabbitMQ Admin proje
   - **NOT part of CI/CD pipeline** (too slow and potentially flaky)
   - Use for: local development, manual validation, pre-release verification
 
+- **`test-multiarch-build.sh`** - Test multi-architecture Docker builds locally
+  - Validates AMD64 and ARM64 Docker image builds
+  - Requires Docker BuildKit and buildx
+  - Useful for testing before CI/CD deployment
+
 ### Version Management
 
 - **`sync-versions.sh`** - Synchronize versions across all components from main pom.xml

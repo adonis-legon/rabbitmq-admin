@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-admin
+  namespace: rabbitmq-admin
+  labels:
+    app: rabbitmq-admin
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-admin
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-admin
+        version: v1
+    spec:
+      containers:
+        - name: rabbitmq-admin
+          image: alegon/rabbitmq-admin:latest
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "production"
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-secrets
+                  key: DATABASE_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-secrets
+                  key: DATABASE_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-secrets
+                  key: DATABASE_PASSWORD
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-admin-secrets
+                  key: JWT_SECRET_KEY
+            - name: SERVER_PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        fsGroup: 1000
+      restartPolicy: Always

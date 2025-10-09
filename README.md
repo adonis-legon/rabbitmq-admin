@@ -963,60 +963,48 @@ chmod +x deploy-prod.sh
 
 #### Using Kubernetes
 
-```yaml
-# deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: rabbitmq-admin
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: rabbitmq-admin
-  template:
-    metadata:
-      labels:
-        app: rabbitmq-admin
-    spec:
-      containers:
-        - name: rabbitmq-admin
-          image: username/rabbitmq-admin:latest
-          ports:
-            - containerPort: 8080
-          env:
-            - name: SPRING_PROFILES_ACTIVE
-              value: "production"
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-admin-secrets
-                  key: database-url
-            - name: JWT_SECRET_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-admin-secrets
-                  key: jwt-secret
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "500m"
-            limits:
-              memory: "2Gi"
-              cpu: "1000m"
-          livenessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
+For comprehensive Kubernetes deployment with manifests, secrets management, and automated deployment scripts, see the **[kubernetes/](kubernetes/)** directory.
+
+**Quick Start:**
+```bash
+# Navigate to kubernetes directory
+cd kubernetes
+
+# Copy environment template
+cp .env.template .env.dev
+
+# Edit with your database credentials and JWT secret
+nano .env.dev
+
+# Deploy to your cluster
+./deploy.sh dev
+
+# Access the application
+kubectl port-forward svc/rabbitmq-admin-service -n rabbitmq-admin 8080:8080
 ```
+
+**Features:**
+- 📦 Complete Kubernetes manifests (Namespace, Secret, Deployment, Service, Ingress)
+- 🔧 Automated deployment script with environment-specific configuration
+- 🔐 Secure secrets management from `.env` files
+- 📊 Built-in health checks and resource limits
+- 🚀 Single-command deployment to any environment
+- 📚 Comprehensive documentation and troubleshooting guide
+
+**Directory Structure:**
+```
+kubernetes/
+├── README.md              # Comprehensive deployment guide
+├── deploy.sh              # Automated deployment script
+├── .env.template          # Environment configuration template
+├── namespace.yaml         # Kubernetes namespace
+├── secret.yaml            # Secrets template
+├── deployment.yaml        # Application deployment (1 replica)
+├── service.yaml           # ClusterIP service
+└── ingress.yaml           # Ingress configuration
+```
+
+For detailed instructions, configuration options, and troubleshooting, see **[kubernetes/README.md](kubernetes/README.md)**.
 
 ### ✅ Pre-deployment Checklist
 

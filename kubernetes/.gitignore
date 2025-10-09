@@ -1,0 +1,15 @@
+# Environment files - DO NOT COMMIT
+.env.*
+!.env.template
+
+# Temporary files
+*.tmp
+*.log
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

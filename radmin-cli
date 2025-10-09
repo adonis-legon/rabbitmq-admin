@@ -61,6 +61,9 @@ show_help() {
     echo "  version set <version>     Set new version across all components"
     echo "  version sync              Sync versions across all components"
     echo ""
+    echo -e "${GREEN}Test Commands:${NC}"
+    echo "  test multiarch            Test multi-architecture Docker build"
+    echo ""
     echo -e "${GREEN}Utility Commands:${NC}"
     echo "  help                      Show this help message"
     echo ""
@@ -249,6 +252,25 @@ case $COMMAND in
                 ;;
         esac
         ;;
+    test)
+        case $SUBCOMMAND in
+            multiarch)
+                shift 2
+                ./scripts/test-multiarch-build.sh "$@"
+                ;;
+            "")
+                log "${RED}✗${NC} Test command requires a subcommand"
+                echo "Available: multiarch"
+                echo "Use '$0 help' for more information"
+                exit 1
+                ;;
+            *)
+                log "${RED}✗${NC} Unknown test subcommand: $SUBCOMMAND"
+                echo "Available: multiarch"
+                exit 1
+                ;;
+        esac
+        ;;
     version)
         case $SUBCOMMAND in
             set)
@@ -283,7 +305,7 @@ case $COMMAND in
     *)
         log "${RED}✗${NC} Unknown command: $COMMAND"
         echo ""
-        echo "Available commands: build, run, deploy, version, help"
+        echo "Available commands: build, run, deploy, test, version, help"
         echo "Use '$0 help' for more information"
         exit 1
         ;;
