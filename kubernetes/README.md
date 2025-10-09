@@ -33,12 +33,17 @@ The deployment consists of:
    
    Fill in your database connection details and JWT secret key.
 
-3. **Deploy to your cluster:**
+3. **Validate your setup (optional):**
+   ```bash
+   ./validate.sh dev
+   ```
+
+4. **Deploy to your cluster:**
    ```bash
    ./deploy.sh dev
    ```
 
-4. **Access the application:**
+5. **Access the application:**
    ```bash
    # Port forward for local access
    kubectl port-forward svc/rabbitmq-admin-service -n rabbitmq-admin 8080:8080
@@ -86,13 +91,22 @@ JWT_SECRET_KEY=$(openssl rand -base64 32)
    - Set appropriate file permissions: `chmod 600 .env.*`
    - Store securely in production environments
 
-## 📁 Manifest Files
+## 📁 Files Overview
 
+### Manifest Files
 - `namespace.yaml` - Creates the rabbitmq-admin namespace
 - `secret.yaml` - Template for secrets (values injected by deploy script)
 - `deployment.yaml` - Application deployment with 1 replica
 - `service.yaml` - ClusterIP service
 - `ingress.yaml` - Ingress configuration (customize for your ingress controller)
+
+### Scripts and Configuration
+- `deploy.sh` - Automated deployment script with environment support
+- `validate.sh` - Validation script to check setup before deployment
+- `.env.template` - Environment configuration template
+- `.env.dev.example` - Sample development environment file
+- `.gitignore` - Prevents committing sensitive environment files
+- `README.md` - This comprehensive guide
 
 ## 🔧 Customization
 
@@ -138,6 +152,14 @@ spec:
 ```
 
 ## 🛠️ Deployment Commands
+
+### Validate Setup (Recommended)
+
+```bash
+# Validate configuration before deployment
+./validate.sh dev        # Check development environment
+./validate.sh prod       # Check production environment
+```
 
 ### Deploy to Different Environments
 

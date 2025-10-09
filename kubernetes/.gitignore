@@ -1,6 +1,7 @@
 # Environment files - DO NOT COMMIT
 .env.*
 !.env.template
+!.env.*.example
 
 # Temporary files
 *.tmp
