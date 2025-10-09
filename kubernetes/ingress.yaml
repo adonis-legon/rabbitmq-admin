@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rabbitmq-admin-ingress
+  namespace: rabbitmq-admin
+  labels:
+    app: rabbitmq-admin
+  annotations:
+    # Uncomment and configure based on your ingress controller
+    # kubernetes.io/ingress.class: "nginx"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  # Uncomment and configure TLS if needed
+  # tls:
+  #   - hosts:
+  #       - rabbitmq-admin.yourdomain.com
+  #     secretName: rabbitmq-admin-tls
+  rules:
+    - host: rabbitmq-admin.local  # Change this to your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rabbitmq-admin-service
+                port:
+                  number: 8080
