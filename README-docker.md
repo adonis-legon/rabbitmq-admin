@@ -42,12 +42,25 @@ docker run -d \
 - **Docker 24+**
 - **PostgreSQL 15+**
 - **Memory**: 512MB minimum, 1GB recommended
+- **Architecture**: AMD64 (x86_64) and ARM64 (aarch64) supported
 
 ### Development
 - **Java 21+**
 - **Node.js 20+**
 - **Maven 3.9+**
 - **PostgreSQL 15+**
+
+## 🏗️ Multi-Architecture Support
+
+This Docker image supports multiple architectures:
+- **AMD64** (x86_64) - Intel/AMD processors
+- **ARM64** (aarch64) - Apple Silicon (M1/M2), AWS Graviton, etc.
+
+Docker will automatically pull the correct image for your platform:
+```bash
+# Works on both Intel and Apple Silicon Macs, Linux ARM64, etc.
+docker run alegon/rabbitmq-admin:latest
+```
 
 ## ⚙️ Environment Variables
 
