@@ -103,8 +103,7 @@ JWT_SECRET_KEY=$(openssl rand -base64 32)
 ### Scripts and Configuration
 - `deploy.sh` - Automated deployment script with environment support
 - `validate.sh` - Validation script to check setup before deployment
-- `.env.template` - Environment configuration template
-- `.env.dev.example` - Sample development environment file
+- `.env.template` - Environment configuration template with examples
 - `.gitignore` - Prevents committing sensitive environment files
 - `README.md` - This comprehensive guide
 

@@ -18,7 +18,7 @@ spec:
   #       - rabbitmq-admin.yourdomain.com
   #     secretName: rabbitmq-admin-tls
   rules:
-    - host: rabbitmq-admin.local  # Change this to your domain
+    - host: rabbitmq-admin.local # Change this to your domain
       http:
         paths:
           - path: /
