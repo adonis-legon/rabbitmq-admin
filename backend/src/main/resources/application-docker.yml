@@ -28,5 +28,6 @@ app:
 logging:
   level:
     "[com.rabbitmq.admin]": INFO
+    "[com.rabbitmq.admin.security]": INFO
     "[org.springframework.security]": INFO
     "[org.flywaydb]": INFO
