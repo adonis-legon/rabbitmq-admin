@@ -9,10 +9,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Default environment
-ENVIRONMENT=${1:-dev}
+# Default values
+ENVIRONMENT="dev"
 NAMESPACE="rabbitmq-admin"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+AUTO_PORT_FORWARD=false
+PORT_FORWARD_PORT=8080
 
 # Function to print colored output
 print_status() {
@@ -72,6 +74,11 @@ load_env_file() {
         exit 1
     fi
     
+    # Set defaults for configuration variables if not provided
+    AUDIT_WRITE_OPERATIONS_ENABLED=${AUDIT_WRITE_OPERATIONS_ENABLED:-true}
+    SERVER_PORT=${SERVER_PORT:-8080}
+    SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-production,docker}
+    
     print_success "Environment variables loaded successfully"
 }
 
@@ -96,6 +103,21 @@ create_secret() {
     print_success "Secret created/updated successfully"
 }
 
+# Function to create or update the ConfigMap
+create_configmap() {
+    print_status "Creating/updating Kubernetes ConfigMap..."
+    
+    # Create ConfigMap with actual values
+    kubectl create configmap rabbitmq-admin-config \
+        --namespace="$NAMESPACE" \
+        --from-literal=AUDIT_WRITE_OPERATIONS_ENABLED="$AUDIT_WRITE_OPERATIONS_ENABLED" \
+        --from-literal=SERVER_PORT="$SERVER_PORT" \
+        --from-literal=SPRING_PROFILES_ACTIVE="$SPRING_PROFILES_ACTIVE" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    
+    print_success "ConfigMap created/updated successfully"
+}
+
 # Function to deploy the application
 deploy_application() {
     print_status "Deploying RabbitMQ Admin to Kubernetes..."
@@ -103,8 +125,9 @@ deploy_application() {
     # Apply all manifests
     kubectl apply -f "${SCRIPT_DIR}/namespace.yaml"
     
-    # Create secret
+    # Create secret and ConfigMap
     create_secret
+    create_configmap
     
     # Apply other manifests
     kubectl apply -f "${SCRIPT_DIR}/deployment.yaml"
@@ -159,6 +182,84 @@ show_access_info() {
     print_warning "Change these credentials immediately after first login!"
 }
 
+# Function to prompt and setup port forwarding
+setup_port_forward() {
+    echo ""
+    print_status "Port Forwarding Setup"
+    echo ""
+    
+    local LOCAL_PORT
+    local START_PORT_FORWARD=false
+    
+    # Check if auto port forwarding is enabled
+    if [[ "$AUTO_PORT_FORWARD" == "true" ]]; then
+        START_PORT_FORWARD=true
+        LOCAL_PORT="$PORT_FORWARD_PORT"
+        print_status "Auto port forwarding enabled on port $LOCAL_PORT"
+    else
+        # Ask user if they want to setup port forwarding
+        read -p "Do you want to set up port forwarding now? (y/N): " -n 1 -r
+        echo ""
+        
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            START_PORT_FORWARD=true
+            # Ask for local port with default
+            echo ""
+            read -p "Enter local port to use (default: 8080): " LOCAL_PORT
+            LOCAL_PORT=${LOCAL_PORT:-8080}
+            
+            # Validate port number
+            if ! [[ "$LOCAL_PORT" =~ ^[0-9]+$ ]] || [ "$LOCAL_PORT" -lt 1 ] || [ "$LOCAL_PORT" -gt 65535 ]; then
+                print_error "Invalid port number. Using default port 8080."
+                LOCAL_PORT=8080
+            fi
+        fi
+    fi
+    
+    if [[ "$START_PORT_FORWARD" == "true" ]]; then
+        # Check if port is already in use
+        if lsof -Pi :$LOCAL_PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
+            print_warning "Port $LOCAL_PORT is already in use!"
+            if [[ "$AUTO_PORT_FORWARD" == "true" ]]; then
+                print_error "Cannot start auto port forwarding on port $LOCAL_PORT (already in use)."
+                print_status "You can manually start port forwarding later with:"
+                echo "kubectl port-forward svc/rabbitmq-admin-service -n $NAMESPACE <local-port>:8080"
+                return
+            else
+                read -p "Do you want to use a different port? (Y/n): " -n 1 -r
+                echo ""
+                
+                if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+                    read -p "Enter alternative port: " LOCAL_PORT
+                    LOCAL_PORT=${LOCAL_PORT:-8081}
+                    
+                    if lsof -Pi :$LOCAL_PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
+                        print_error "Port $LOCAL_PORT is also in use. Please stop the process or choose another port."
+                        print_status "You can manually start port forwarding later with:"
+                        echo "kubectl port-forward svc/rabbitmq-admin-service -n $NAMESPACE <local-port>:8080"
+                        return
+                    fi
+                else
+                    print_status "Continuing with port $LOCAL_PORT (may conflict with existing service)"
+                fi
+            fi
+        fi
+        
+        echo ""
+        print_status "Starting port forwarding on localhost:$LOCAL_PORT -> service:8080"
+        print_status "Press Ctrl+C to stop port forwarding"
+        print_success "Application will be available at: http://localhost:$LOCAL_PORT"
+        echo ""
+        
+        # Start port forwarding in foreground
+        kubectl port-forward svc/rabbitmq-admin-service -n "$NAMESPACE" "$LOCAL_PORT:8080"
+    else
+        echo ""
+        print_status "Port forwarding skipped. You can start it manually with:"
+        echo "kubectl port-forward svc/rabbitmq-admin-service -n $NAMESPACE <local-port>:8080"
+    fi
+}
+
 # Function to show logs
 show_logs() {
     print_status "Recent application logs:"
@@ -187,28 +288,75 @@ main() {
     echo ""
     print_success "🎉 Deployment completed successfully!"
     print_status "Monitor the deployment with: kubectl get pods -n $NAMESPACE -w"
+    
+    # Offer port forwarding setup
+    setup_port_forward
 }
 
-# Usage information
-if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-    echo "Usage: $0 [environment]"
+# Function to show usage information
+show_usage() {
+    echo "Usage: $0 [OPTIONS] [environment]"
     echo ""
     echo "Arguments:"
-    echo "  environment    Environment name (default: dev)"
-    echo "                 Looks for .env.[environment] file"
+    echo "  environment         Environment name (default: dev)"
+    echo "                      Looks for .env.[environment] file"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help          Show this help message"
+    echo "  -p, --port-forward  Automatically start port forwarding after deployment"
+    echo "  --port PORT         Specify local port for port forwarding (default: 8080)"
     echo ""
     echo "Examples:"
-    echo "  $0 dev         # Uses .env.dev"
-    echo "  $0 prod        # Uses .env.prod"
-    echo "  $0 staging     # Uses .env.staging"
+    echo "  $0 dev                    # Deploy dev environment"
+    echo "  $0 prod -p                # Deploy prod with auto port forwarding"
+    echo "  $0 staging -p --port 9090 # Deploy staging with port forwarding on port 9090"
     echo ""
     echo "Prerequisites:"
     echo "  - kubectl installed and configured"
     echo "  - Access to Kubernetes cluster"
     echo "  - Environment file (.env.[environment]) with required variables"
     echo ""
-    exit 0
-fi
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        -p|--port-forward)
+            AUTO_PORT_FORWARD=true
+            shift
+            ;;
+        --port)
+            if [[ -n $2 && $2 =~ ^[0-9]+$ ]] && [ "$2" -ge 1 ] && [ "$2" -le 65535 ]; then
+                PORT_FORWARD_PORT="$2"
+                shift 2
+            else
+                print_error "Invalid port number: $2"
+                exit 1
+            fi
+            ;;
+        -*)
+            print_error "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+        *)
+            # First non-option argument is the environment
+            if [[ -z "$ENVIRONMENT_SET" ]]; then
+                ENVIRONMENT="$1"
+                ENVIRONMENT_SET=true
+            else
+                print_error "Unexpected argument: $1"
+                show_usage
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
 
 # Run main function
-main "$@"
+main

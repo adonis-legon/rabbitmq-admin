@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-admin-config
+  namespace: rabbitmq-admin
+data:
+  # Configuration values will be injected during deployment
+  # These are placeholders - actual values will come from .env files
+  AUDIT_WRITE_OPERATIONS_ENABLED: ""
+  SERVER_PORT: "8080"
+  SPRING_PROFILES_ACTIVE: "production,docker"
