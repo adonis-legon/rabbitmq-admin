@@ -165,7 +165,7 @@ jobs:
 
       - name: Build application JAR
         run: |
-          mvn clean package -Pproduction -DskipTests
+          mvn clean package -Pproduction -DbuildFrontend=true -DskipTests
 
       - name: Extract version from pom.xml
         id: version
