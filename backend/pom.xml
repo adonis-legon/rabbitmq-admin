@@ -322,6 +322,32 @@
             <properties>
                 <skipFrontendBuild>false</skipFrontendBuild>
             </properties>
+            <build>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                        <filtering>true</filtering>
+                        <includes>
+                            <include>application*.yml</include>
+                            <include>application*.yaml</include>
+                            <include>application*.properties</include>
+                            <include>version.properties</include>
+                        </includes>
+                    </resource>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                        <filtering>false</filtering>
+                        <excludes>
+                            <exclude>application*.yml</exclude>
+                            <exclude>application*.yaml</exclude>
+                            <exclude>application*.properties</exclude>
+                            <exclude>version.properties</exclude>
+                            <!-- Exclude static resources when building with frontend to avoid conflicts -->
+                            <exclude>static/**</exclude>
+                        </excludes>
+                    </resource>
+                </resources>
+            </build>
         </profile>
         
         <!-- CI profile that skips integration tests -->
