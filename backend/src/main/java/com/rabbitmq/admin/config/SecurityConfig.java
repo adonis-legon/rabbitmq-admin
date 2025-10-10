@@ -101,7 +101,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/refresh").permitAll()
                         .requestMatchers("/api/auth/validate").permitAll()
                         .requestMatchers("/api/auth/health").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/actuator/info").permitAll()
 
                         // Static resources (frontend)
