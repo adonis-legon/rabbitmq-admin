@@ -9,6 +9,7 @@ import com.rabbitmq.admin.service.WriteAuditService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +29,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/audits")
 @Validated
+@ConditionalOnProperty(name = "app.audit.write-operations.enabled", havingValue = "true", matchIfMissing = false)
 public class AuditController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuditController.class);
