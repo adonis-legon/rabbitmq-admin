@@ -26,7 +26,7 @@ spec:
               protocol: TCP
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: "production"
+              value: "production,docker"
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 secretKeyRef:
