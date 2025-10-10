@@ -25,8 +25,23 @@ spec:
               name: http
               protocol: TCP
           env:
+            # Configuration from ConfigMap
             - name: SPRING_PROFILES_ACTIVE
-              value: "production,docker"
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-admin-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: AUDIT_WRITE_OPERATIONS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-admin-config
+                  key: AUDIT_WRITE_OPERATIONS_ENABLED
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-admin-config
+                  key: SERVER_PORT
+            # Secrets
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 secretKeyRef:
@@ -47,8 +62,6 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-admin-secrets
                   key: JWT_SECRET_KEY
-            - name: SERVER_PORT
-              value: "8080"
           livenessProbe:
             httpGet:
               path: /actuator/health
