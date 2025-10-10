@@ -51,20 +51,43 @@
         </rollingPolicy>
     </appender>
 
+    <!-- Console appenders for structured logging in containers -->
+    <appender name="AUDIT_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [AUDIT] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="PERFORMANCE_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [PERFORMANCE] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <!-- Audit logger configuration -->
     <logger name="AUDIT.com.rabbitmq.admin.service.ResourceAuditService" level="INFO" additivity="false">
-        <appender-ref ref="AUDIT_FILE"/>
+        <springProfile name="!production,!docker">
+            <appender-ref ref="AUDIT_FILE"/>
+        </springProfile>
+        <springProfile name="production,docker">
+            <appender-ref ref="AUDIT_CONSOLE"/>
+        </springProfile>
     </logger>
 
     <!-- Performance logger configuration -->
     <logger name="PERFORMANCE" level="INFO" additivity="false">
-        <appender-ref ref="PERFORMANCE_FILE"/>
+        <springProfile name="!production,!docker">
+            <appender-ref ref="PERFORMANCE_FILE"/>
+        </springProfile>
+        <springProfile name="production,docker">
+            <appender-ref ref="PERFORMANCE_CONSOLE"/>
+        </springProfile>
     </logger>
 
     <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <springProfile name="!test">
+        <springProfile name="!test,!production,!docker">
             <appender-ref ref="FILE"/>
         </springProfile>
     </root>
@@ -82,6 +105,16 @@
         <logger name="org.springframework.web" level="WARN"/>
         <logger name="org.hibernate" level="WARN"/>
         <logger name="org.springframework.boot.actuate" level="WARN"/>
+    </springProfile>
+
+    <!-- Docker/Container profile specific settings -->
+    <springProfile name="docker">
+        <logger name="com.rabbitmq.admin" level="INFO"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.springframework.web" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="org.springframework.boot.actuate" level="WARN"/>
+        <logger name="org.flywaydb" level="INFO"/>
     </springProfile>
 
     <!-- Test profile specific settings -->
