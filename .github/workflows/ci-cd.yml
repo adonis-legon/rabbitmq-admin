@@ -213,6 +213,42 @@ jobs:
           name: rabbitmq-admin-jar-${{ steps.version.outputs.version }}
           path: ./docker
 
+      - name: Verify JAR file
+        run: |
+          echo "Verifying JAR file integrity..."
+          JAR_FILE=$(find ./docker -name "rabbitmq-admin-*.jar" | head -1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "ERROR: No JAR file found!"
+            exit 1
+          fi
+          
+          echo "Found JAR file: $JAR_FILE"
+          ls -la "$JAR_FILE"
+          
+          # Check if it's a valid ZIP/JAR file
+          if ! file "$JAR_FILE" | grep -q "Java.*archive\|Zip archive"; then
+            echo "ERROR: File is not a valid JAR archive!"
+            file "$JAR_FILE"
+            exit 1
+          fi
+          
+          # Check for manifest
+          if ! unzip -l "$JAR_FILE" | grep -q "META-INF/MANIFEST.MF"; then
+            echo "ERROR: JAR file missing manifest!"
+            unzip -l "$JAR_FILE" | head -20
+            exit 1
+          fi
+          
+          # Check for main class in manifest
+          if ! unzip -p "$JAR_FILE" META-INF/MANIFEST.MF | grep -q "Main-Class"; then
+            echo "ERROR: JAR manifest missing Main-Class attribute!"
+            unzip -p "$JAR_FILE" META-INF/MANIFEST.MF
+            exit 1
+          fi
+          
+          echo "JAR file verification passed!"
+          unzip -p "$JAR_FILE" META-INF/MANIFEST.MF | grep "Main-Class"
+
       - name: Set image name for local build
         id: docker_config
         run: |
@@ -278,6 +314,42 @@ jobs:
         with:
           name: rabbitmq-admin-jar-${{ steps.version.outputs.version }}
           path: ./docker
+
+      - name: Verify JAR file
+        run: |
+          echo "Verifying JAR file integrity..."
+          JAR_FILE=$(find ./docker -name "rabbitmq-admin-*.jar" | head -1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "ERROR: No JAR file found!"
+            exit 1
+          fi
+          
+          echo "Found JAR file: $JAR_FILE"
+          ls -la "$JAR_FILE"
+          
+          # Check if it's a valid ZIP/JAR file
+          if ! file "$JAR_FILE" | grep -q "Java.*archive\|Zip archive"; then
+            echo "ERROR: File is not a valid JAR archive!"
+            file "$JAR_FILE"
+            exit 1
+          fi
+          
+          # Check for manifest
+          if ! unzip -l "$JAR_FILE" | grep -q "META-INF/MANIFEST.MF"; then
+            echo "ERROR: JAR file missing manifest!"
+            unzip -l "$JAR_FILE" | head -20
+            exit 1
+          fi
+          
+          # Check for main class in manifest
+          if ! unzip -p "$JAR_FILE" META-INF/MANIFEST.MF | grep -q "Main-Class"; then
+            echo "ERROR: JAR manifest missing Main-Class attribute!"
+            unzip -p "$JAR_FILE" META-INF/MANIFEST.MF
+            exit 1
+          fi
+          
+          echo "JAR file verification passed!"
+          unzip -p "$JAR_FILE" META-INF/MANIFEST.MF | grep "Main-Class"
 
       - name: Extract metadata
         id: meta
