@@ -148,6 +148,7 @@
     </dependencies>
 
     <build>
+        <finalName>rabbitmq-admin-${project.version}</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -249,7 +250,6 @@
                 </executions>
                 <configuration>
                     <mainClass>com.rabbitmq.admin.RabbitMQAdminApplication</mainClass>
-                    <finalName>rabbitmq-admin-${project.version}</finalName>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
@@ -415,7 +415,6 @@
                                 </exclude>
                             </excludes>
                             <!-- Production optimizations -->
-                            <executable>true</executable>
                             <layers>
                                 <enabled>true</enabled>
                             </layers>
