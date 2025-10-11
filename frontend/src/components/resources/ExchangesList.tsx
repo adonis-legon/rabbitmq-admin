@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -32,6 +32,7 @@ import {
 import { useExchanges } from "../../hooks/useExchanges";
 import { useWriteOperationNotifications } from "../../hooks/useWriteOperationNotifications";
 import { useAutoRefreshPreferences } from "../../hooks/useAutoRefreshPreferences";
+import { useVirtualHosts } from "../../hooks/useVirtualHosts";
 import { rabbitmqResourcesApi } from "../../services/api/rabbitmqResourcesApi";
 import ResourceTable from "./shared/ResourceTable";
 import ResourceFilters from "./shared/ResourceFilters";
@@ -66,6 +67,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     searchTerm: "",
     stateFilter: [],
     typeFilter: [],
+    vhost: "",
   });
 
   const { autoRefresh, refreshInterval, setAutoRefresh, setRefreshInterval } =
@@ -100,6 +102,17 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
   const { notifyExchangeDeleted, notifyOperationError } =
     useWriteOperationNotifications();
 
+  // Virtual hosts hook for vhost filtering
+  const { virtualHosts, loading: vhostsLoading } = useVirtualHosts(clusterId);
+
+  // Transform virtual hosts to filter options
+  const vhostOptions = useMemo(() => {
+    return virtualHosts.map(vhost => ({
+      value: vhost.name,
+      label: vhost.name === "/" ? "/ (default)" : vhost.name
+    }));
+  }, [virtualHosts]);
+
   const {
     data,
     loading,
@@ -124,6 +137,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         page: filters.page,
         pageSize: filters.pageSize,
         name: filters.searchTerm || undefined,
+        vhost: filters.vhost || undefined,
         useRegex: false,
       });
     }
@@ -132,6 +146,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     filters.page,
     filters.pageSize,
     filters.searchTerm,
+    filters.vhost,
     loadExchanges,
   ]);
 
@@ -151,6 +166,10 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     setFilters((prev) => ({ ...prev, page: 0, typeFilter }));
   }, []);
 
+  const handleVhostFilterChange = useCallback((vhost: string) => {
+    setFilters((prev) => ({ ...prev, page: 0, vhost }));
+  }, []);
+
   const handleClearFilters = useCallback(() => {
     setFilters({
       page: 0,
@@ -158,6 +177,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
       searchTerm: "",
       stateFilter: [],
       typeFilter: [],
+      vhost: "",
     });
   }, []);
 
@@ -559,9 +579,12 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         typeFilter={filters.typeFilter}
         onTypeFilterChange={handleTypeFilterChange}
         typeOptions={EXCHANGE_TYPE_OPTIONS}
+        vhostFilter={filters.vhost}
+        onVhostFilterChange={handleVhostFilterChange}
+        vhostOptions={vhostOptions}
         onClearFilters={handleClearFilters}
         searchPlaceholder="Search exchanges by name..."
-        disabled={loading}
+        disabled={loading || vhostsLoading}
       />
 
       <ResourceTable

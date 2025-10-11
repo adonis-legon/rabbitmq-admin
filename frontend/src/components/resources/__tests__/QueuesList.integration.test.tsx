@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -211,7 +211,11 @@ describe("QueuesList Integration Tests", () => {
       expect(
         screen.getByRole("textbox", { name: /queue name/i })
       ).toBeInTheDocument();
-      expect(screen.getByLabelText(/virtual host/i)).toBeInTheDocument();
+
+      // Find virtual host select within the dialog
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("/ (default)")).toBeInTheDocument(); // Virtual host select
+
       expect(
         screen.getByRole("checkbox", { name: /durable/i })
       ).toBeInTheDocument();
@@ -252,7 +256,10 @@ describe("QueuesList Integration Tests", () => {
       expect(
         screen.getByRole("textbox", { name: /queue name/i })
       ).toBeInTheDocument();
-      expect(screen.getByLabelText(/virtual host/i)).toBeInTheDocument();
+
+      // Verify virtual host field is present within the dialog
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("/ (default)")).toBeInTheDocument(); // Virtual host select
     });
 
     it("validates required fields before submission", async () => {
@@ -275,8 +282,9 @@ describe("QueuesList Integration Tests", () => {
       expect(nameInput).toBeInTheDocument();
       expect(nameInput).toBeRequired();
 
-      // Verify virtual host field is present
-      expect(screen.getByLabelText(/virtual host/i)).toBeInTheDocument();
+      // Verify virtual host field is present within the dialog
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("/ (default)")).toBeInTheDocument(); // Virtual host select
     });
   });
 

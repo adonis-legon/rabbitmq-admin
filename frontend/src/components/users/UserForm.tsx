@@ -127,7 +127,7 @@ const UserForm: React.FC<UserFormProps> = ({
       )
     ) {
       newErrors.password =
-        "Password must contain uppercase, lowercase, number, and special character";
+        "Password must contain uppercase, lowercase, number, and special character (@$!%*?&)";
     }
 
     if (!formData.role) {
@@ -171,8 +171,7 @@ const UserForm: React.FC<UserFormProps> = ({
       }
 
       success(
-        `User "${savedUser.username}" ${
-          isEditing ? "updated" : "created"
+        `User "${savedUser.username}" ${isEditing ? "updated" : "created"
         } successfully`
       );
       onSuccess(savedUser);
@@ -191,8 +190,7 @@ const UserForm: React.FC<UserFormProps> = ({
       } else {
         errorMessage =
           err.response?.data?.message ||
-          `Failed to ${
-            isEditing ? "update" : "create"
+          `Failed to ${isEditing ? "update" : "create"
           } user. Please try again.`;
       }
 
@@ -205,17 +203,17 @@ const UserForm: React.FC<UserFormProps> = ({
 
   const handleInputChange =
     (field: keyof FormData) =>
-    (
-      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
-    ) => {
-      const value = event.target.value;
-      setFormData((prev) => ({ ...prev, [field]: value }));
+      (
+        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
+      ) => {
+        const value = event.target.value;
+        setFormData((prev) => ({ ...prev, [field]: value }));
 
-      // Clear error when user starts typing
-      if (errors[field]) {
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
-      }
-    };
+        // Clear error when user starts typing
+        if (errors[field]) {
+          setErrors((prev) => ({ ...prev, [field]: undefined }));
+        }
+      };
 
   const handleClusterChange = (event: any) => {
     const value = event.target.value;

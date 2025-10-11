@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -38,6 +38,7 @@ import {
 import { useQueues } from "../../hooks/useQueues";
 import { useWriteOperationNotifications } from "../../hooks/useWriteOperationNotifications";
 import { useAutoRefreshPreferences } from "../../hooks/useAutoRefreshPreferences";
+import { useVirtualHosts } from "../../hooks/useVirtualHosts";
 import { rabbitmqResourcesApi } from "../../services/api/rabbitmqResourcesApi";
 import ResourceTable from "./shared/ResourceTable";
 import ResourceFilters from "./shared/ResourceFilters";
@@ -74,6 +75,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
     searchTerm: "",
     stateFilter: [],
     typeFilter: [],
+    vhost: "",
   });
 
   const { autoRefresh, refreshInterval, setAutoRefresh, setRefreshInterval } =
@@ -114,6 +116,17 @@ export const QueuesList: React.FC<QueuesListProps> = ({
   const { notifyQueueDeleted, notifyQueuePurged, notifyOperationError } =
     useWriteOperationNotifications();
 
+  // Virtual hosts hook for vhost filtering
+  const { virtualHosts, loading: vhostsLoading } = useVirtualHosts(clusterId);
+
+  // Transform virtual hosts to filter options
+  const vhostOptions = useMemo(() => {
+    return virtualHosts.map(vhost => ({
+      value: vhost.name,
+      label: vhost.name === "/" ? "/ (default)" : vhost.name
+    }));
+  }, [virtualHosts]);
+
   const {
     data,
     loading,
@@ -134,6 +147,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
         page: filters.page,
         pageSize: filters.pageSize,
         name: filters.searchTerm || undefined,
+        vhost: filters.vhost || undefined,
         useRegex: false,
       });
     }
@@ -142,6 +156,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
     filters.page,
     filters.pageSize,
     filters.searchTerm,
+    filters.vhost,
     loadQueues,
   ]);
 
@@ -161,6 +176,10 @@ export const QueuesList: React.FC<QueuesListProps> = ({
     setFilters((prev) => ({ ...prev, page: 0, stateFilter }));
   }, []);
 
+  const handleVhostFilterChange = useCallback((vhost: string) => {
+    setFilters((prev) => ({ ...prev, page: 0, vhost }));
+  }, []);
+
   const handleClearFilters = useCallback(() => {
     setFilters({
       page: 0,
@@ -168,6 +187,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
       searchTerm: "",
       stateFilter: [],
       typeFilter: [],
+      vhost: "",
     });
   }, []);
 
@@ -667,9 +687,12 @@ export const QueuesList: React.FC<QueuesListProps> = ({
         stateFilter={filters.stateFilter}
         onStateFilterChange={handleStateFilterChange}
         stateOptions={QUEUE_STATE_OPTIONS}
+        vhostFilter={filters.vhost}
+        onVhostFilterChange={handleVhostFilterChange}
+        vhostOptions={vhostOptions}
         onClearFilters={handleClearFilters}
         searchPlaceholder="Search queues by name..."
-        disabled={loading}
+        disabled={loading || vhostsLoading}
       />
 
       <ResourceTable

@@ -68,6 +68,7 @@ export const rabbitmqResourcesApi = {
     if (params.page !== undefined) searchParams.append('page', (params.page + 1).toString());
     if (params.pageSize !== undefined) searchParams.append('pageSize', params.pageSize.toString());
     if (params.name) searchParams.append('name', params.name);
+    if (params.vhost) searchParams.append('vhost', params.vhost);
     if (params.useRegex !== undefined) searchParams.append('useRegex', params.useRegex.toString());
 
     const response = await apiClient.get<PagedResponse<RabbitMQExchange>>(
@@ -87,6 +88,7 @@ export const rabbitmqResourcesApi = {
     if (params.page !== undefined) searchParams.append('page', (params.page + 1).toString());
     if (params.pageSize !== undefined) searchParams.append('pageSize', params.pageSize.toString());
     if (params.name) searchParams.append('name', params.name);
+    if (params.vhost) searchParams.append('vhost', params.vhost);
     if (params.useRegex !== undefined) searchParams.append('useRegex', params.useRegex.toString());
 
     const response = await apiClient.get<PagedResponse<RabbitMQQueue>>(

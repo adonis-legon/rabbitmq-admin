@@ -37,6 +37,9 @@ export interface ResourceFiltersProps {
   typeFilter?: string[];
   onTypeFilterChange?: (types: string[]) => void;
   typeOptions?: FilterOption[];
+  vhostFilter?: string;
+  onVhostFilterChange?: (vhost: string) => void;
+  vhostOptions?: FilterOption[];
   customFilters?: React.ReactNode;
   onClearFilters: () => void;
   disabled?: boolean;
@@ -53,6 +56,9 @@ const ResourceFiltersComponent: React.FC<ResourceFiltersProps> = ({
   typeFilter = [],
   onTypeFilterChange,
   typeOptions = [],
+  vhostFilter = "",
+  onVhostFilterChange,
+  vhostOptions = [],
   customFilters,
   onClearFilters,
   disabled = false,
@@ -99,8 +105,13 @@ const ResourceFiltersComponent: React.FC<ResourceFiltersProps> = ({
     onTypeFilterChange?.(typeof value === "string" ? value.split(",") : value);
   };
 
+  const handleVhostFilterChange = (event: any) => {
+    const value = event.target.value;
+    onVhostFilterChange?.(value);
+  };
+
   const hasActiveFilters =
-    searchTerm || stateFilter.length > 0 || typeFilter.length > 0;
+    searchTerm || stateFilter.length > 0 || typeFilter.length > 0 || vhostFilter;
 
   const handleClearSearch = () => {
     setSearchValue("");
@@ -153,6 +164,7 @@ const ResourceFiltersComponent: React.FC<ResourceFiltersProps> = ({
         {showAdvancedFilters &&
           (stateOptions.length > 0 ||
             typeOptions.length > 0 ||
+            vhostOptions.length > 0 ||
             customFilters) && (
             <Tooltip title="Advanced filters">
               <IconButton
@@ -270,6 +282,30 @@ const ResourceFiltersComponent: React.FC<ResourceFiltersProps> = ({
               </FormControl>
             )}
 
+            {/* Virtual Host filter */}
+            {vhostOptions.length > 0 && onVhostFilterChange && (
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel id="vhost-filter-label">Virtual Host</InputLabel>
+                <Select
+                  labelId="vhost-filter-label"
+                  id="vhost-filter-select"
+                  value={vhostFilter}
+                  onChange={handleVhostFilterChange}
+                  input={<OutlinedInput label="Virtual Host" />}
+                  disabled={disabled}
+                >
+                  <MenuItem value="">
+                    <em>All Virtual Hosts</em>
+                  </MenuItem>
+                  {vhostOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+
             {/* Custom filters */}
             {customFilters}
           </Box>
@@ -329,6 +365,18 @@ const ResourceFiltersComponent: React.FC<ResourceFiltersProps> = ({
                     />
                   );
                 })}
+                {vhostFilter && (
+                  <Chip
+                    label={`Virtual Host: ${vhostOptions.find((opt) => opt.value === vhostFilter)
+                        ?.label || vhostFilter
+                      }`}
+                    size="small"
+                    onDelete={() => {
+                      onVhostFilterChange?.("");
+                    }}
+                    disabled={disabled}
+                  />
+                )}
               </Box>
             </Box>
           )}
@@ -347,14 +395,17 @@ export const ResourceFilters = React.memo(
       prevProps.disabled === nextProps.disabled &&
       prevProps.searchPlaceholder === nextProps.searchPlaceholder &&
       prevProps.showAdvancedFilters === nextProps.showAdvancedFilters &&
+      prevProps.vhostFilter === nextProps.vhostFilter &&
       JSON.stringify(prevProps.stateFilter) ===
-        JSON.stringify(nextProps.stateFilter) &&
+      JSON.stringify(nextProps.stateFilter) &&
       JSON.stringify(prevProps.typeFilter) ===
-        JSON.stringify(nextProps.typeFilter) &&
+      JSON.stringify(nextProps.typeFilter) &&
       JSON.stringify(prevProps.stateOptions) ===
-        JSON.stringify(nextProps.stateOptions) &&
+      JSON.stringify(nextProps.stateOptions) &&
       JSON.stringify(prevProps.typeOptions) ===
-        JSON.stringify(nextProps.typeOptions)
+      JSON.stringify(nextProps.typeOptions) &&
+      JSON.stringify(prevProps.vhostOptions) ===
+      JSON.stringify(nextProps.vhostOptions)
     );
   }
 );

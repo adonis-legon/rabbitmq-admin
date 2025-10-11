@@ -17,6 +17,8 @@ public class PaginationRequest {
 
     private String name;
 
+    private String vhost;
+
     private boolean useRegex = false;
 
     public PaginationRequest() {
@@ -31,6 +33,14 @@ public class PaginationRequest {
         this.page = page;
         this.pageSize = pageSize;
         this.name = name;
+        this.useRegex = useRegex;
+    }
+
+    public PaginationRequest(int page, int pageSize, String name, String vhost, boolean useRegex) {
+        this.page = page;
+        this.pageSize = pageSize;
+        this.name = name;
+        this.vhost = vhost;
         this.useRegex = useRegex;
     }
 
@@ -56,6 +66,14 @@ public class PaginationRequest {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getVhost() {
+        return vhost;
+    }
+
+    public void setVhost(String vhost) {
+        this.vhost = vhost;
     }
 
     public boolean isUseRegex() {
