@@ -19,13 +19,18 @@ spec:
     spec:
       containers:
         - name: rabbitmq-admin
-          image: alegon/rabbitmq-admin:latest
+          image: alegon/rabbitmq-admin:${RABBITMQ_ADMIN_IMAGE_TAG}
           ports:
             - containerPort: 8080
               name: http
               protocol: TCP
           env:
             # Configuration from ConfigMap
+            - name: RABBITMQ_ADMIN_IMAGE_TAG
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-admin-config
+                  key: RABBITMQ_ADMIN_IMAGE_TAG
             - name: SPRING_PROFILES_ACTIVE
               valueFrom:
                 configMapKeyRef:

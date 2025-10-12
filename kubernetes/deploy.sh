@@ -110,7 +110,11 @@ create_configmap() {
     # Create ConfigMap with actual values
     kubectl create configmap rabbitmq-admin-config \
         --namespace="$NAMESPACE" \
+        --from-literal=RABBITMQ_ADMIN_IMAGE_TAG="${RABBITMQ_ADMIN_IMAGE_TAG:-latest}" \
         --from-literal=AUDIT_WRITE_OPERATIONS_ENABLED="$AUDIT_WRITE_OPERATIONS_ENABLED" \
+        --from-literal=AUDIT_RETENTION_ENABLED="${AUDIT_RETENTION_ENABLED:-true}" \
+        --from-literal=AUDIT_RETENTION_DAYS="${AUDIT_RETENTION_DAYS:-30}" \
+        --from-literal=AUDIT_RETENTION_CLEAN_SCHEDULE="${AUDIT_RETENTION_CLEAN_SCHEDULE:-0 0 2 * * ?}" \
         --from-literal=SERVER_PORT="$SERVER_PORT" \
         --from-literal=SPRING_PROFILES_ACTIVE="$SPRING_PROFILES_ACTIVE" \
         --dry-run=client -o yaml | kubectl apply -f -
@@ -129,8 +133,10 @@ deploy_application() {
     create_secret
     create_configmap
     
-    # Apply other manifests
-    kubectl apply -f "${SCRIPT_DIR}/deployment.yaml"
+    # Apply other manifests with environment variable substitution
+    # Ensure RABBITMQ_ADMIN_IMAGE_TAG has a default value
+    export RABBITMQ_ADMIN_IMAGE_TAG=${RABBITMQ_ADMIN_IMAGE_TAG:-latest}
+    envsubst < "${SCRIPT_DIR}/deployment.yaml" | kubectl apply -f -
     kubectl apply -f "${SCRIPT_DIR}/service.yaml"
     kubectl apply -f "${SCRIPT_DIR}/ingress.yaml"
     

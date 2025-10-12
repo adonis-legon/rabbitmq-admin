@@ -66,12 +66,29 @@ Create environment-specific files:
 - `DATABASE_PASSWORD` - Database password
 - `JWT_SECRET_KEY` - JWT signing secret (256-bit)
 
+**Optional Variables:**
+- `RABBITMQ_ADMIN_IMAGE_TAG` - Docker image tag to deploy (default: `latest`)
+- `AUDIT_WRITE_OPERATIONS_ENABLED` - Enable audit logging (default: `true`)
+- `AUDIT_RETENTION_ENABLED` - Enable audit cleanup (default: `true`) 
+- `AUDIT_RETENTION_DAYS` - Days to retain audit records (default: `30`)
+- `AUDIT_RETENTION_CLEAN_SCHEDULE` - CRON schedule for cleanup (default: `0 0 2 * * ?`)
+
 **Example .env file:**
 ```bash
+# Container Configuration
+RABBITMQ_ADMIN_IMAGE_TAG=v1.2.0
+
+# Database Configuration  
 DATABASE_URL=jdbc:postgresql://postgres-service.database:5432/rabbitmq_admin
 DATABASE_USERNAME=rabbitmq_user
 DATABASE_PASSWORD=MySecurePassword123!
 JWT_SECRET_KEY=$(openssl rand -base64 32)
+
+# Audit Configuration
+AUDIT_WRITE_OPERATIONS_ENABLED=true
+AUDIT_RETENTION_ENABLED=true
+AUDIT_RETENTION_DAYS=30
+AUDIT_RETENTION_CLEAN_SCHEDULE=0 0 2 * * ?
 ```
 
 ### Security Best Practices

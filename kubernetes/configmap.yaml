@@ -6,6 +6,7 @@ metadata:
 data:
   # Configuration values will be injected during deployment
   # These are placeholders - actual values will come from .env files
+  RABBITMQ_ADMIN_IMAGE_TAG: "latest"
   AUDIT_WRITE_OPERATIONS_ENABLED: ""
   AUDIT_RETENTION_ENABLED: ""
   AUDIT_RETENTION_DAYS: ""
