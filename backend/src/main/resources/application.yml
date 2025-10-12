@@ -40,6 +40,10 @@ app:
       retention-days: ${AUDIT_RETENTION_DAYS:90}
       batch-size: ${AUDIT_BATCH_SIZE:100}
       async-processing: ${AUDIT_ASYNC_PROCESSING:true}
+    retention:
+      enabled: ${AUDIT_RETENTION_ENABLED:true}
+      days: ${AUDIT_RETENTION_DAYS:90}
+      clean-schedule: ${AUDIT_RETENTION_CLEAN_SCHEDULE:0 0 0 * * ?}
 
 # RabbitMQ Resource Management Configuration
 rabbitmq:

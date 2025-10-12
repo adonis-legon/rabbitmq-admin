@@ -490,6 +490,69 @@ The audit system uses the `AuditConfigurationProperties` class for type-safe con
   - Default: true
   - Validation: Must not be null
 
+### Audit Retention Configuration
+
+The audit retention system automatically cleans up old audit records to prevent unlimited database growth:
+
+```yaml
+app:
+  audit:
+    retention:
+      # Enable/disable automatic audit record cleanup
+      enabled: ${AUDIT_RETENTION_ENABLED:true}
+
+      # Number of days to retain audit records before cleanup
+      days: ${AUDIT_RETENTION_DAYS:90}
+
+      # CRON expression for cleanup schedule (daily at midnight)
+      clean-schedule: ${AUDIT_RETENTION_CLEAN_SCHEDULE:0 0 0 * * ?}
+```
+
+**Environment Variables:**
+
+- `AUDIT_RETENTION_ENABLED`: Enable/disable retention cleanup (default: true)
+- `AUDIT_RETENTION_DAYS`: Retention period in days (default: 90)
+- `AUDIT_RETENTION_CLEAN_SCHEDULE`: CRON schedule for cleanup (default: "0 0 0 * * ?")
+
+### Audit Retention Configuration Properties
+
+The audit retention system uses the `AuditRetentionConfigurationProperties` class:
+
+**Property Details:**
+
+- **enabled**: Controls whether automatic audit retention cleanup is enabled
+
+  - Type: Boolean (required)
+  - Default: true
+  - Validation: Must not be null
+
+- **days**: Number of days to retain audit records before cleanup
+
+  - Type: Integer (required)
+  - Default: 90
+  - Range: 1 to 36,500 (100 years)
+  - Validation: Must be at least 1
+
+- **clean-schedule**: CRON expression for cleanup schedule
+
+  - Type: String (required)
+  - Default: "0 0 0 * * ?" (daily at midnight)
+  - Validation: Must be a valid CRON expression
+
+**Common CRON Schedules:**
+
+- `"0 0 0 * * ?"` - Daily at midnight
+- `"0 0 2 * * ?"` - Daily at 2 AM
+- `"0 0 0 * * SUN"` - Weekly on Sunday at midnight
+- `"0 0 0 1 * ?"` - Monthly on the 1st at midnight
+
+**Retention Service Features:**
+
+- **Batch Processing**: Deletes records in batches of 1000 for optimal performance
+- **Transaction Safety**: All cleanup operations are transactional
+- **Comprehensive Logging**: Detailed logging of cleanup operations for monitoring
+- **Manual Cleanup**: Supports manual cleanup operations via `AuditRetentionService`
+
 ### Audit System Features
 
 **Tracked Operations:**
