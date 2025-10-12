@@ -28,6 +28,7 @@ class PaginationRequestTest {
         assertEquals(1, request.getPage());
         assertEquals(50, request.getPageSize());
         assertNull(request.getName());
+        assertNull(request.getVhost());
         assertFalse(request.isUseRegex());
     }
 
@@ -38,6 +39,7 @@ class PaginationRequestTest {
         assertEquals(2, request.getPage());
         assertEquals(25, request.getPageSize());
         assertNull(request.getName());
+        assertNull(request.getVhost());
         assertFalse(request.isUseRegex());
     }
 
@@ -48,6 +50,18 @@ class PaginationRequestTest {
         assertEquals(3, request.getPage());
         assertEquals(100, request.getPageSize());
         assertEquals("test-filter", request.getName());
+        assertNull(request.getVhost());
+        assertTrue(request.isUseRegex());
+    }
+
+    @Test
+    void testConstructorWithAllParametersIncludingVhost() {
+        PaginationRequest request = new PaginationRequest(3, 100, "test-filter", "/test-vhost", true);
+
+        assertEquals(3, request.getPage());
+        assertEquals(100, request.getPageSize());
+        assertEquals("test-filter", request.getName());
+        assertEquals("/test-vhost", request.getVhost());
         assertTrue(request.isUseRegex());
     }
 
@@ -113,11 +127,13 @@ class PaginationRequestTest {
         request.setPage(5);
         request.setPageSize(75);
         request.setName("filter-name");
+        request.setVhost("/test-vhost");
         request.setUseRegex(true);
 
         assertEquals(5, request.getPage());
         assertEquals(75, request.getPageSize());
         assertEquals("filter-name", request.getName());
+        assertEquals("/test-vhost", request.getVhost());
         assertTrue(request.isUseRegex());
     }
 
@@ -156,5 +172,25 @@ class PaginationRequestTest {
         // Test setting back to false
         request.setUseRegex(false);
         assertFalse(request.isUseRegex());
+    }
+
+    @Test
+    void testVhostFilter() {
+        PaginationRequest request = new PaginationRequest();
+
+        // Test default value
+        assertNull(request.getVhost());
+
+        // Test setting vhost
+        request.setVhost("/production");
+        assertEquals("/production", request.getVhost());
+
+        // Test setting to null
+        request.setVhost(null);
+        assertNull(request.getVhost());
+
+        // Test setting empty string
+        request.setVhost("");
+        assertEquals("", request.getVhost());
     }
 }

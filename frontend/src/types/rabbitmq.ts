@@ -14,6 +14,7 @@ export interface PaginationRequest {
   page?: number;
   pageSize?: number;
   name?: string;
+  vhost?: string;
   useRegex?: boolean;
 }
 
@@ -164,6 +165,7 @@ export interface ResourceFilters {
   searchTerm: string;
   stateFilter: string[];
   typeFilter: string[];
+  vhost?: string;
 }
 
 // Virtual Host Types
@@ -241,6 +243,7 @@ export interface CreateShovelRequest {
   destinationUri?: string;
   deleteAfter?: 'queue-length' | 'never';
   ackMode?: 'on-confirm' | 'on-publish' | 'no-ack';
+  sourceQueueMessageCount?: number;
 }
 
 // Error Types

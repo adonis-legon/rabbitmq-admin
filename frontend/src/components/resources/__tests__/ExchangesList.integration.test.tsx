@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -166,7 +166,11 @@ describe("ExchangesList Integration Tests", () => {
 
       // Verify all required form fields are present
       expect(screen.getByRole("textbox", { name: /exchange name/i })).toBeInTheDocument();
-      expect(screen.getByLabelText(/virtual host/i)).toBeInTheDocument();
+
+      // Find virtual host select within the dialog
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("/ (default)")).toBeInTheDocument(); // Virtual host select
+
       expect(screen.getByRole("checkbox", { name: /durable/i })).toBeInTheDocument();
       expect(screen.getByTestId("create-exchange-submit")).toBeInTheDocument();
 
@@ -199,7 +203,10 @@ describe("ExchangesList Integration Tests", () => {
 
       // Verify form fields are present
       expect(screen.getByRole("textbox", { name: /exchange name/i })).toBeInTheDocument();
-      expect(screen.getByLabelText(/virtual host/i)).toBeInTheDocument();
+
+      // Find virtual host select within the dialog
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("/ (default)")).toBeInTheDocument(); // Virtual host select
 
       // Verify submit button is present
       expect(screen.getByTestId("create-exchange-submit")).toBeInTheDocument();
@@ -226,8 +233,9 @@ describe("ExchangesList Integration Tests", () => {
       expect(nameInput).toBeInTheDocument();
       expect(nameInput).toBeRequired();
 
-      // Verify virtual host field is present
-      expect(screen.getByLabelText(/virtual host/i)).toBeInTheDocument();
+      // Verify virtual host field is present within the dialog
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText("/ (default)")).toBeInTheDocument(); // Virtual host select
 
       // Verify submit button is present and enabled initially
       const submitButton = screen.getByTestId("create-exchange-submit");

@@ -187,99 +187,24 @@ describe("AuditRecordsList", () => {
     });
   });
 
-  describe("Row Expansion", () => {
-    it("expands and collapses row details", async () => {
+  describe("Row Interaction", () => {
+    it("should not have expand column anymore", () => {
       render(<AuditRecordsList {...defaultProps} />);
 
-      // Find expand button for first record
-      const expandButton = screen.getByLabelText(
-        /expand details for CREATE_QUEUE/i
-      );
-      expect(expandButton).toBeInTheDocument();
-
-      // Click to expand
-      fireEvent.click(expandButton);
-
-      // Check that detailed view is shown
-      await waitFor(() => {
-        expect(screen.getByText("Operation Details")).toBeInTheDocument();
-        expect(screen.getByText("User Information")).toBeInTheDocument();
-        expect(screen.getByText("Cluster Information")).toBeInTheDocument();
-        expect(screen.getByText("Resource Information")).toBeInTheDocument();
-        expect(screen.getByText("Timing Information")).toBeInTheDocument();
-      });
-
-      // Check specific details
-      expect(screen.getByText("Username: admin")).toBeInTheDocument();
-      expect(screen.getByText("IP Address: 192.168.1.100")).toBeInTheDocument();
-      expect(screen.getByText("Cluster: test-cluster")).toBeInTheDocument();
-      expect(screen.getByText("Type: queue")).toBeInTheDocument();
-      expect(screen.getByText("Name: test-queue")).toBeInTheDocument();
-
-      // Check resource details JSON
-      expect(screen.getByText("Resource Details")).toBeInTheDocument();
-
-      // Click to collapse
-      const collapseButton = screen.getByLabelText(
-        /collapse details for CREATE_QUEUE/i
-      );
-      fireEvent.click(collapseButton);
-
-      // Details should be hidden
-      await waitFor(() => {
-        expect(screen.queryByText("Operation Details")).not.toBeInTheDocument();
-      });
+      // Check that no expand buttons are present
+      expect(screen.queryByLabelText(/expand details/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/collapse details/i)).not.toBeInTheDocument();
     });
 
-    it("shows error message in expanded view for failed operations", async () => {
+    it("should not show detailed view inline anymore", () => {
       render(<AuditRecordsList {...defaultProps} />);
 
-      // Find expand button for second record (failed operation)
-      const expandButton = screen.getByLabelText(
-        /expand details for DELETE_EXCHANGE/i
-      );
-      fireEvent.click(expandButton);
-
-      await waitFor(() => {
-        expect(screen.getByText("Error Details")).toBeInTheDocument();
-        expect(screen.getByText("Exchange not found")).toBeInTheDocument();
-      });
-    });
-
-    it("handles multiple expanded rows independently", async () => {
-      render(<AuditRecordsList {...defaultProps} />);
-
-      // Expand first row
-      const expandButton1 = screen.getByLabelText(
-        /expand details for CREATE_QUEUE/i
-      );
-      fireEvent.click(expandButton1);
-
-      // Expand second row
-      const expandButton2 = screen.getByLabelText(
-        /expand details for DELETE_EXCHANGE/i
-      );
-      fireEvent.click(expandButton2);
-
-      await waitFor(() => {
-        // Both should be expanded
-        const operationDetailsElements =
-          screen.getAllByText("Operation Details");
-        expect(operationDetailsElements).toHaveLength(2);
-      });
-
-      // Collapse first row
-      const collapseButton1 = screen.getByLabelText(
-        /collapse details for CREATE_QUEUE/i
-      );
-      fireEvent.click(collapseButton1);
-
-      await waitFor(() => {
-        // Only one should remain expanded
-        const operationDetailsElements =
-          screen.getAllByText("Operation Details");
-        expect(operationDetailsElements).toHaveLength(1);
-      });
+      // Check that detailed information is not shown inline
+      expect(screen.queryByText("Operation Details")).not.toBeInTheDocument();
+      expect(screen.queryByText("User Information")).not.toBeInTheDocument();
+      expect(screen.queryByText("Cluster Information")).not.toBeInTheDocument();
+      expect(screen.queryByText("Resource Information")).not.toBeInTheDocument();
+      expect(screen.queryByText("Timing Information")).not.toBeInTheDocument();
     });
   });
 
@@ -325,29 +250,26 @@ describe("AuditRecordsList", () => {
   });
 
   describe("Accessibility", () => {
-    it("has proper ARIA labels for expand buttons", () => {
+    it("should not have expand buttons anymore", () => {
       render(<AuditRecordsList {...defaultProps} />);
 
       expect(
-        screen.getByLabelText(/expand details for CREATE_QUEUE/i)
-      ).toBeInTheDocument();
+        screen.queryByLabelText(/expand details for CREATE_QUEUE/i)
+      ).not.toBeInTheDocument();
       expect(
-        screen.getByLabelText(/expand details for DELETE_EXCHANGE/i)
-      ).toBeInTheDocument();
+        screen.queryByLabelText(/expand details for DELETE_EXCHANGE/i)
+      ).not.toBeInTheDocument();
     });
 
-    it("updates ARIA labels when rows are expanded", async () => {
-      render(<AuditRecordsList {...defaultProps} />);
+    it("calls onRowClick when row is clicked for accessibility", async () => {
+      const onRowClick = vi.fn();
+      render(<AuditRecordsList {...defaultProps} onRowClick={onRowClick} />);
 
-      const expandButton = screen.getByLabelText(
-        /expand details for CREATE_QUEUE/i
-      );
-      fireEvent.click(expandButton);
+      const firstRow = screen.getByTestId("row-1");
+      fireEvent.click(firstRow);
 
       await waitFor(() => {
-        expect(
-          screen.getByLabelText(/collapse details for CREATE_QUEUE/i)
-        ).toBeInTheDocument();
+        expect(onRowClick).toHaveBeenCalledWith(mockAuditRecords[0]);
       });
     });
   });
@@ -398,18 +320,17 @@ describe("AuditRecordsList", () => {
         resourceDetails: {},
       };
 
+      const onRowClick = vi.fn();
       render(
-        <AuditRecordsList {...defaultProps} data={[recordWithEmptyDetails]} />
+        <AuditRecordsList {...defaultProps} data={[recordWithEmptyDetails]} onRowClick={onRowClick} />
       );
 
-      const expandButton = screen.getByLabelText(
-        /expand details for CREATE_QUEUE/i
-      );
-      fireEvent.click(expandButton);
+      const firstRow = screen.getByTestId("row-5");
+      fireEvent.click(firstRow);
 
       await waitFor(() => {
-        // Resource Details section should not be shown for empty details
-        expect(screen.queryByText("Resource Details")).not.toBeInTheDocument();
+        // Should call onRowClick with the record containing empty details
+        expect(onRowClick).toHaveBeenCalledWith(recordWithEmptyDetails);
       });
     });
 

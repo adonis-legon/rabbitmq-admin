@@ -130,13 +130,14 @@ public class RabbitMQResourceController {
                         @RequestParam(defaultValue = "1") @Min(value = 1, message = "Page must be at least 1") int page,
                         @RequestParam(defaultValue = "50") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 500, message = "Page size cannot exceed 500") int pageSize,
                         @RequestParam(required = false) String name,
+                        @RequestParam(required = false) String vhost,
                         @RequestParam(defaultValue = "false") boolean useRegex,
                         @AuthenticationPrincipal UserPrincipal principal) {
 
-                logger.debug("Getting exchanges for cluster {} by user {} - page: {}, pageSize: {}, name: {}, useRegex: {}",
-                                clusterId, principal.getUsername(), page, pageSize, name, useRegex);
+                logger.debug("Getting exchanges for cluster {} by user {} - page: {}, pageSize: {}, name: {}, vhost: {}, useRegex: {}",
+                                clusterId, principal.getUsername(), page, pageSize, name, vhost, useRegex);
 
-                PaginationRequest request = new PaginationRequest(page, pageSize, name, useRegex);
+                PaginationRequest request = new PaginationRequest(page, pageSize, name, vhost, useRegex);
 
                 try {
                         PagedResponse<ExchangeDto> result = resourceService
@@ -167,13 +168,14 @@ public class RabbitMQResourceController {
                         @RequestParam(defaultValue = "1") @Min(value = 1, message = "Page must be at least 1") int page,
                         @RequestParam(defaultValue = "50") @Min(value = 1, message = "Page size must be at least 1") @Max(value = 500, message = "Page size cannot exceed 500") int pageSize,
                         @RequestParam(required = false) String name,
+                        @RequestParam(required = false) String vhost,
                         @RequestParam(defaultValue = "false") boolean useRegex,
                         @AuthenticationPrincipal UserPrincipal principal) {
 
-                logger.debug("Getting queues for cluster {} by user {} - page: {}, pageSize: {}, name: {}, useRegex: {}",
-                                clusterId, principal.getUsername(), page, pageSize, name, useRegex);
+                logger.debug("Getting queues for cluster {} by user {} - page: {}, pageSize: {}, name: {}, vhost: {}, useRegex: {}",
+                                clusterId, principal.getUsername(), page, pageSize, name, vhost, useRegex);
 
-                PaginationRequest request = new PaginationRequest(page, pageSize, name, useRegex);
+                PaginationRequest request = new PaginationRequest(page, pageSize, name, vhost, useRegex);
 
                 try {
                         PagedResponse<QueueDto> result = resourceService
@@ -721,7 +723,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @PostMapping("/shovels")
-        @AuditWriteOperation(operationType = AuditOperationType.MOVE_MESSAGES_QUEUE, resourceType = "shovel", description = "Create a shovel to move messages between queues")
+        @AuditWriteOperation(operationType = AuditOperationType.MOVE_MESSAGES_QUEUE, resourceType = "shovel", description = "Create a shovel to move messages between queues", includeParameters = true)
         public ResponseEntity<Void> createShovel(
                         @PathVariable UUID clusterId,
                         @Valid @RequestBody CreateShovelRequest request,

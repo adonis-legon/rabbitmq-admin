@@ -1,27 +1,19 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useCallback, useMemo, useEffect, useState } from "react";
 import {
   Box,
   Typography,
   Chip,
   Tooltip,
-  IconButton,
-  Collapse,
-  Card,
-  CardContent,
   Alert,
   Button,
 } from "@mui/material";
 import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
   CheckCircle as SuccessIcon,
   Error as ErrorIcon,
   Warning as PartialIcon,
+  Info as InfoIcon,
   Person as UserIcon,
   Storage as ClusterIcon,
-  Category as ResourceIcon,
-  Schedule as TimeIcon,
-  Info as InfoIcon,
 } from "@mui/icons-material";
 import { GridColDef, GridRowParams, GridSortModel } from "@mui/x-data-grid";
 import {
@@ -92,25 +84,12 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
   showLocalTime = true,
   onTimestampModeChange,
 }) => {
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [internalShowLocal, setInternalShowLocal] = useState(showLocalTime);
 
   // Sync internal state with prop changes
   useEffect(() => {
     setInternalShowLocal(showLocalTime);
   }, [showLocalTime]);
-
-  const handleRowExpand = useCallback((recordId: string) => {
-    setExpandedRows((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(recordId)) {
-        newSet.delete(recordId);
-      } else {
-        newSet.add(recordId);
-      }
-      return newSet;
-    });
-  }, []);
 
   const handleRowClick = useCallback(
     (params: GridRowParams) => {
@@ -132,17 +111,7 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
     [onTimestampModeChange]
   );
 
-  // Format timestamp based on current display mode
-  const formatTimestampDisplay = useCallback(
-    (timestamp: string): string => {
-      return formatTimestamp(
-        timestamp,
-        internalShowLocal,
-        DEFAULT_TIMESTAMP_OPTIONS
-      );
-    },
-    [internalShowLocal]
-  );
+
 
 
 
@@ -183,155 +152,7 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
       .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  // Create detailed view for expanded row
-  const createDetailedView = (record: AuditRecord) => (
-    <Card sx={{ m: 1, backgroundColor: "grey.50" }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Operation Details
-        </Typography>
-
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              <UserIcon
-                fontSize="small"
-                sx={{ mr: 1, verticalAlign: "middle" }}
-              />
-              User Information
-            </Typography>
-            <Typography variant="body2">Username: {record.username}</Typography>
-            {record.clientIp && (
-              <Typography variant="body2">
-                IP Address: {record.clientIp}
-              </Typography>
-            )}
-            {record.userAgent && (
-              <Typography variant="body2" sx={{ wordBreak: "break-all" }}>
-                User Agent: {record.userAgent}
-              </Typography>
-            )}
-          </Box>
-
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              <ClusterIcon
-                fontSize="small"
-                sx={{ mr: 1, verticalAlign: "middle" }}
-              />
-              Cluster Information
-            </Typography>
-            <Typography variant="body2">
-              Cluster: {record.clusterName}
-            </Typography>
-          </Box>
-
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              <ResourceIcon
-                fontSize="small"
-                sx={{ mr: 1, verticalAlign: "middle" }}
-              />
-              Resource Information
-            </Typography>
-            <Typography variant="body2">Type: {record.resourceType}</Typography>
-            <Typography variant="body2">Name: {record.resourceName}</Typography>
-          </Box>
-
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              <TimeIcon
-                fontSize="small"
-                sx={{ mr: 1, verticalAlign: "middle" }}
-              />
-              Timing Information
-            </Typography>
-            <Typography variant="body2">
-              Timestamp: {formatTimestampDisplay(record.timestamp)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {getRelativeTime(record.timestamp)}
-            </Typography>
-            {record.createdAt && record.createdAt !== record.timestamp && (
-              <Typography variant="body2">
-                Recorded: {formatTimestampDisplay(record.createdAt)}
-              </Typography>
-            )}
-          </Box>
-        </Box>
-
-        {record.resourceDetails &&
-          Object.keys(record.resourceDetails).length > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
-                Resource Details
-              </Typography>
-              <Box
-                component="pre"
-                sx={{
-                  backgroundColor: "grey.100",
-                  p: 1,
-                  borderRadius: 1,
-                  fontSize: "0.75rem",
-                  overflow: "auto",
-                  maxHeight: 200,
-                }}
-              >
-                {JSON.stringify(record.resourceDetails, null, 2)}
-              </Box>
-            </Box>
-          )}
-
-        {record.errorMessage && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle2" color="error" gutterBottom>
-              Error Details
-            </Typography>
-            <Alert severity="error" sx={{ mt: 1 }}>
-              {record.errorMessage}
-            </Alert>
-          </Box>
-        )}
-      </CardContent>
-    </Card>
-  );
-
   const columns: GridColDef[] = useMemo(() => [
-    {
-      field: "expand",
-      headerName: "",
-      width: 50,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      renderCell: (params) => (
-        <IconButton
-          size="small"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleRowExpand(params.row.id);
-          }}
-          aria-label={`${expandedRows.has(params.row.id) ? "Collapse" : "Expand"
-            } details for ${params.row.operationType}`}
-        >
-          {expandedRows.has(params.row.id) ? (
-            <ExpandLessIcon />
-          ) : (
-            <ExpandMoreIcon />
-          )}
-        </IconButton>
-      ),
-    },
     {
       field: "timestamp",
       headerName: "Timestamp",
@@ -462,8 +283,6 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
       ),
     },
   ], [
-    expandedRows,
-    handleRowExpand,
     internalShowLocal,
     getStatusIcon
   ]);
@@ -529,13 +348,6 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
         height={height}
         disableRowSelectionOnClick={true}
       />
-
-      {/* Expanded row details */}
-      {formattedData.map((record) => (
-        <Collapse key={`${record.id}-details`} in={expandedRows.has(record.id)}>
-          {expandedRows.has(record.id) && createDetailedView(record)}
-        </Collapse>
-      ))}
     </Box>
   );
 };

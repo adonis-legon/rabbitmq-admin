@@ -1,11 +1,13 @@
 package com.rabbitmq.admin.aspect;
 
+import com.rabbitmq.admin.dto.CreateShovelRequest;
 import com.rabbitmq.admin.model.AuditOperationStatus;
 import com.rabbitmq.admin.model.AuditOperationType;
 import com.rabbitmq.admin.model.ClusterConnection;
 import com.rabbitmq.admin.model.User;
 import com.rabbitmq.admin.repository.ClusterConnectionRepository;
 import com.rabbitmq.admin.service.WriteAuditService;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -348,6 +350,15 @@ public class WriteOperationAuditAspect {
                     MethodSignature signature = (MethodSignature) joinPoint.getSignature();
                     String[] parameterNames = signature.getParameterNames();
 
+                    // Check for CreateShovelRequest to extract shovel-specific details
+                    CreateShovelRequest shovelRequest = null;
+                    for (Object arg : args) {
+                        if (arg instanceof CreateShovelRequest) {
+                            shovelRequest = (CreateShovelRequest) arg;
+                            break;
+                        }
+                    }
+
                     for (int i = 0; i < args.length && i < parameterNames.length; i++) {
                         if (args[i] != null) {
                             // Avoid including sensitive objects like User or ClusterConnection
@@ -359,6 +370,24 @@ public class WriteOperationAuditAspect {
 
                     if (!parameters.isEmpty()) {
                         details.put("parameters", parameters);
+                    }
+
+                    // For shovel operations, extract key details to top level for frontend display
+                    if (shovelRequest != null) {
+                        details.put("sourceQueue", shovelRequest.getSourceQueue());
+                        details.put("destinationQueue", shovelRequest.getDestinationQueue());
+                        details.put("vhost", shovelRequest.getVhost());
+                        details.put("shovelName", shovelRequest.getName());
+                        details.put("sourceUri", shovelRequest.getSourceUri());
+                        details.put("destinationUri", shovelRequest.getDestinationUri());
+                        details.put("deleteAfter", shovelRequest.getDeleteAfter());
+                        details.put("ackMode", shovelRequest.getAckMode());
+
+                        // Add source queue message count from the request if available
+                        Integer messageCount = shovelRequest.getSourceQueueMessageCount();
+                        if (messageCount != null) {
+                            details.put("sourceQueueMessageCount", messageCount);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -390,6 +419,22 @@ public class WriteOperationAuditAspect {
         // For primitive types and strings, return as-is
         if (value instanceof String || value instanceof Number || value instanceof Boolean) {
             return value;
+        }
+
+        // Special handling for CreateShovelRequest to extract relevant fields for audit
+        // display
+        if (value instanceof CreateShovelRequest) {
+            CreateShovelRequest request = (CreateShovelRequest) value;
+            Map<String, Object> shovelDetails = new HashMap<>();
+            shovelDetails.put("name", request.getName());
+            shovelDetails.put("vhost", request.getVhost());
+            shovelDetails.put("sourceQueue", request.getSourceQueue());
+            shovelDetails.put("destinationQueue", request.getDestinationQueue());
+            shovelDetails.put("sourceUri", request.getSourceUri());
+            shovelDetails.put("destinationUri", request.getDestinationUri());
+            shovelDetails.put("deleteAfter", request.getDeleteAfter());
+            shovelDetails.put("ackMode", request.getAckMode());
+            return shovelDetails;
         }
 
         // For collections, return size information

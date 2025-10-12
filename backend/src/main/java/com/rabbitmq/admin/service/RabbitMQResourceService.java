@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.admin.dto.*;
 import com.rabbitmq.admin.model.User;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -441,14 +442,27 @@ public class RabbitMQResourceService {
          * parameters.
          * Since RabbitMQ Management API doesn't support server-side pagination for all
          * endpoints,
-         * we implement client-side pagination.
+         * we implement client-side pagination and filtering.
          * 
          * @param allItems the complete list of items from the API
          * @param request  pagination parameters
          * @return PagedResponse with the requested page of items
          */
         private <T> PagedResponse<T> createPagedResponse(List<T> allItems, PaginationRequest request) {
-                int totalItems = allItems.size();
+                // Apply client-side filtering if specified
+                List<T> filteredItems = allItems;
+
+                // Apply name filtering
+                if (request.getName() != null && !request.getName().trim().isEmpty()) {
+                        filteredItems = filterItemsByName(filteredItems, request.getName(), request.isUseRegex());
+                }
+
+                // Apply vhost filtering
+                if (request.getVhost() != null && !request.getVhost().trim().isEmpty()) {
+                        filteredItems = filterItemsByVhost(filteredItems, request.getVhost());
+                }
+
+                int totalItems = filteredItems.size();
                 int startIndex = (request.getPage() - 1) * request.getPageSize();
                 int endIndex = Math.min(startIndex + request.getPageSize(), totalItems);
 
@@ -456,36 +470,158 @@ public class RabbitMQResourceService {
                 if (startIndex >= totalItems) {
                         pageItems = List.of(); // Empty list if page is beyond available data
                 } else {
-                        pageItems = allItems.subList(startIndex, endIndex);
+                        pageItems = filteredItems.subList(startIndex, endIndex);
                 }
 
                 return new PagedResponse<>(pageItems, request.getPage(), request.getPageSize(), totalItems);
         }
 
         /**
+         * Filters items by name using reflection to access getName() method.
+         * Supports both exact match and regex filtering.
+         * 
+         * @param items      the list of items to filter
+         * @param nameFilter the name filter string
+         * @param useRegex   whether to use regex matching
+         * @return filtered list of items
+         */
+        private <T> List<T> filterItemsByName(List<T> items, String nameFilter, boolean useRegex) {
+                if (items.isEmpty()) {
+                        return items;
+                }
+
+                try {
+                        return items.stream()
+                                        .filter(item -> {
+                                                try {
+                                                        // Use reflection to get the name field
+                                                        String itemName = getItemName(item);
+                                                        if (itemName == null) {
+                                                                return false;
+                                                        }
+
+                                                        if (useRegex) {
+                                                                return itemName.matches(nameFilter);
+                                                        } else {
+                                                                return itemName.toLowerCase()
+                                                                                .contains(nameFilter.toLowerCase());
+                                                        }
+                                                } catch (Exception e) {
+                                                        logger.warn("Failed to filter item by name: {}",
+                                                                        e.getMessage());
+                                                        return true; // Include item if filtering fails
+                                                }
+                                        })
+                                        .toList();
+                } catch (Exception e) {
+                        logger.warn("Failed to filter items by name: {}", e.getMessage());
+                        return items; // Return original list if filtering fails
+                }
+        }
+
+        /**
+         * Gets the name from an item using reflection.
+         * 
+         * @param item the item to get name from
+         * @return the name of the item, or null if not found
+         */
+        private <T> String getItemName(T item) {
+                try {
+                        // Try to get name field directly
+                        java.lang.reflect.Field nameField = item.getClass().getDeclaredField("name");
+                        nameField.setAccessible(true);
+                        Object nameValue = nameField.get(item);
+                        return nameValue != null ? nameValue.toString() : null;
+                } catch (Exception e) {
+                        try {
+                                // Try to call getName() method
+                                java.lang.reflect.Method getNameMethod = item.getClass().getMethod("getName");
+                                Object nameValue = getNameMethod.invoke(item);
+                                return nameValue != null ? nameValue.toString() : null;
+                        } catch (Exception ex) {
+                                logger.debug("Failed to get name from item of type {}: {}",
+                                                item.getClass().getSimpleName(), ex.getMessage());
+                                return null;
+                        }
+                }
+        }
+
+        /**
+         * Filters items by virtual host using reflection to access getVhost() method.
+         * 
+         * @param items       the list of items to filter
+         * @param vhostFilter the vhost filter string
+         * @return filtered list of items
+         */
+        private <T> List<T> filterItemsByVhost(List<T> items, String vhostFilter) {
+                if (items.isEmpty()) {
+                        return items;
+                }
+
+                try {
+                        return items.stream()
+                                        .filter(item -> {
+                                                try {
+                                                        // Use reflection to get the vhost field
+                                                        String itemVhost = getItemVhost(item);
+                                                        if (itemVhost == null) {
+                                                                return false;
+                                                        }
+                                                        // Exact match for vhost (case-sensitive)
+                                                        return itemVhost.equals(vhostFilter);
+                                                } catch (Exception e) {
+                                                        logger.warn("Failed to filter item by vhost: {}",
+                                                                        e.getMessage());
+                                                        return true; // Include item if filtering fails
+                                                }
+                                        })
+                                        .toList();
+                } catch (Exception e) {
+                        logger.warn("Failed to filter items by vhost: {}", e.getMessage());
+                        return items; // Return original list if filtering fails
+                }
+        }
+
+        /**
+         * Gets the vhost from an item using reflection.
+         * 
+         * @param item the item to get vhost from
+         * @return the vhost of the item, or null if not found
+         */
+        private <T> String getItemVhost(T item) {
+                try {
+                        // Try to get vhost field directly
+                        java.lang.reflect.Field vhostField = item.getClass().getDeclaredField("vhost");
+                        vhostField.setAccessible(true);
+                        Object vhostValue = vhostField.get(item);
+                        return vhostValue != null ? vhostValue.toString() : null;
+                } catch (Exception e) {
+                        try {
+                                // Try to call getVhost() method
+                                java.lang.reflect.Method getVhostMethod = item.getClass().getMethod("getVhost");
+                                Object vhostValue = getVhostMethod.invoke(item);
+                                return vhostValue != null ? vhostValue.toString() : null;
+                        } catch (Exception ex) {
+                                logger.debug("Failed to get vhost from item of type {}: {}",
+                                                item.getClass().getSimpleName(), ex.getMessage());
+                                return null;
+                        }
+                }
+        }
+
+        /**
          * Builds the API path with query parameters for pagination and filtering.
+         * RabbitMQ Management API doesn't support server-side filtering by name,
+         * so we only return the base path and implement client-side filtering.
          * 
          * @param basePath the base API path
          * @param request  pagination and filtering parameters
          * @return the complete API path with query parameters
          */
         private String buildApiPath(String basePath, PaginationRequest request) {
-                StringBuilder pathBuilder = new StringBuilder(basePath);
-                boolean hasParams = false;
-
-                // Add name filter if provided
-                if (request.getName() != null && !request.getName().trim().isEmpty()) {
-                        pathBuilder.append(hasParams ? "&" : "?");
-                        pathBuilder.append("name=").append(encodeQueryParam(request.getName()));
-                        hasParams = true;
-
-                        // Add regex flag if enabled
-                        if (request.isUseRegex()) {
-                                pathBuilder.append("&use_regex=true");
-                        }
-                }
-
-                return pathBuilder.toString();
+                // RabbitMQ Management API doesn't support name filtering
+                // We'll implement client-side filtering in createPagedResponse
+                return basePath;
         }
 
         /**
@@ -504,21 +640,6 @@ public class RabbitMQResourceService {
                 } catch (java.io.UnsupportedEncodingException e) {
                         logger.warn("Failed to encode path segment: {}", segment);
                         return segment;
-                }
-        }
-
-        /**
-         * URL encodes a query parameter value.
-         * 
-         * @param param the parameter value to encode
-         * @return the encoded parameter value
-         */
-        private String encodeQueryParam(String param) {
-                try {
-                        return java.net.URLEncoder.encode(param, "UTF-8");
-                } catch (java.io.UnsupportedEncodingException e) {
-                        logger.warn("Failed to encode query parameter: {}", param);
-                        return param;
                 }
         }
 
@@ -1017,6 +1138,38 @@ public class RabbitMQResourceService {
         }
 
         /**
+         * Gets details for a specific queue in the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name
+         * @param queueName the queue name
+         * @param user      the current authenticated user
+         * @return Mono containing queue details
+         */
+        public Mono<QueueDto> getQueueDetails(UUID clusterId, String vhost, String queueName, User user) {
+                logger.debug("Fetching queue details for {} in vhost {} for cluster {} by user {}",
+                                queueName, vhost, clusterId, user.getUsername());
+
+                String path = String.format("/api/queues/%s/%s",
+                                encodePathSegment(vhost),
+                                encodePathSegment(queueName));
+
+                // Record metrics and audit
+                metricsService.recordClusterAccess(clusterId);
+                metricsService.recordUserAccess(user.getUsername());
+
+                return proxyService.get(clusterId, path, QueueDto.class, user)
+                                .doOnSuccess(result -> {
+                                        logger.debug("Successfully fetched queue details for {} in vhost {} for cluster {}",
+                                                        queueName, vhost, clusterId);
+                                })
+                                .doOnError(error -> {
+                                        logger.error("Failed to fetch queue details for {} in vhost {} for cluster {}: {}",
+                                                        queueName, vhost, clusterId, error.getMessage());
+                                });
+        }
+
+        /**
          * Creates a shovel to move messages from one queue to another in the specified
          * RabbitMQ cluster.
          * 
@@ -1031,57 +1184,72 @@ public class RabbitMQResourceService {
                                 request.getDestinationQueue(), clusterId, user.getUsername());
 
                 Instant startTime = Instant.now();
-                String path = String.format("/api/parameters/shovel/%s/%s",
-                                encodePathSegment(request.getVhost()),
-                                encodePathSegment(request.getName()));
 
-                // Create shovel configuration for RabbitMQ Management API
-                // Force URIs to localhost for local-only shovel operations with proper
-                // credentials
-                Map<String, Object> value = new HashMap<>();
-                value.put("src-protocol", "amqp091");
-                value.put("src-uri", "amqp://admin:admin@localhost");
-                value.put("src-queue", request.getSourceQueue());
-                value.put("dest-protocol", "amqp091");
-                value.put("dest-uri", "amqp://admin:admin@localhost");
-                value.put("dest-queue", request.getDestinationQueue());
-                value.put("ack-mode", request.getAckMode());
-                value.put("delete-after", request.getDeleteAfter());
+                // The source queue message count is now provided by the frontend
 
-                // For parameters API, the body structure is different
-                Map<String, Object> body = new HashMap<>();
-                body.put("value", value);
+                return Mono.defer(() -> {
+                        String path = String.format("/api/parameters/shovel/%s/%s",
+                                        encodePathSegment(request.getVhost()),
+                                        encodePathSegment(request.getName()));
 
-                // Record metrics and audit
-                metricsService.recordClusterAccess(clusterId);
-                metricsService.recordUserAccess(user.getUsername());
+                        // Create shovel configuration for RabbitMQ Management API
+                        // Force URIs to localhost for local-only shovel operations with proper
+                        // credentials
+                        Map<String, Object> value = new HashMap<>();
+                        value.put("src-protocol", "amqp091");
+                        value.put("src-uri", "amqp://admin:admin@localhost");
+                        value.put("src-queue", request.getSourceQueue());
+                        value.put("dest-protocol", "amqp091");
+                        value.put("dest-uri", "amqp://admin:admin@localhost");
+                        value.put("dest-queue", request.getDestinationQueue());
+                        value.put("ack-mode", request.getAckMode());
+                        value.put("delete-after", request.getDeleteAfter());
 
-                Map<String, Object> auditParams = Map.of(
-                                "shovelName", request.getName(),
-                                "vhost", request.getVhost(),
-                                "sourceQueue", request.getSourceQueue(),
-                                "destinationQueue", request.getDestinationQueue());
+                        // For parameters API, the body structure is different
+                        Map<String, Object> body = new HashMap<>();
+                        body.put("value", value);
 
-                return proxyService.put(clusterId, path, body, Void.class, user)
-                                .doOnSuccess(result -> {
-                                        Duration duration = Duration.between(startTime, Instant.now());
-                                        auditService.logResourceAccess(user.getUsername(), clusterId, "shovels",
-                                                        "create",
-                                                        auditParams);
-                                        logger.debug("Successfully created shovel {} in vhost {} for cluster {} in {}ms",
-                                                        request.getName(), request.getVhost(), clusterId,
-                                                        duration.toMillis());
-                                })
-                                .doOnError(error -> {
-                                        Duration duration = Duration.between(startTime, Instant.now());
-                                        auditService.logResourceAccessFailure(user.getUsername(), clusterId, "shovels",
-                                                        "create",
-                                                        error.getMessage(), error.getClass().getSimpleName());
-                                        logger.error("Failed to create shovel {} in vhost {} for cluster {} after {}ms: {}",
-                                                        request.getName(), request.getVhost(), clusterId,
-                                                        duration.toMillis(),
-                                                        error.getMessage());
-                                });
+                        // Record metrics and audit
+                        metricsService.recordClusterAccess(clusterId);
+                        metricsService.recordUserAccess(user.getUsername());
+
+                        Map<String, Object> auditParams = Map.of(
+                                        "shovelName", request.getName(),
+                                        "vhost", request.getVhost(),
+                                        "sourceQueue", request.getSourceQueue(),
+                                        "destinationQueue", request.getDestinationQueue());
+
+                        return proxyService.put(clusterId, path, body, Void.class, user)
+                                        .doOnSuccess(result -> {
+                                                Duration duration = Duration.between(startTime,
+                                                                Instant.now());
+                                                auditService.logResourceAccess(user.getUsername(),
+                                                                clusterId, "shovels",
+                                                                "create",
+                                                                auditParams);
+                                                logger.debug("Successfully created shovel {} in vhost {} for cluster {} in {}ms",
+                                                                request.getName(), request.getVhost(),
+                                                                clusterId,
+                                                                duration.toMillis());
+
+                                        })
+                                        .doOnError(error -> {
+                                                Duration duration = Duration.between(startTime,
+                                                                Instant.now());
+                                                auditService.logResourceAccessFailure(
+                                                                user.getUsername(), clusterId,
+                                                                "shovels",
+                                                                "create",
+                                                                error.getMessage(),
+                                                                error.getClass().getSimpleName());
+                                                logger.error("Failed to create shovel {} in vhost {} for cluster {} after {}ms: {}",
+                                                                request.getName(), request.getVhost(),
+                                                                clusterId,
+                                                                duration.toMillis(),
+                                                                error.getMessage());
+
+                                        });
+                });
         }
 
         /**

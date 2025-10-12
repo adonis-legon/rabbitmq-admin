@@ -18,9 +18,10 @@ import { useClusters } from "../../hooks/useClusters";
 // TEMPORARY: Commented out to test 401 theory
 // import { useUsers } from "../../hooks/useUsers";
 import { tokenService } from "../../services/auth/tokenService";
-import { AuditFilterRequest } from "../../types/audit";
+import { AuditFilterRequest, AuditRecord } from "../../types/audit";
 import AuditFilters from "./AuditFilters";
 import AuditRecordsList from "./AuditRecordsList";
+import AuditDetailModal from "./AuditDetailModal";
 import AuditErrorBoundary from "./AuditErrorBoundary";
 import AuditErrorDisplay from "./AuditErrorDisplay";
 import AuditFallbackUI from "./AuditFallbackUI";
@@ -47,6 +48,8 @@ export const AuditPage: React.FC = () => {
   const [filterValidationErrors, setFilterValidationErrors] = useState<
     AuditFilterValidationError[]
   >([]);
+  const [selectedAuditRecord, setSelectedAuditRecord] = useState<AuditRecord | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Hooks for data fetching
   const {
@@ -176,6 +179,18 @@ export const AuditPage: React.FC = () => {
     },
     []
   );
+
+  // Handle audit record row click to open modal
+  const handleAuditRecordClick = useCallback((record: AuditRecord) => {
+    setSelectedAuditRecord(record);
+    setModalOpen(true);
+  }, []);
+
+  // Handle modal close
+  const handleModalClose = useCallback(() => {
+    setModalOpen(false);
+    setSelectedAuditRecord(null);
+  }, []);
 
   // auditError is already an AuditError from the hook, no need to convert
   const enhancedAuditError: AuditError | null = auditError;
@@ -319,6 +334,7 @@ export const AuditPage: React.FC = () => {
                 onPageChange={handlePageChange}
                 onPageSizeChange={handlePageSizeChange}
                 onSortChange={handleSortChange}
+                onRowClick={handleAuditRecordClick}
                 emptyMessage={
                   Object.keys(filters).length > 0
                     ? "No audit records found matching the current filters"
@@ -345,6 +361,14 @@ export const AuditPage: React.FC = () => {
             </Typography>
           </Paper>
         </Box>
+
+        {/* Audit Detail Modal */}
+        <AuditDetailModal
+          record={selectedAuditRecord}
+          open={modalOpen}
+          onClose={handleModalClose}
+          showLocalTime={showLocalTime}
+        />
       </AuditErrorBoundary>
     </AdminRoute>
   );
