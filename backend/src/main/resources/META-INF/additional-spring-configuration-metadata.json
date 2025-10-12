@@ -513,6 +513,24 @@
       "type": "java.lang.Boolean",
       "description": "Enable asynchronous processing of audit records to improve performance.",
       "defaultValue": true
+    },
+    {
+      "name": "app.audit.retention.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable or disable automatic cleanup of old audit records based on retention policy.",
+      "defaultValue": true
+    },
+    {
+      "name": "app.audit.retention.days",
+      "type": "java.lang.Integer",
+      "description": "Number of days to retain audit records before they are automatically deleted by the cleanup task.",
+      "defaultValue": 90
+    },
+    {
+      "name": "app.audit.retention.clean-schedule",
+      "type": "java.lang.String",
+      "description": "CRON expression for the scheduled task that cleans up old audit records. Default runs daily at midnight.",
+      "defaultValue": "0 0 0 * * ?"
     }
   ]
 }
