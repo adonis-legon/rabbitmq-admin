@@ -82,20 +82,6 @@ vi.mock("../../resources/shared/ResourceTable", () => ({
             }}
           >
             {columns.map((col: any) => {
-              if (col.field === "expand") {
-                return (
-                  <button
-                    key={col.field}
-                    data-testid={`expand-${row.id}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // This would normally be handled by the component
-                    }}
-                  >
-                    Expand
-                  </button>
-                );
-              }
 
               const cellContent = col.renderCell
                 ? col.renderCell({ row, value: row[col.field] })
@@ -173,9 +159,9 @@ describe("AuditRecordsList Integration Tests", () => {
         expect(screen.getByTestId(`row-${record.id}`)).toBeInTheDocument();
       });
 
-      // Check expand buttons are present
-      mockRecords.forEach((record) => {
-        expect(screen.getByTestId(`expand-${record.id}`)).toBeInTheDocument();
+      // Check that expand buttons are no longer present
+      mockRecords.forEach((record: AuditRecord) => {
+        expect(screen.queryByTestId(`expand-${record.id}`)).not.toBeInTheDocument();
       });
     });
 
@@ -371,14 +357,9 @@ describe("AuditRecordsList Integration Tests", () => {
     it("maintains accessibility standards across all interactions", async () => {
       render(<AuditRecordsList {...defaultProps} />);
 
-      // Check that expand buttons have proper labels
-      mockRecords.forEach((record) => {
-        const expandButton = screen.getByTestId(`expand-${record.id}`);
-        expect(expandButton).toBeInTheDocument();
-        expect(expandButton).toHaveAttribute(
-          "data-testid",
-          `expand-${record.id}`
-        );
+      // Check that expand buttons are no longer present
+      mockRecords.forEach((record: AuditRecord) => {
+        expect(screen.queryByTestId(`expand-${record.id}`)).not.toBeInTheDocument();
       });
 
       // Check that rows are clickable and have proper structure
@@ -428,10 +409,9 @@ describe("AuditRecordsList Integration Tests", () => {
       fireEvent.click(nextButton);
       expect(onPageChange).toHaveBeenCalledWith(1);
 
-      // 5. User expands a record for details
-      const expandButton = screen.getByTestId("expand-record-1");
-      fireEvent.click(expandButton);
-      // Expansion would be handled by the actual component
+      // 5. User clicks on the same record again to view details in modal
+      fireEvent.click(firstRow);
+      // Modal opening would be handled by the parent component
     });
 
     it("handles rapid user interactions gracefully", async () => {

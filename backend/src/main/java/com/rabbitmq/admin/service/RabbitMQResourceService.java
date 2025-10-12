@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.admin.dto.*;
 import com.rabbitmq.admin.model.User;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -1137,6 +1138,38 @@ public class RabbitMQResourceService {
         }
 
         /**
+         * Gets details for a specific queue in the specified RabbitMQ cluster.
+         * 
+         * @param clusterId the cluster connection ID
+         * @param vhost     the virtual host name
+         * @param queueName the queue name
+         * @param user      the current authenticated user
+         * @return Mono containing queue details
+         */
+        public Mono<QueueDto> getQueueDetails(UUID clusterId, String vhost, String queueName, User user) {
+                logger.debug("Fetching queue details for {} in vhost {} for cluster {} by user {}",
+                                queueName, vhost, clusterId, user.getUsername());
+
+                String path = String.format("/api/queues/%s/%s",
+                                encodePathSegment(vhost),
+                                encodePathSegment(queueName));
+
+                // Record metrics and audit
+                metricsService.recordClusterAccess(clusterId);
+                metricsService.recordUserAccess(user.getUsername());
+
+                return proxyService.get(clusterId, path, QueueDto.class, user)
+                                .doOnSuccess(result -> {
+                                        logger.debug("Successfully fetched queue details for {} in vhost {} for cluster {}",
+                                                        queueName, vhost, clusterId);
+                                })
+                                .doOnError(error -> {
+                                        logger.error("Failed to fetch queue details for {} in vhost {} for cluster {}: {}",
+                                                        queueName, vhost, clusterId, error.getMessage());
+                                });
+        }
+
+        /**
          * Creates a shovel to move messages from one queue to another in the specified
          * RabbitMQ cluster.
          * 
@@ -1151,57 +1184,72 @@ public class RabbitMQResourceService {
                                 request.getDestinationQueue(), clusterId, user.getUsername());
 
                 Instant startTime = Instant.now();
-                String path = String.format("/api/parameters/shovel/%s/%s",
-                                encodePathSegment(request.getVhost()),
-                                encodePathSegment(request.getName()));
 
-                // Create shovel configuration for RabbitMQ Management API
-                // Force URIs to localhost for local-only shovel operations with proper
-                // credentials
-                Map<String, Object> value = new HashMap<>();
-                value.put("src-protocol", "amqp091");
-                value.put("src-uri", "amqp://admin:admin@localhost");
-                value.put("src-queue", request.getSourceQueue());
-                value.put("dest-protocol", "amqp091");
-                value.put("dest-uri", "amqp://admin:admin@localhost");
-                value.put("dest-queue", request.getDestinationQueue());
-                value.put("ack-mode", request.getAckMode());
-                value.put("delete-after", request.getDeleteAfter());
+                // The source queue message count is now provided by the frontend
 
-                // For parameters API, the body structure is different
-                Map<String, Object> body = new HashMap<>();
-                body.put("value", value);
+                return Mono.defer(() -> {
+                        String path = String.format("/api/parameters/shovel/%s/%s",
+                                        encodePathSegment(request.getVhost()),
+                                        encodePathSegment(request.getName()));
 
-                // Record metrics and audit
-                metricsService.recordClusterAccess(clusterId);
-                metricsService.recordUserAccess(user.getUsername());
+                        // Create shovel configuration for RabbitMQ Management API
+                        // Force URIs to localhost for local-only shovel operations with proper
+                        // credentials
+                        Map<String, Object> value = new HashMap<>();
+                        value.put("src-protocol", "amqp091");
+                        value.put("src-uri", "amqp://admin:admin@localhost");
+                        value.put("src-queue", request.getSourceQueue());
+                        value.put("dest-protocol", "amqp091");
+                        value.put("dest-uri", "amqp://admin:admin@localhost");
+                        value.put("dest-queue", request.getDestinationQueue());
+                        value.put("ack-mode", request.getAckMode());
+                        value.put("delete-after", request.getDeleteAfter());
 
-                Map<String, Object> auditParams = Map.of(
-                                "shovelName", request.getName(),
-                                "vhost", request.getVhost(),
-                                "sourceQueue", request.getSourceQueue(),
-                                "destinationQueue", request.getDestinationQueue());
+                        // For parameters API, the body structure is different
+                        Map<String, Object> body = new HashMap<>();
+                        body.put("value", value);
 
-                return proxyService.put(clusterId, path, body, Void.class, user)
-                                .doOnSuccess(result -> {
-                                        Duration duration = Duration.between(startTime, Instant.now());
-                                        auditService.logResourceAccess(user.getUsername(), clusterId, "shovels",
-                                                        "create",
-                                                        auditParams);
-                                        logger.debug("Successfully created shovel {} in vhost {} for cluster {} in {}ms",
-                                                        request.getName(), request.getVhost(), clusterId,
-                                                        duration.toMillis());
-                                })
-                                .doOnError(error -> {
-                                        Duration duration = Duration.between(startTime, Instant.now());
-                                        auditService.logResourceAccessFailure(user.getUsername(), clusterId, "shovels",
-                                                        "create",
-                                                        error.getMessage(), error.getClass().getSimpleName());
-                                        logger.error("Failed to create shovel {} in vhost {} for cluster {} after {}ms: {}",
-                                                        request.getName(), request.getVhost(), clusterId,
-                                                        duration.toMillis(),
-                                                        error.getMessage());
-                                });
+                        // Record metrics and audit
+                        metricsService.recordClusterAccess(clusterId);
+                        metricsService.recordUserAccess(user.getUsername());
+
+                        Map<String, Object> auditParams = Map.of(
+                                        "shovelName", request.getName(),
+                                        "vhost", request.getVhost(),
+                                        "sourceQueue", request.getSourceQueue(),
+                                        "destinationQueue", request.getDestinationQueue());
+
+                        return proxyService.put(clusterId, path, body, Void.class, user)
+                                        .doOnSuccess(result -> {
+                                                Duration duration = Duration.between(startTime,
+                                                                Instant.now());
+                                                auditService.logResourceAccess(user.getUsername(),
+                                                                clusterId, "shovels",
+                                                                "create",
+                                                                auditParams);
+                                                logger.debug("Successfully created shovel {} in vhost {} for cluster {} in {}ms",
+                                                                request.getName(), request.getVhost(),
+                                                                clusterId,
+                                                                duration.toMillis());
+
+                                        })
+                                        .doOnError(error -> {
+                                                Duration duration = Duration.between(startTime,
+                                                                Instant.now());
+                                                auditService.logResourceAccessFailure(
+                                                                user.getUsername(), clusterId,
+                                                                "shovels",
+                                                                "create",
+                                                                error.getMessage(),
+                                                                error.getClass().getSimpleName());
+                                                logger.error("Failed to create shovel {} in vhost {} for cluster {} after {}ms: {}",
+                                                                request.getName(), request.getVhost(),
+                                                                clusterId,
+                                                                duration.toMillis(),
+                                                                error.getMessage());
+
+                                        });
+                });
         }
 
         /**

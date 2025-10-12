@@ -243,6 +243,7 @@ export interface CreateShovelRequest {
   destinationUri?: string;
   deleteAfter?: 'queue-length' | 'never';
   ackMode?: 'on-confirm' | 'on-publish' | 'no-ack';
+  sourceQueueMessageCount?: number;
 }
 
 // Error Types

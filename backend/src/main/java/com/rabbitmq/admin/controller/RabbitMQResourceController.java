@@ -723,7 +723,7 @@ public class RabbitMQResourceController {
          * @return ResponseEntity indicating success or failure
          */
         @PostMapping("/shovels")
-        @AuditWriteOperation(operationType = AuditOperationType.MOVE_MESSAGES_QUEUE, resourceType = "shovel", description = "Create a shovel to move messages between queues")
+        @AuditWriteOperation(operationType = AuditOperationType.MOVE_MESSAGES_QUEUE, resourceType = "shovel", description = "Create a shovel to move messages between queues", includeParameters = true)
         public ResponseEntity<Void> createShovel(
                         @PathVariable UUID clusterId,
                         @Valid @RequestBody CreateShovelRequest request,

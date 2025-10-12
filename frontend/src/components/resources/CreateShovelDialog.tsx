@@ -119,6 +119,11 @@ export const CreateShovelDialog: React.FC<CreateShovelDialogProps> = ({
 
         setLoading(true);
         try {
+            // Find the source queue to get its current message count
+            const sourceQueueData = queues.find(q =>
+                q.name === formData.sourceQueue && q.vhost === formData.vhost
+            );
+
             // Submit data without URI fields since they're hardcoded on the backend
             const submitData = {
                 name: formData.name,
@@ -127,6 +132,7 @@ export const CreateShovelDialog: React.FC<CreateShovelDialogProps> = ({
                 destinationQueue: formData.destinationQueue,
                 deleteAfter: formData.deleteAfter,
                 ackMode: formData.ackMode,
+                sourceQueueMessageCount: sourceQueueData?.messages || 0,
             };
 
             await rabbitmqResourcesApi.createShovel(clusterId, submitData);

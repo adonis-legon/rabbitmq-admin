@@ -37,6 +37,12 @@ public class CreateShovelRequest {
     @Pattern(regexp = "^(on-confirm|on-publish|no-ack)$", message = "Acknowledge mode must be one of: on-confirm, on-publish, no-ack")
     private String ackMode = "on-confirm";
 
+    /**
+     * The number of messages in the source queue at the time of shovel creation.
+     * This is used for audit tracking purposes.
+     */
+    private Integer sourceQueueMessageCount;
+
     public CreateShovelRequest() {
     }
 
@@ -117,6 +123,14 @@ public class CreateShovelRequest {
         this.ackMode = ackMode;
     }
 
+    public Integer getSourceQueueMessageCount() {
+        return sourceQueueMessageCount;
+    }
+
+    public void setSourceQueueMessageCount(Integer sourceQueueMessageCount) {
+        this.sourceQueueMessageCount = sourceQueueMessageCount;
+    }
+
     @Override
     public String toString() {
         return "CreateShovelRequest{" +
@@ -128,6 +142,7 @@ public class CreateShovelRequest {
                 ", destinationUri='" + destinationUri + '\'' +
                 ", deleteAfter='" + deleteAfter + '\'' +
                 ", ackMode='" + ackMode + '\'' +
+                ", sourceQueueMessageCount=" + sourceQueueMessageCount +
                 '}';
     }
 }
