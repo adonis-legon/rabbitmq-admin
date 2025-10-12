@@ -138,6 +138,154 @@ app.audit.write-operations.async-processing: true
 app.audit.write-operations.async-processing: false
 ```
 
+## Audit Retention Configuration
+
+The audit retention system automatically cleans up old audit records based on retention policies. This prevents the audit database from growing indefinitely and maintains performance.
+
+### Configuration Properties
+
+All audit retention configuration properties are under the `app.audit.retention` prefix.
+
+```yaml
+app:
+  audit:
+    retention:
+      enabled: true # Enable/disable automatic cleanup
+      days: 90 # Number of days to retain audit records
+      clean-schedule: "0 0 0 * * ?" # CRON expression for cleanup schedule
+```
+
+### Property Details
+
+#### `enabled`
+
+- **Type**: Boolean
+- **Default**: `true`
+- **Required**: Yes
+- **Description**: Controls whether automatic audit retention cleanup is enabled
+- **Environment Variable**: `AUDIT_RETENTION_ENABLED`
+
+**Valid Values**:
+
+- `true` - Enable automatic cleanup of old audit records
+- `false` - Disable automatic cleanup (manual cleanup still possible)
+
+**Examples**:
+
+```yaml
+# Enable automatic cleanup
+app.audit.retention.enabled: true
+
+# Disable automatic cleanup
+app.audit.retention.enabled: false
+```
+
+#### `days`
+
+- **Type**: Integer
+- **Default**: `90`
+- **Required**: Yes
+- **Range**: 1 to 36,500 (100 years)
+- **Description**: Number of days to retain audit records before cleanup
+- **Environment Variable**: `AUDIT_RETENTION_DAYS`
+
+**Recommendations**:
+
+- **Development**: 7-30 days
+- **Production**: 90-365 days
+- **Compliance environments**: 365+ days
+
+**Examples**:
+
+```yaml
+# Short retention for development
+app.audit.retention.days: 7
+
+# Standard production retention
+app.audit.retention.days: 90
+
+# Long-term compliance retention
+app.audit.retention.days: 365
+```
+
+#### `clean-schedule`
+
+- **Type**: String (CRON expression)
+- **Default**: `"0 0 0 * * ?"` (daily at midnight)
+- **Required**: Yes
+- **Description**: CRON expression defining when the cleanup task runs
+- **Environment Variable**: `AUDIT_RETENTION_CLEAN_SCHEDULE`
+
+**Common CRON Expressions**:
+
+- `"0 0 0 * * ?"` - Daily at midnight
+- `"0 0 2 * * ?"` - Daily at 2 AM
+- `"0 0 0 * * SUN"` - Weekly on Sunday at midnight
+- `"0 0 0 1 * ?"` - Monthly on the 1st at midnight
+
+**Examples**:
+
+```yaml
+# Daily cleanup at midnight
+app.audit.retention.clean-schedule: "0 0 0 * * ?"
+
+# Daily cleanup at 2 AM (avoid peak hours)
+app.audit.retention.clean-schedule: "0 0 2 * * ?"
+
+# Weekly cleanup on Sunday at midnight
+app.audit.retention.clean-schedule: "0 0 0 * * SUN"
+```
+
+### Retention Configuration Examples
+
+#### Development Environment
+
+```yaml
+app:
+  audit:
+    retention:
+      enabled: true
+      days: 7
+      clean-schedule: "0 0 1 * * ?" # 1 AM cleanup
+```
+
+#### Production Environment
+
+```yaml
+app:
+  audit:
+    retention:
+      enabled: true
+      days: 90
+      clean-schedule: "0 0 0 * * ?" # Midnight cleanup
+```
+
+#### Compliance Environment
+
+```yaml
+app:
+  audit:
+    retention:
+      enabled: true
+      days: 2555 # 7 years
+      clean-schedule: "0 0 0 1 * ?" # Monthly cleanup
+```
+
+### Performance Considerations
+
+- **Batch Processing**: The retention service processes deletions in batches of 1000 records to optimize performance
+- **Off-Peak Scheduling**: Schedule cleanup during low-usage periods (typically early morning hours)
+- **Transaction Management**: All cleanup operations are transactional to ensure data consistency
+- **Monitoring**: The service logs detailed information about cleanup operations for monitoring
+
+### Manual Cleanup
+
+The retention service also supports manual cleanup through the `AuditRetentionService.performManualCleanup()` method, which can be useful for:
+
+- Testing retention policies
+- One-time cleanup operations
+- Administrative maintenance
+
 ## Environment-Specific Configurations
 
 ### Development Environment

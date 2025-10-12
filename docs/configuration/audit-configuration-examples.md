@@ -44,6 +44,31 @@ app:
 - Asynchronous processing for better performance
 - 3-month retention for most business needs
 
+### High-Performance Configuration (Production with Retention)
+
+```yaml
+# application-prod.yml
+app:
+  audit:
+    write-operations:
+      enabled: true
+      retention-days: 90
+      batch-size: 500
+      async-processing: true
+    retention:
+      enabled: true
+      days: 90
+      clean-schedule: "0 0 2 * * ?" # 2 AM cleanup
+```
+
+**Use Case**: Production with automatic cleanup
+**Benefits**:
+
+- Automatic cleanup prevents database growth
+- Off-peak cleanup time (2 AM)
+- Maintains audit data for 90 days
+- High-performance batch processing
+
 ## Environment-Specific Examples
 
 ### Development Environment

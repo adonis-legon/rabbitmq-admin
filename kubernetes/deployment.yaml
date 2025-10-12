@@ -36,6 +36,21 @@ spec:
                 configMapKeyRef:
                   name: rabbitmq-admin-config
                   key: AUDIT_WRITE_OPERATIONS_ENABLED
+            - name: AUDIT_RETENTION_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-admin-config
+                  key: AUDIT_RETENTION_ENABLED
+            - name: AUDIT_RETENTION_DAYS
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-admin-config
+                  key: AUDIT_RETENTION_DAYS
+            - name: AUDIT_RETENTION_CLEAN_SCHEDULE
+              valueFrom:
+                configMapKeyRef:
+                  name: rabbitmq-admin-config
+                  key: AUDIT_RETENTION_CLEAN_SCHEDULE
             - name: SERVER_PORT
               valueFrom:
                 configMapKeyRef:
