@@ -68,6 +68,7 @@ Create environment-specific files:
 
 **Optional Variables:**
 - `RABBITMQ_ADMIN_IMAGE_TAG` - Docker image tag to deploy (default: `latest`)
+- `INGRESS_HOST` - Ingress hostname for external access (default: `rabbitmq-admin.local`)
 - `AUDIT_WRITE_OPERATIONS_ENABLED` - Enable audit logging (default: `true`)
 - `AUDIT_RETENTION_ENABLED` - Enable audit cleanup (default: `true`) 
 - `AUDIT_RETENTION_DAYS` - Days to retain audit records (default: `30`)
@@ -83,6 +84,9 @@ DATABASE_URL=jdbc:postgresql://postgres-service.database:5432/rabbitmq_admin
 DATABASE_USERNAME=rabbitmq_user
 DATABASE_PASSWORD=MySecurePassword123!
 JWT_SECRET_KEY=$(openssl rand -base64 32)
+
+# Ingress Configuration
+INGRESS_HOST=rabbitmq-admin.yourdomain.com
 
 # Audit Configuration
 AUDIT_WRITE_OPERATIONS_ENABLED=true
@@ -151,7 +155,15 @@ spec:
 
 ### Ingress Configuration
 
-Update `ingress.yaml` for your ingress controller:
+The ingress hostname is configurable via the `INGRESS_HOST` environment variable. Set it in your environment file (`.env.dev`, `.env.prod`, etc.):
+
+```bash
+INGRESS_HOST=rabbitmq-admin.yourdomain.com
+```
+
+If not specified, it defaults to `rabbitmq-admin.local`.
+
+You can also customize other ingress settings by editing `ingress.yaml` for your ingress controller:
 
 ```yaml
 metadata:
@@ -161,10 +173,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - rabbitmq-admin.yourdomain.com
+        - ${INGRESS_HOST}  # Automatically populated from environment
       secretName: rabbitmq-admin-tls
   rules:
-    - host: rabbitmq-admin.yourdomain.com  # Your domain
+    - host: ${INGRESS_HOST}  # Automatically populated from environment
 ```
 
 ## 🛠️ Deployment Commands

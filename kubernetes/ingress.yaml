@@ -15,10 +15,10 @@ spec:
   # Uncomment and configure TLS if needed
   # tls:
   #   - hosts:
-  #       - rabbitmq-admin.yourdomain.com
+  #       - ${INGRESS_HOST}
   #     secretName: rabbitmq-admin-tls
   rules:
-    - host: rabbitmq-admin.local # Change this to your domain
+    - host: ${INGRESS_HOST} # Configurable via INGRESS_HOST environment variable
       http:
         paths:
           - path: /

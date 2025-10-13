@@ -136,9 +136,11 @@ deploy_application() {
     # Apply other manifests with environment variable substitution
     # Ensure RABBITMQ_ADMIN_IMAGE_TAG has a default value
     export RABBITMQ_ADMIN_IMAGE_TAG=${RABBITMQ_ADMIN_IMAGE_TAG:-latest}
+    # Ensure INGRESS_HOST has a default value
+    export INGRESS_HOST=${INGRESS_HOST:-rabbitmq-admin.local}
     envsubst < "${SCRIPT_DIR}/deployment.yaml" | kubectl apply -f -
     kubectl apply -f "${SCRIPT_DIR}/service.yaml"
-    kubectl apply -f "${SCRIPT_DIR}/ingress.yaml"
+    envsubst < "${SCRIPT_DIR}/ingress.yaml" | kubectl apply -f -
     
     print_success "Application deployed successfully"
 }
