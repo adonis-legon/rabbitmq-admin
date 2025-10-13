@@ -26,6 +26,8 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   Refresh as RefreshIcon,
+  LockOpen as UnlockIcon,
+  Lock as LockIcon,
 } from "@mui/icons-material";
 import { User } from "../../types/user";
 import { UserRole } from "../../types/auth";
@@ -130,6 +132,18 @@ const UserList: React.FC = () => {
       notifyError(errorMessage);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleUnlockUser = async (user: User) => {
+    try {
+      const unlockedUser = await userApi.unlockUser(user.id);
+      // Update the user in the list
+      setUsers(users.map((u) => (u.id === user.id ? unlockedUser : u)));
+      success(`User "${user.username}" has been unlocked`);
+    } catch (err) {
+      const errorMessage = "Failed to unlock user. Please try again.";
+      notifyError(errorMessage);
     }
   };
 
@@ -314,6 +328,7 @@ const UserList: React.FC = () => {
               <TableRow>
                 <TableCell>Username</TableCell>
                 <TableCell>Role</TableCell>
+                <TableCell>Status</TableCell>
                 <TableCell>Assigned Clusters</TableCell>
                 <TableCell>Created At</TableCell>
                 <TableCell align="right">Actions</TableCell>
@@ -322,7 +337,7 @@ const UserList: React.FC = () => {
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       {users.length === 0
                         ? 'No users found. Click "Add User" to create the first user.'
@@ -344,6 +359,19 @@ const UserList: React.FC = () => {
                         color={getRoleColor(user.role)}
                         size="small"
                       />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={user.locked ? "Locked" : "Active"}
+                        color={user.locked ? "error" : "success"}
+                        size="small"
+                        icon={user.locked ? <LockIcon /> : undefined}
+                      />
+                      {user.locked && user.failedLoginAttempts && (
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          {user.failedLoginAttempts} failed attempts
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
@@ -380,6 +408,17 @@ const UserList: React.FC = () => {
                             <EditIcon />
                           </IconButton>
                         </Tooltip>
+                        {user.locked && currentUser?.role === UserRole.ADMINISTRATOR && (
+                          <Tooltip title="Unlock User">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleUnlockUser(user)}
+                              color="success"
+                            >
+                              <UnlockIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <Tooltip title="Delete User">
                           <IconButton
                             size="small"

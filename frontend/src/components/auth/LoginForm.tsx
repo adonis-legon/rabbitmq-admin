@@ -25,6 +25,11 @@ const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState<{
+    current: number;
+    max: number;
+    remaining: number;
+  } | null>(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -32,6 +37,7 @@ const LoginForm: React.FC = () => {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
+    setLoginAttempts(null);
     setIsLoading(true);
 
     try {
@@ -39,8 +45,17 @@ const LoginForm: React.FC = () => {
 
       // Always redirect to dashboard after successful login
       navigate(ROUTES.DASHBOARD, { replace: true });
-    } catch (err) {
+    } catch (err: any) {
       setError(getErrorMessage(err));
+
+      // Check if the error contains login attempts information
+      if (err.response?.data?.remainingAttempts !== undefined) {
+        setLoginAttempts({
+          current: err.response.data.currentAttempts,
+          max: err.response.data.maxAttempts,
+          remaining: err.response.data.remainingAttempts
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,8 +92,18 @@ const LoginForm: React.FC = () => {
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+            <Alert
+              severity={loginAttempts?.remaining === 0 ? "error" : "warning"}
+              sx={{ mb: 2 }}
+            >
+              <div>
+                {error}
+                {loginAttempts && loginAttempts.remaining > 0 && (
+                  <div style={{ marginTop: '8px', fontSize: '0.85em' }}>
+                    <strong>Attempts remaining: {loginAttempts.remaining}</strong>
+                  </div>
+                )}
+              </div>
             </Alert>
           )}
 

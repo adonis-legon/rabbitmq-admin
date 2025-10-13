@@ -102,4 +102,19 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     default List<User> findRegularUsers() {
         return findByRole(UserRole.USER);
     }
+
+    /**
+     * Count users by locked status.
+     * 
+     * @param locked the locked status to count
+     * @return number of users with the specified locked status
+     */
+    long countByLocked(Boolean locked);
+
+    /**
+     * Find all locked users.
+     * 
+     * @return list of locked users
+     */
+    List<User> findByLockedTrue();
 }

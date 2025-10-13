@@ -17,17 +17,24 @@ public class UserResponse {
     private String username;
     private UserRole role;
     private LocalDateTime createdAt;
+    private Boolean locked;
+    private Integer failedLoginAttempts;
+    private LocalDateTime lockedAt;
     private Set<ClusterConnectionSummary> assignedClusters;
 
     public UserResponse() {
     }
 
     public UserResponse(UUID id, String username, UserRole role, LocalDateTime createdAt,
+            Boolean locked, Integer failedLoginAttempts, LocalDateTime lockedAt,
             Set<ClusterConnectionSummary> assignedClusters) {
         this.id = id;
         this.username = username;
         this.role = role;
         this.createdAt = createdAt;
+        this.locked = locked;
+        this.failedLoginAttempts = failedLoginAttempts;
+        this.lockedAt = lockedAt;
         this.assignedClusters = assignedClusters;
     }
 
@@ -44,6 +51,9 @@ public class UserResponse {
                 user.getUsername(),
                 user.getRole(),
                 user.getCreatedAt(),
+                user.getLocked(),
+                user.getFailedLoginAttempts(),
+                user.getLockedAt(),
                 clusterSummaries);
     }
 
@@ -85,6 +95,30 @@ public class UserResponse {
 
     public void setAssignedClusters(Set<ClusterConnectionSummary> assignedClusters) {
         this.assignedClusters = assignedClusters;
+    }
+
+    public Boolean getLocked() {
+        return locked;
+    }
+
+    public void setLocked(Boolean locked) {
+        this.locked = locked;
+    }
+
+    public Integer getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    public LocalDateTime getLockedAt() {
+        return lockedAt;
+    }
+
+    public void setLockedAt(LocalDateTime lockedAt) {
+        this.lockedAt = lockedAt;
     }
 
     /**

@@ -7,6 +7,8 @@ import com.rabbitmq.admin.model.User;
 import com.rabbitmq.admin.model.UserRole;
 import com.rabbitmq.admin.repository.ClusterConnectionRepository;
 import com.rabbitmq.admin.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,8 @@ import java.util.regex.Pattern;
 @Service
 @Transactional
 public class UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final ClusterConnectionRepository clusterConnectionRepository;
@@ -280,6 +284,46 @@ public class UserService {
     @Transactional(readOnly = true)
     public long countUsersByRole(UserRole role) {
         return userRepository.countByRole(role);
+    }
+
+    /**
+     * Unlock a user account (admin operation).
+     * 
+     * @param userId the ID of the user to unlock
+     * @return the updated user
+     * @throws IllegalArgumentException if user not found
+     */
+    public User unlockUser(UUID userId) {
+        User user = getUserById(userId);
+
+        if (user.isLocked()) {
+            user.unlockUser();
+            User savedUser = userRepository.save(user);
+            logger.info("User {} has been unlocked by administrator", user.getUsername());
+            return savedUser;
+        }
+
+        return user;
+    }
+
+    /**
+     * Get locked users count.
+     * 
+     * @return the number of locked users
+     */
+    @Transactional(readOnly = true)
+    public long getLockedUsersCount() {
+        return userRepository.countByLocked(true);
+    }
+
+    /**
+     * Get all locked users.
+     * 
+     * @return list of locked users
+     */
+    @Transactional(readOnly = true)
+    public List<User> getLockedUsers() {
+        return userRepository.findByLockedTrue();
     }
 
     /**

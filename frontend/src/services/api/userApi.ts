@@ -24,5 +24,20 @@ export const userApi = {
 
   deleteUser: async (id: string): Promise<void> => {
     await apiClient.delete(`/users/${id}`);
+  },
+
+  unlockUser: async (id: string): Promise<User> => {
+    const response = await apiClient.put<User>(`/users/${id}/unlock`);
+    return response.data;
+  },
+
+  getLockedUsers: async (): Promise<User[]> => {
+    const response = await apiClient.get<User[]>('/users/locked');
+    return response.data;
+  },
+
+  getLockedUsersCount: async (): Promise<number> => {
+    const response = await apiClient.get<number>('/users/locked/count');
+    return response.data;
   }
 };

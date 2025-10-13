@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -106,6 +107,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleBadCredentialsException(
             BadCredentialsException ex, WebRequest request) {
 
+        // Check if it's a LoginAttemptsExceededException and delegate to its handler
+        if (ex instanceof LoginAttemptsExceededException) {
+            return handleLoginAttemptsExceededException((LoginAttemptsExceededException) ex, request);
+        }
+
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", Instant.now().toString());
         response.put("status", HttpStatus.UNAUTHORIZED.value());
@@ -114,6 +120,47 @@ public class GlobalExceptionHandler {
         response.put("path", request.getDescription(false).replace("uri=", ""));
 
         logger.warn("Authentication error: {}", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    /**
+     * Handle account locked errors
+     */
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<Map<String, Object>> handleLockedException(
+            LockedException ex, WebRequest request) {
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", Instant.now().toString());
+        response.put("status", HttpStatus.LOCKED.value());
+        response.put("error", "Account Locked");
+        response.put("message", ex.getMessage());
+        response.put("path", request.getDescription(false).replace("uri=", ""));
+        response.put("accountLocked", true);
+
+        logger.warn("Account locked error: {}", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.LOCKED);
+    }
+
+    /**
+     * Handle failed login attempts with remaining attempts info
+     */
+    @ExceptionHandler(LoginAttemptsExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleLoginAttemptsExceededException(
+            LoginAttemptsExceededException ex, WebRequest request) {
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", Instant.now().toString());
+        response.put("status", HttpStatus.UNAUTHORIZED.value());
+        response.put("error", "Unauthorized");
+        response.put("message", ex.getMessage());
+        response.put("path", request.getDescription(false).replace("uri=", ""));
+        response.put("currentAttempts", ex.getCurrentAttempts());
+        response.put("maxAttempts", ex.getMaxAttempts());
+        response.put("remainingAttempts", ex.getRemainingAttempts());
+
+        logger.warn("Failed login attempt: {} ({}/{})", ex.getMessage(),
+                ex.getCurrentAttempts(), ex.getMaxAttempts());
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 

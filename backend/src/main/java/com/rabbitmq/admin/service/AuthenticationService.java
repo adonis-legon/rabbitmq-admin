@@ -1,9 +1,11 @@
 package com.rabbitmq.admin.service;
 
+import com.rabbitmq.admin.config.UserSecurityProperties;
 import com.rabbitmq.admin.dto.JwtAuthenticationResponse;
 import com.rabbitmq.admin.dto.LoginRequest;
 import com.rabbitmq.admin.dto.RefreshTokenRequest;
 import com.rabbitmq.admin.dto.UserInfo;
+import com.rabbitmq.admin.exception.LoginAttemptsExceededException;
 import com.rabbitmq.admin.model.User;
 import com.rabbitmq.admin.repository.UserRepository;
 import com.rabbitmq.admin.security.JwtTokenProvider;
@@ -12,12 +14,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -25,7 +28,6 @@ import java.util.UUID;
  * token refresh.
  */
 @Service
-@Transactional
 public class AuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
@@ -39,10 +41,44 @@ public class AuthenticationService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserSecurityProperties userSecurityProperties;
+
     /**
      * Authenticate user and generate JWT tokens
      */
+    @org.springframework.transaction.annotation.Transactional(noRollbackFor = { LoginAttemptsExceededException.class,
+            LockedException.class })
     public JwtAuthenticationResponse login(LoginRequest loginRequest) {
+        // Get user first to check if locked
+        User user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
+                .orElse(null);
+
+        // Check if user locking is enabled and user exists
+        if (userSecurityProperties.isEnabled() && user != null) {
+            // Check if user is locked
+            if (user.isLocked()) {
+                // Check for auto-unlock
+                if (userSecurityProperties.getAutoUnlockMinutes() > 0 && user.getLockedAt() != null) {
+                    LocalDateTime unlockTime = user.getLockedAt()
+                            .plusMinutes(userSecurityProperties.getAutoUnlockMinutes());
+                    if (LocalDateTime.now().isAfter(unlockTime)) {
+                        // Auto-unlock the user
+                        user.unlockUser();
+                        userRepository.save(user);
+                        logger.info("User {} auto-unlocked after {} minutes", user.getUsername(),
+                                userSecurityProperties.getAutoUnlockMinutes());
+                    } else {
+                        logger.warn("Login attempt for locked user: {}", loginRequest.getUsername());
+                        throw new LockedException("Account is locked. Please contact an administrator.");
+                    }
+                } else {
+                    logger.warn("Login attempt for locked user: {}", loginRequest.getUsername());
+                    throw new LockedException("Account is locked. Please contact an administrator.");
+                }
+            }
+        }
+
         try {
             // Authenticate user credentials
             Authentication authentication = authenticationManager.authenticate(
@@ -50,9 +86,18 @@ public class AuthenticationService {
                             loginRequest.getUsername(),
                             loginRequest.getPassword()));
 
-            // Get user from database
-            User user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
-                    .orElseThrow(() -> new BadCredentialsException("User not found"));
+            // Reset failed attempts and unlock user on successful login
+            if (userSecurityProperties.isEnabled() && user != null) {
+                user.resetFailedLoginAttempts();
+                user.unlockUser(); // Also unlock the user on successful authentication
+                userRepository.save(user);
+            }
+
+            // Re-fetch user if it was null (shouldn't happen after successful auth)
+            if (user == null) {
+                user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
+                        .orElseThrow(() -> new BadCredentialsException("User not found"));
+            }
 
             // Generate tokens
             String accessToken = tokenProvider.generateToken(authentication);
@@ -66,6 +111,43 @@ public class AuthenticationService {
                     UserInfo.fromUser(user));
 
         } catch (AuthenticationException e) {
+            // Handle failed login attempt - update user attempts and save in same
+            // transaction
+            if (userSecurityProperties.isEnabled() && user != null && !user.isLocked()) {
+                // Increment failed attempts
+                user.incrementFailedLoginAttempts();
+
+                // Check if user should be locked
+                if (user.getFailedLoginAttempts() >= userSecurityProperties.getMaxFailedAttempts()) {
+                    user.lockUser();
+                    userRepository.save(user);
+                    logger.warn("User {} locked after {} failed login attempts", user.getUsername(),
+                            user.getFailedLoginAttempts());
+                    throw new LockedException(
+                            "Account is locked due to too many failed login attempts. Please contact an administrator.");
+                } else {
+                    // Save the updated attempt count
+                    userRepository.save(user);
+
+                    logger.warn("Failed login attempt for user: {} (attempt {}/{})",
+                            user.getUsername(), user.getFailedLoginAttempts(),
+                            userSecurityProperties.getMaxFailedAttempts());
+
+                    // Provide detailed information about remaining attempts
+                    int remainingAttempts = userSecurityProperties.getMaxFailedAttempts()
+                            - user.getFailedLoginAttempts();
+                    String message = remainingAttempts == 1
+                            ? "Invalid username or password. Warning: You have 1 attempt remaining before your account is locked."
+                            : String.format(
+                                    "Invalid username or password. Warning: You have %d attempts remaining before your account is locked.",
+                                    remainingAttempts);
+
+                    throw new LoginAttemptsExceededException(message,
+                            user.getFailedLoginAttempts(),
+                            userSecurityProperties.getMaxFailedAttempts());
+                }
+            }
+
             logger.warn("Authentication failed for user: {}", loginRequest.getUsername());
             throw new BadCredentialsException("Invalid username or password");
         }

@@ -531,6 +531,24 @@
       "type": "java.lang.String",
       "description": "CRON expression for the scheduled task that cleans up old audit records. Default runs daily at midnight.",
       "defaultValue": "0 0 0 * * ?"
+    },
+    {
+      "name": "app.security.user-locking.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable or disable user account locking after failed login attempts.",
+      "defaultValue": true
+    },
+    {
+      "name": "app.security.user-locking.max-failed-attempts",
+      "type": "java.lang.Integer",
+      "description": "Maximum number of failed login attempts before user account is locked.",
+      "defaultValue": 3
+    },
+    {
+      "name": "app.security.user-locking.auto-unlock-minutes",
+      "type": "java.lang.Integer",
+      "description": "Number of minutes after which a locked user account is automatically unlocked. Set to 0 to disable automatic unlock (manual unlock only).",
+      "defaultValue": 0
     }
   ]
 }
