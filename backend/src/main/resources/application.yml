@@ -44,6 +44,11 @@ app:
       enabled: ${AUDIT_RETENTION_ENABLED:true}
       days: ${AUDIT_RETENTION_DAYS:90}
       clean-schedule: ${AUDIT_RETENTION_CLEAN_SCHEDULE:0 0 0 * * ?}
+  security:
+    user-locking:
+      enabled: ${USER_LOCKING_ENABLED:true}
+      max-failed-attempts: ${MAX_FAILED_LOGIN_ATTEMPTS:3}
+      auto-unlock-minutes: ${AUTO_UNLOCK_MINUTES:0} # 0 means manual unlock only
 
 # RabbitMQ Resource Management Configuration
 rabbitmq:

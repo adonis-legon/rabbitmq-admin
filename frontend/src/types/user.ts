@@ -6,6 +6,9 @@ export interface User {
   username: string;
   role: UserRole;
   createdAt: string;
+  locked?: boolean;
+  failedLoginAttempts?: number;
+  lockedAt?: string;
   assignedClusters: ClusterConnection[];
 }
 

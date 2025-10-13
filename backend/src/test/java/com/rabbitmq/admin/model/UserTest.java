@@ -77,31 +77,40 @@ class UserTest {
 
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream()
-                .anyMatch(v -> v.getMessage().equals("Username must be between 3 and 50 characters")));
+                .anyMatch(v -> v.getMessage().equals("Username must be between 3 and 100 characters")));
     }
 
     @Test
     void testUsernameTooLong() {
-        String longUsername = "a".repeat(51);
+        String longUsername = "a".repeat(101);
         User user = new User(longUsername, "hashedPassword123", UserRole.USER);
 
         Set<ConstraintViolation<User>> violations = validator.validate(user);
 
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream()
-                .anyMatch(v -> v.getMessage().equals("Username must be between 3 and 50 characters")));
+                .anyMatch(v -> v.getMessage().equals("Username must be between 3 and 100 characters")));
+    }
+
+    @Test
+    void testValidEmailAsUsername() {
+        User user = new User("test@example.com", "hashedPassword123", UserRole.USER);
+
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+
+        assertTrue(violations.isEmpty(), "Valid email should be accepted as username");
     }
 
     @Test
     void testUsernameWithInvalidCharacters() {
-        User user = new User("test@user", "hashedPassword123", UserRole.USER);
+        User user = new User("test@invalid@email", "hashedPassword123", UserRole.USER);
 
         Set<ConstraintViolation<User>> violations = validator.validate(user);
 
         assertFalse(violations.isEmpty());
         assertTrue(violations.stream()
                 .anyMatch(v -> v.getMessage()
-                        .equals("Username can only contain letters, numbers, underscores, and hyphens")));
+                        .equals("Username can only contain letters, numbers, underscores, hyphens, or be a valid email address")));
     }
 
     @Test
@@ -207,5 +216,49 @@ class UserTest {
 
         assertFalse(user.getAssignedClusters().contains(cluster));
         assertFalse(cluster.getAssignedUsers().contains(user));
+    }
+
+    @Test
+    void testUserLockingFunctionality() {
+        User user = new User("testuser", "hashedPassword123", UserRole.USER);
+
+        // Test initial state
+        assertFalse(user.isLocked());
+        assertEquals(0, user.getFailedLoginAttempts());
+        assertNull(user.getLockedAt());
+
+        // Test incrementing failed login attempts
+        user.incrementFailedLoginAttempts();
+        assertEquals(1, user.getFailedLoginAttempts());
+        assertFalse(user.isLocked());
+
+        // Test locking user
+        user.lockUser();
+        assertTrue(user.isLocked());
+        assertNotNull(user.getLockedAt());
+
+        // Test unlocking user
+        user.unlockUser();
+        assertFalse(user.isLocked());
+        assertEquals(0, user.getFailedLoginAttempts());
+        assertNull(user.getLockedAt());
+
+        // Test reset failed attempts
+        user.incrementFailedLoginAttempts();
+        user.incrementFailedLoginAttempts();
+        assertEquals(2, user.getFailedLoginAttempts());
+
+        user.resetFailedLoginAttempts();
+        assertEquals(0, user.getFailedLoginAttempts());
+    }
+
+    @Test
+    void testUserLockingWithNullValues() {
+        User user = new User("testuser", "hashedPassword123", UserRole.USER);
+        user.setFailedLoginAttempts(null);
+
+        // Should handle null values gracefully
+        user.incrementFailedLoginAttempts();
+        assertEquals(1, user.getFailedLoginAttempts());
     }
 }

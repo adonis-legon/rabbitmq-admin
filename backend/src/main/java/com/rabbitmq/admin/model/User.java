@@ -22,10 +22,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(unique = true, nullable = false, length = 100)
     @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    @Pattern(regexp = "^[a-zA-Z0-9_-]+$", message = "Username can only contain letters, numbers, underscores, and hyphens")
+    @Size(min = 3, max = 100, message = "Username must be between 3 and 100 characters")
+    @Pattern(regexp = "^([a-zA-Z0-9_-]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,})$", message = "Username can only contain letters, numbers, underscores, hyphens, or be a valid email address")
     private String username;
 
     @Column(nullable = false)
@@ -41,10 +41,25 @@ public class User {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean locked = false;
+
+    @Column(nullable = false, columnDefinition = "INT DEFAULT 0")
+    private Integer failedLoginAttempts = 0;
+
+    @Column
+    private LocalDateTime lockedAt;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (locked == null) {
+            locked = false;
+        }
+        if (failedLoginAttempts == null) {
+            failedLoginAttempts = 0;
         }
     }
 
@@ -112,6 +127,35 @@ public class User {
         this.assignedClusters = assignedClusters;
     }
 
+    public Boolean getLocked() {
+        return locked;
+    }
+
+    public void setLocked(Boolean locked) {
+        this.locked = locked;
+        if (locked != null && locked) {
+            this.lockedAt = LocalDateTime.now();
+        } else {
+            this.lockedAt = null;
+        }
+    }
+
+    public Integer getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public void setFailedLoginAttempts(Integer failedLoginAttempts) {
+        this.failedLoginAttempts = failedLoginAttempts;
+    }
+
+    public LocalDateTime getLockedAt() {
+        return lockedAt;
+    }
+
+    public void setLockedAt(LocalDateTime lockedAt) {
+        this.lockedAt = lockedAt;
+    }
+
     // Utility methods for managing cluster assignments
     public void addClusterConnection(ClusterConnection clusterConnection) {
         this.assignedClusters.add(clusterConnection);
@@ -121,6 +165,30 @@ public class User {
     public void removeClusterConnection(ClusterConnection clusterConnection) {
         this.assignedClusters.remove(clusterConnection);
         clusterConnection.getAssignedUsers().remove(this);
+    }
+
+    // Utility methods for managing user locking
+    public void incrementFailedLoginAttempts() {
+        this.failedLoginAttempts = (this.failedLoginAttempts == null ? 0 : this.failedLoginAttempts) + 1;
+    }
+
+    public void resetFailedLoginAttempts() {
+        this.failedLoginAttempts = 0;
+    }
+
+    public void lockUser() {
+        this.locked = true;
+        this.lockedAt = LocalDateTime.now();
+    }
+
+    public void unlockUser() {
+        this.locked = false;
+        this.lockedAt = null;
+        this.failedLoginAttempts = 0;
+    }
+
+    public boolean isLocked() {
+        return this.locked != null && this.locked;
     }
 
     @Override
@@ -144,6 +212,8 @@ public class User {
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", role=" + role +
+                ", locked=" + locked +
+                ", failedLoginAttempts=" + failedLoginAttempts +
                 ", createdAt=" + createdAt +
                 '}';
     }

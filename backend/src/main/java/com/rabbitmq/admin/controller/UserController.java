@@ -138,4 +138,37 @@ public class UserController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userResponses);
     }
+
+    /**
+     * Unlock a user account (admin operation)
+     */
+    @PutMapping("/{id}/unlock")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    public ResponseEntity<UserResponse> unlockUser(@PathVariable("id") UUID id) {
+        User user = userService.unlockUser(id);
+        return ResponseEntity.ok(UserResponse.fromUser(user));
+    }
+
+    /**
+     * Get locked users count
+     */
+    @GetMapping("/locked/count")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    public ResponseEntity<Long> getLockedUsersCount() {
+        long count = userService.getLockedUsersCount();
+        return ResponseEntity.ok(count);
+    }
+
+    /**
+     * Get all locked users
+     */
+    @GetMapping("/locked")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    public ResponseEntity<List<UserResponse>> getLockedUsers() {
+        List<User> users = userService.getLockedUsers();
+        List<UserResponse> userResponses = users.stream()
+                .map(UserResponse::fromUser)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(userResponses);
+    }
 }

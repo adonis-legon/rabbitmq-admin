@@ -123,11 +123,11 @@ export const ValidationRules = {
   username: {
     required: true,
     minLength: 3,
-    maxLength: 50,
-    pattern: /^[a-zA-Z0-9_-]+$/,
+    maxLength: 100,
+    pattern: /^([a-zA-Z0-9_-]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/,
     custom: (value: string) => {
-      if (value && !/^[a-zA-Z0-9_-]+$/.test(value)) {
-        return 'Username can only contain letters, numbers, hyphens, and underscores';
+      if (value && !/^([a-zA-Z0-9_-]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})$/.test(value)) {
+        return 'Username can only contain letters, numbers, hyphens, underscores, or be a valid email address';
       }
       return null;
     }
