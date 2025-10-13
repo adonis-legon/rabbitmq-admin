@@ -1,5 +1,6 @@
 package com.rabbitmq.admin.service;
 
+import com.rabbitmq.admin.config.UserSecurityProperties;
 import com.rabbitmq.admin.dto.JwtAuthenticationResponse;
 import com.rabbitmq.admin.dto.LoginRequest;
 import com.rabbitmq.admin.dto.RefreshTokenRequest;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 /**
  * Unit tests for AuthenticationService.
@@ -41,6 +43,9 @@ class AuthenticationServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserSecurityProperties userSecurityProperties;
 
     @Mock
     private Authentication authentication;
@@ -63,6 +68,11 @@ class AuthenticationServiceTest {
 
         loginRequest = new LoginRequest("testuser", "password123");
         refreshTokenRequest = new RefreshTokenRequest("valid.refresh.token");
+
+        // Default lenient mock behavior for UserSecurityProperties
+        lenient().when(userSecurityProperties.isEnabled()).thenReturn(false);
+        lenient().when(userSecurityProperties.getMaxFailedAttempts()).thenReturn(3);
+        lenient().when(userSecurityProperties.getAutoUnlockMinutes()).thenReturn(0);
     }
 
     @Test
@@ -95,6 +105,8 @@ class AuthenticationServiceTest {
     @Test
     void login_WithInvalidCredentials_ShouldThrowException() {
         // Given
+        when(userRepository.findByUsernameIgnoreCase("testuser"))
+                .thenReturn(Optional.of(testUser));
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Invalid credentials"));
 
@@ -104,7 +116,7 @@ class AuthenticationServiceTest {
         });
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(userRepository, never()).findByUsernameIgnoreCase(any());
+        verify(userRepository).findByUsernameIgnoreCase("testuser");
         verify(tokenProvider, never()).generateToken(any());
     }
 
@@ -121,7 +133,7 @@ class AuthenticationServiceTest {
             authenticationService.login(loginRequest);
         });
 
-        verify(userRepository).findByUsernameIgnoreCase("testuser");
+        verify(userRepository, times(2)).findByUsernameIgnoreCase("testuser");
         verify(tokenProvider, never()).generateToken(any());
     }
 

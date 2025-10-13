@@ -5,6 +5,7 @@ import com.rabbitmq.admin.dto.JwtAuthenticationResponse;
 import com.rabbitmq.admin.dto.LoginRequest;
 import com.rabbitmq.admin.dto.RefreshTokenRequest;
 import com.rabbitmq.admin.dto.UserInfo;
+import com.rabbitmq.admin.exception.LoginAttemptsExceededException;
 import com.rabbitmq.admin.model.User;
 import com.rabbitmq.admin.repository.UserRepository;
 import com.rabbitmq.admin.security.JwtTokenProvider;
@@ -18,7 +19,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -28,7 +28,6 @@ import java.util.UUID;
  * token refresh.
  */
 @Service
-@Transactional
 public class AuthenticationService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
@@ -48,6 +47,8 @@ public class AuthenticationService {
     /**
      * Authenticate user and generate JWT tokens
      */
+    @org.springframework.transaction.annotation.Transactional(noRollbackFor = { LoginAttemptsExceededException.class,
+            LockedException.class })
     public JwtAuthenticationResponse login(LoginRequest loginRequest) {
         // Get user first to check if locked
         User user = userRepository.findByUsernameIgnoreCase(loginRequest.getUsername())
@@ -85,9 +86,10 @@ public class AuthenticationService {
                             loginRequest.getUsername(),
                             loginRequest.getPassword()));
 
-            // Reset failed attempts on successful login
+            // Reset failed attempts and unlock user on successful login
             if (userSecurityProperties.isEnabled() && user != null) {
                 user.resetFailedLoginAttempts();
+                user.unlockUser(); // Also unlock the user on successful authentication
                 userRepository.save(user);
             }
 
@@ -109,21 +111,41 @@ public class AuthenticationService {
                     UserInfo.fromUser(user));
 
         } catch (AuthenticationException e) {
-            // Handle failed login attempt
+            // Handle failed login attempt - update user attempts and save in same
+            // transaction
             if (userSecurityProperties.isEnabled() && user != null && !user.isLocked()) {
+                // Increment failed attempts
                 user.incrementFailedLoginAttempts();
 
+                // Check if user should be locked
                 if (user.getFailedLoginAttempts() >= userSecurityProperties.getMaxFailedAttempts()) {
                     user.lockUser();
+                    userRepository.save(user);
                     logger.warn("User {} locked after {} failed login attempts", user.getUsername(),
                             user.getFailedLoginAttempts());
+                    throw new LockedException(
+                            "Account is locked due to too many failed login attempts. Please contact an administrator.");
                 } else {
+                    // Save the updated attempt count
+                    userRepository.save(user);
+
                     logger.warn("Failed login attempt for user: {} (attempt {}/{})",
                             user.getUsername(), user.getFailedLoginAttempts(),
                             userSecurityProperties.getMaxFailedAttempts());
-                }
 
-                userRepository.save(user);
+                    // Provide detailed information about remaining attempts
+                    int remainingAttempts = userSecurityProperties.getMaxFailedAttempts()
+                            - user.getFailedLoginAttempts();
+                    String message = remainingAttempts == 1
+                            ? "Invalid username or password. Warning: You have 1 attempt remaining before your account is locked."
+                            : String.format(
+                                    "Invalid username or password. Warning: You have %d attempts remaining before your account is locked.",
+                                    remainingAttempts);
+
+                    throw new LoginAttemptsExceededException(message,
+                            user.getFailedLoginAttempts(),
+                            userSecurityProperties.getMaxFailedAttempts());
+                }
             }
 
             logger.warn("Authentication failed for user: {}", loginRequest.getUsername());
