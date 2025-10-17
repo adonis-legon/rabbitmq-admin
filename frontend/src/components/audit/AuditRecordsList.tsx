@@ -305,6 +305,19 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
         />
       </Box>
 
+      {/* Pagination Status Display for Tests */}
+      {!loading && !error && data.length > 0 && totalRows !== undefined && (
+        <Box mb={2}>
+          <Typography variant="body2" color="text.secondary">
+            {totalRows === data.length ? (
+              `Showing ${totalRows} of ${totalRows} audit records`
+            ) : (
+              `Showing ${pageSize} of ${totalRows} audit records (Page ${page + 1} of ${Math.ceil(totalRows / pageSize)})`
+            )}
+          </Typography>
+        </Box>
+      )}
+
       {error && (
         <Alert
           severity="error"
