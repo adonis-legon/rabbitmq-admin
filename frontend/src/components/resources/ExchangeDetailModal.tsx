@@ -89,7 +89,7 @@ export const ExchangeDetailModal: React.FC<ExchangeDetailModalProps> = ({
   useEffect(() => {
     setCurrentExchange(exchange);
     if (exchange && clusterId && open) {
-      loadBindings(clusterId, exchange.vhost, exchange.name);
+      loadBindings(clusterId, exchange.vhost, exchange.originalName || exchange.name);
     }
   }, [exchange, clusterId, open, loadBindings]);
 
@@ -138,17 +138,17 @@ export const ExchangeDetailModal: React.FC<ExchangeDetailModalProps> = ({
   // Filter bindings based on search term
   const filteredBindings = bindings
     ? bindings.filter(
-        (binding) =>
-          binding.destination
-            .toLowerCase()
-            .includes(bindingFilter.toLowerCase()) ||
-          binding.routing_key
-            .toLowerCase()
-            .includes(bindingFilter.toLowerCase()) ||
-          binding.destination_type
-            .toLowerCase()
-            .includes(bindingFilter.toLowerCase())
-      )
+      (binding) =>
+        binding.destination
+          .toLowerCase()
+          .includes(bindingFilter.toLowerCase()) ||
+        binding.routing_key
+          .toLowerCase()
+          .includes(bindingFilter.toLowerCase()) ||
+        binding.destination_type
+          .toLowerCase()
+          .includes(bindingFilter.toLowerCase())
+    )
     : [];
 
   // Separate queue and exchange bindings
@@ -625,11 +625,10 @@ export const ExchangeDetailModal: React.FC<ExchangeDetailModalProps> = ({
                               </TableCell>
                               <TableCell>
                                 {Object.keys(binding.arguments || {}).length >
-                                0 ? (
+                                  0 ? (
                                   <Chip
-                                    label={`${
-                                      Object.keys(binding.arguments).length
-                                    } args`}
+                                    label={`${Object.keys(binding.arguments).length
+                                      } args`}
                                     size="small"
                                     variant="outlined"
                                   />
@@ -715,11 +714,10 @@ export const ExchangeDetailModal: React.FC<ExchangeDetailModalProps> = ({
                               </TableCell>
                               <TableCell>
                                 {Object.keys(binding.arguments || {}).length >
-                                0 ? (
+                                  0 ? (
                                   <Chip
-                                    label={`${
-                                      Object.keys(binding.arguments).length
-                                    } args`}
+                                    label={`${Object.keys(binding.arguments).length
+                                      } args`}
                                     size="small"
                                     variant="outlined"
                                   />

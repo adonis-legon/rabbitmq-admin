@@ -85,9 +85,13 @@ const CreateBindingDialog: React.FC<CreateBindingDialogProps> = ({
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Reset form when dialog opens
+  // Track if dialog was previously open to detect actual opening
+  const [wasOpen, setWasOpen] = useState(open);
+
+  // Reset form when dialog opens (but not when auto-refresh occurs)
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpen) {
+      // Dialog is opening for the first time
       setFormData({
         vhost:
           sourceResource?.vhost ||
@@ -102,14 +106,15 @@ const CreateBindingDialog: React.FC<CreateBindingDialogProps> = ({
       setSubmitError(null);
       reset();
     }
-  }, [open, sourceResource, virtualHosts, context, reset]);
+    setWasOpen(open);
+  }, [open, sourceResource, context, reset, virtualHosts, wasOpen]);
 
-  // Set default vhost when virtual hosts load
+  // Set default vhost when virtual hosts load (only if dialog just opened and no vhost is set)
   useEffect(() => {
-    if (virtualHosts.length > 0 && !formData.vhost && !sourceResource?.vhost) {
+    if (open && virtualHosts.length > 0 && !formData.vhost && !sourceResource?.vhost) {
       setFormData((prev) => ({ ...prev, vhost: virtualHosts[0].name }));
     }
-  }, [virtualHosts, formData.vhost, sourceResource?.vhost]);
+  }, [open, virtualHosts, formData.vhost, sourceResource?.vhost]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -194,8 +199,8 @@ const CreateBindingDialog: React.FC<CreateBindingDialogProps> = ({
           );
           setSubmitError(
             err.response?.data?.message ||
-              err.message ||
-              "Failed to create binding. Please try again."
+            err.message ||
+            "Failed to create binding. Please try again."
           );
         }
       );
@@ -206,17 +211,17 @@ const CreateBindingDialog: React.FC<CreateBindingDialogProps> = ({
 
   const handleInputChange =
     (field: keyof FormData) =>
-    (
-      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
-    ) => {
-      const value = event.target.value;
-      setFormData((prev) => ({ ...prev, [field]: value }));
+      (
+        event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
+      ) => {
+        const value = event.target.value;
+        setFormData((prev) => ({ ...prev, [field]: value }));
 
-      // Clear error when user starts typing
-      if (errors[field as keyof FormErrors]) {
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
-      }
-    };
+        // Clear error when user starts typing
+        if (errors[field as keyof FormErrors]) {
+          setErrors((prev) => ({ ...prev, [field]: undefined }));
+        }
+      };
 
   const handleArgumentsChange = (newArguments: Record<string, any>) => {
     setFormData((prev) => ({ ...prev, arguments: newArguments }));

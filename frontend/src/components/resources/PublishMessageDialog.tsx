@@ -199,7 +199,7 @@ const PublishMessageDialog: React.FC<PublishMessageDialogProps> = ({
       reset();
     }
     setWasOpen(open);
-  }, [open, targetResource, context, reset, virtualHosts, wasOpen]);
+  }, [open, targetResource, context, reset, wasOpen]);
 
   // Set default vhost when virtual hosts load (only if no vhost is set and dialog is open)
   useEffect(() => {

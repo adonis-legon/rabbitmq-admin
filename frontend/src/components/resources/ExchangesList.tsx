@@ -280,7 +280,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         await rabbitmqResourcesApi.deleteExchange(
           clusterId,
           actionMenuExchange.vhost,
-          actionMenuExchange.name,
+          actionMenuExchange.originalName || actionMenuExchange.name,
           options.ifUnused
         );
         notifyExchangeDeleted(actionMenuExchange.name, options.ifUnused);
@@ -321,16 +321,25 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
 
   // Format exchange data for display
   const formatExchangeData = (exchanges: RabbitMQExchange[]) => {
-    return exchanges.map((exchange) => ({
-      ...exchange,
-      id: exchange.name, // Use name as ID for DataGrid
-      durabilityText: exchange.durable ? "Durable" : "Transient",
-      autoDeleteText: exchange.auto_delete ? "Yes" : "No",
-      internalText: exchange.internal ? "Yes" : "No",
-      argumentsCount: Object.keys(exchange.arguments || {}).length,
-      publishInRate: exchange.message_stats?.publish_in_details?.rate || 0,
-      publishOutRate: exchange.message_stats?.publish_out_details?.rate || 0,
-    }));
+    return exchanges.map((exchange) => {
+      // Handle default AMQP exchange (empty name) - display as "(AMQP default)"
+      const displayName = exchange.name === "" ? "(AMQP default)" : exchange.name;
+      // Use vhost + name combination for unique ID to avoid empty ID issues
+      const uniqueId = exchange.name === "" ? `${exchange.vhost}::(AMQP default)` : `${exchange.vhost}::${exchange.name}`;
+
+      return {
+        ...exchange,
+        id: uniqueId, // Use unique ID for DataGrid
+        name: displayName, // Override display name for default exchange
+        originalName: exchange.name, // Keep original name for API operations
+        durabilityText: exchange.durable ? "Durable" : "Transient",
+        autoDeleteText: exchange.auto_delete ? "Yes" : "No",
+        internalText: exchange.internal ? "Yes" : "No",
+        argumentsCount: Object.keys(exchange.arguments || {}).length,
+        publishInRate: exchange.message_stats?.publish_in_details?.rate || 0,
+        publishOutRate: exchange.message_stats?.publish_out_details?.rate || 0,
+      };
+    });
   };
 
   const getTypeIcon = (type: string) => {
@@ -702,7 +711,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           clusterId={clusterId}
           context="exchange"
           sourceResource={{
-            name: actionMenuExchange.name,
+            name: actionMenuExchange.originalName || actionMenuExchange.name,
             vhost: actionMenuExchange.vhost,
           }}
           onClose={handleCreateBindingClose}
@@ -717,7 +726,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           clusterId={clusterId}
           context="exchange"
           targetResource={{
-            name: actionMenuExchange.name,
+            name: actionMenuExchange.originalName || actionMenuExchange.name,
             vhost: actionMenuExchange.vhost,
           }}
           onClose={handlePublishMessageClose}

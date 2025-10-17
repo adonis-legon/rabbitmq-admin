@@ -101,6 +101,7 @@ export interface RabbitMQChannel {
 // Exchange Types
 export interface RabbitMQExchange {
   name: string;
+  originalName?: string; // Store the original name for API operations when display name is modified
   type: 'direct' | 'fanout' | 'topic' | 'headers';
   durable: boolean;
   auto_delete: boolean;
