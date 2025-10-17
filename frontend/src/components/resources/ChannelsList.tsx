@@ -413,6 +413,7 @@ const ChannelsListComponent: React.FC<ChannelsListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage="No channels found"
         height={600}
+        sortingMode="client"
       />
 
       <ChannelDetailModal

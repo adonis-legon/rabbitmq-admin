@@ -30,6 +30,8 @@ export interface ResourceTableProps<T = any> {
   disableColumnFilter?: boolean;
   disableColumnMenu?: boolean;
   disableRowSelectionOnClick?: boolean;
+  // Sorting mode - 'server' for server-side sorting, 'client' for client-side sorting
+  sortingMode?: 'server' | 'client';
 }
 
 const ResourceTableComponent = <T extends Record<string, any>>({
@@ -52,6 +54,7 @@ const ResourceTableComponent = <T extends Record<string, any>>({
   disableColumnFilter = false,
   disableColumnMenu = false,
   disableRowSelectionOnClick = true,
+  sortingMode = "server",
 }: ResourceTableProps<T>) => {
   const handlePaginationModelChange = (model: GridPaginationModel) => {
     if (model.page !== page && onPageChange) {
@@ -120,7 +123,7 @@ const ResourceTableComponent = <T extends Record<string, any>>({
         columns={columns}
         loading={loading}
         paginationMode="server"
-        sortingMode="server"
+        sortingMode={sortingMode}
         filterMode="server"
         rowCount={totalRows || data.length}
         paginationModel={{

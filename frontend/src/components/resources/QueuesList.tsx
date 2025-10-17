@@ -709,6 +709,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage="No queues found"
         height={600}
+        sortingMode="client"
       />
 
       {/* Queue Detail Modal */}

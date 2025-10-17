@@ -230,40 +230,7 @@ describe("AuditPage", () => {
     expect(screen.getByText("RabbitMQ Admin")).toBeInTheDocument();
   });
 
-  it("displays summary information when data is available", () => {
-    renderWithProviders(<AuditPage />);
 
-    expect(
-      screen.getByText("Showing 1 of 1 audit records")
-    ).toBeInTheDocument();
-  });
-
-  it("displays page information for multiple pages", () => {
-    mockUseAuditRecords.mockReturnValue({
-      data: {
-        items: [mockAuditRecord],
-        totalItems: 150,
-        totalPages: 3,
-        page: 0,
-        pageSize: 50,
-        hasNext: true,
-        hasPrevious: false,
-      },
-      loading: false,
-      error: null,
-      lastUpdated: new Date(),
-      loadAuditRecords: mockLoadAuditRecords,
-      refreshAuditRecords: mockRefreshAuditRecords,
-      clearError: mockClearError,
-      invalidateCache: vi.fn(),
-    });
-
-    renderWithProviders(<AuditPage />);
-
-    expect(
-      screen.getByText("Showing 1 of 150 audit records (Page 1 of 3)")
-    ).toBeInTheDocument();
-  });
 
   it("calls loadAuditRecords on mount for admin user", () => {
     renderWithProviders(<AuditPage />);

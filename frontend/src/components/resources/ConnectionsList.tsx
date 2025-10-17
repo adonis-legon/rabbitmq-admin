@@ -385,6 +385,7 @@ const ConnectionsListComponent: React.FC<ConnectionsListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage="No connections found"
         height={600}
+        sortingMode="client"
       />
 
       {/* Connection Detail Modal */}

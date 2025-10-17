@@ -386,6 +386,7 @@ const ClusterConnectionList: React.FC = () => {
         height={600}
         disableColumnFilter={true}
         disableColumnMenu={false}
+        sortingMode="client"
       />
 
       {/* Action Menu */}

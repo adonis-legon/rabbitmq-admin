@@ -16,6 +16,8 @@ export interface PaginationRequest {
   name?: string;
   vhost?: string;
   useRegex?: boolean;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
 }
 
 // Connection Types

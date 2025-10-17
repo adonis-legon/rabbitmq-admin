@@ -601,6 +601,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage="No exchanges found"
         height={600}
+        sortingMode="client"
       />
 
       {/* Exchange Detail Modal */}
