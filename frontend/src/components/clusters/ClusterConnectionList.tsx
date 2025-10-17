@@ -26,11 +26,12 @@ import {
   Refresh as RefreshIcon,
   MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
-import { GridColDef } from "@mui/x-data-grid";
+import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { ClusterConnection } from "../../types/cluster";
 import { useClusters } from "../../hooks/useClusters";
 import ClusterConnectionForm from "./ClusterConnectionForm";
 import ConnectionTest from "./ConnectionTest";
+import ClusterConnectionDetails from "./ClusterConnectionDetails";
 import { useNotification } from "../../contexts/NotificationContext";
 import { Breadcrumbs, SearchAndFilter } from "../common";
 import { getIcon, IconSizes } from "../../utils/icons";
@@ -42,6 +43,7 @@ const ClusterConnectionList: React.FC = () => {
   const { success } = useNotification();
   const [formOpen, setFormOpen] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedCluster, setSelectedCluster] =
     useState<ClusterConnection | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -114,6 +116,17 @@ const ClusterConnectionList: React.FC = () => {
     setSelectedCluster(null);
   };
 
+  const handleDetailsClose = () => {
+    setDetailsOpen(false);
+    setSelectedCluster(null);
+  };
+
+  const handleEditFromDetails = (cluster: ClusterConnection) => {
+    setDetailsOpen(false);
+    setSelectedCluster(cluster);
+    setFormOpen(true);
+  };
+
   // Filter clusters based on search term and status filter
   useEffect(() => {
     let filtered = clusters;
@@ -175,10 +188,11 @@ const ClusterConnectionList: React.FC = () => {
     setClusterForAction(null);
   };
 
-  // Handle row click (optional - could open edit dialog or details)
-  const handleRowClick = () => {
-    // const cluster = params.row as ClusterConnection;
-    // Could implement view details here if needed
+  // Handle row click to open details modal
+  const handleRowClick = (params: GridRowParams) => {
+    const cluster = params.row as ClusterConnection;
+    setSelectedCluster(cluster);
+    setDetailsOpen(true);
   };
 
   // Format cluster data for display
@@ -475,6 +489,14 @@ const ClusterConnectionList: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Cluster Connection Details Modal */}
+      <ClusterConnectionDetails
+        open={detailsOpen}
+        onClose={handleDetailsClose}
+        cluster={selectedCluster}
+        onEdit={handleEditFromDetails}
+      />
     </Box>
   );
 };
