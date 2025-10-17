@@ -490,6 +490,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
       headerAlign: "center",
       sortable: false,
       filterable: false,
+      resizable: false,
       disableColumnMenu: true,
       renderCell: (params) => (
         <IconButton

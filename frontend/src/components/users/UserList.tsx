@@ -304,6 +304,7 @@ const UserList: React.FC = () => {
       headerAlign: "center",
       sortable: false,
       filterable: false,
+      resizable: false,
       disableColumnMenu: true,
       renderCell: (params) => (
         <IconButton

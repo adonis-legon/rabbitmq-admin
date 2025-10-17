@@ -8,6 +8,7 @@ import {
   GridSortModel,
   GridFilterModel,
   GridToolbar,
+  GridColumnResizeParams,
 } from "@mui/x-data-grid";
 
 export interface ResourceTableProps<T = any> {
@@ -29,7 +30,10 @@ export interface ResourceTableProps<T = any> {
   height?: number | string;
   disableColumnFilter?: boolean;
   disableColumnMenu?: boolean;
+  disableColumnResize?: boolean;
   disableRowSelectionOnClick?: boolean;
+  onColumnResize?: (params: GridColumnResizeParams) => void;
+  onColumnWidthChange?: (params: GridColumnResizeParams) => void;
   // Sorting mode - 'server' for server-side sorting, 'client' for client-side sorting
   sortingMode?: 'server' | 'client';
 }
@@ -53,7 +57,11 @@ const ResourceTableComponent = <T extends Record<string, any>>({
   height = 600,
   disableColumnFilter = false,
   disableColumnMenu = false,
+  disableColumnResize = false,
   disableRowSelectionOnClick = true,
+  onColumnResize,
+  onColumnWidthChange,
+  // Sorting mode
   sortingMode = "server",
 }: ResourceTableProps<T>) => {
   const handlePaginationModelChange = (model: GridPaginationModel) => {
@@ -113,7 +121,6 @@ const ResourceTableComponent = <T extends Record<string, any>>({
       sx={{
         height: { xs: 400, sm: 500, md: height },
         width: "100%",
-        overflow: "hidden",
       }}
       role="region"
       aria-label="Resource data table"
@@ -139,6 +146,9 @@ const ResourceTableComponent = <T extends Record<string, any>>({
         disableRowSelectionOnClick={disableRowSelectionOnClick}
         disableColumnFilter={disableColumnFilter}
         disableColumnMenu={disableColumnMenu}
+        disableColumnResize={disableColumnResize}
+        onColumnResize={onColumnResize}
+        onColumnWidthChange={onColumnWidthChange}
         slots={{
           toolbar: GridToolbar,
         }}
@@ -152,35 +162,15 @@ const ResourceTableComponent = <T extends Record<string, any>>({
           border: 0,
           "& .MuiDataGrid-cell": {
             borderBottom: "1px solid rgba(224, 224, 224, 1)",
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            padding: { xs: "4px 8px", sm: "8px 16px" },
           },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: "rgba(0, 0, 0, 0.04)",
             borderBottom: "2px solid rgba(224, 224, 224, 1)",
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            fontWeight: 600,
           },
-          "& .MuiDataGrid-row:hover": {
-            backgroundColor: "rgba(25, 118, 210, 0.04)",
-            cursor: onRowClick ? "pointer" : "default",
-          },
-          "& .MuiDataGrid-footerContainer": {
-            borderTop: "2px solid rgba(224, 224, 224, 1)",
-            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-          },
-          "& .MuiDataGrid-toolbar": {
-            padding: { xs: "8px", sm: "16px" },
-            "& .MuiButton-root": {
-              fontSize: { xs: "0.75rem", sm: "0.875rem" },
-            },
-          },
-          // Hide less important columns on mobile
-          "& .MuiDataGrid-columnHeader--sortable": {
-            "& .MuiDataGrid-columnHeaderTitle": {
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+          "& .MuiDataGrid-columnSeparator": {
+            cursor: "col-resize !important",
+            "&:hover": {
+              cursor: "col-resize !important",
             },
           },
         }}

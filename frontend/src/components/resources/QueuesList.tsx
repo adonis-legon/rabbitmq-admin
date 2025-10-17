@@ -600,6 +600,7 @@ export const QueuesList: React.FC<QueuesListProps> = ({
       headerAlign: "center",
       sortable: false,
       filterable: false,
+      resizable: false,
       disableColumnMenu: true,
       renderCell: (params) => (
         <IconButton

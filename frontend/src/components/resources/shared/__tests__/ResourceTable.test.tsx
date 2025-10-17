@@ -81,7 +81,7 @@ const mockData = [
 const mockColumns = [
   { field: "name", headerName: "Name", width: 150 },
   { field: "status", headerName: "Status", width: 120 },
-  { field: "value", headerName: "Value", width: 100, type: "number" },
+  { field: "value", headerName: "Value", width: 100, type: "number" as const },
 ];
 
 describe("ResourceTable", () => {
