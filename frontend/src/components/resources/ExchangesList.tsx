@@ -372,13 +372,46 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
       flex: 1,
       minWidth: 200,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          width: "100%",
+          height: "100%"
+        }}>
           {getTypeIcon(params.row.type)}
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
+          <Box sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            minWidth: 0,
+            flex: 1
+          }}>
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              sx={{
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.value}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.row.vhost}
             </Typography>
           </Box>
@@ -388,33 +421,37 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     {
       field: "type",
       headerName: "Type",
-      width: 120,
+      width: 130,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Chip
           label={params.value}
           color={getTypeColor(params.value)}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },
     {
       field: "durabilityText",
       headerName: "Durability",
-      width: 120,
+      width: 130,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Chip
           label={params.value}
           color={params.row.durable ? "success" : "default"}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },
     {
       field: "autoDeleteText",
       headerName: "Auto Delete",
-      width: 120,
+      width: 130,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
@@ -422,14 +459,14 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           label={params.value}
           color={params.row.auto_delete ? "warning" : "default"}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },
     {
       field: "internalText",
       headerName: "Internal",
-      width: 100,
+      width: 110,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
@@ -437,7 +474,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           label={params.value}
           color={params.row.internal ? "info" : "default"}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },

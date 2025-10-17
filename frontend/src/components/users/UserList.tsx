@@ -23,8 +23,9 @@ import {
   Visibility as ViewIcon,
   Refresh as RefreshIcon,
   LockOpen as UnlockIcon,
-  Lock as LockIcon,
   MoreVert as MoreVertIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
 } from "@mui/icons-material";
 import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { User } from "../../types/user";
@@ -235,36 +236,49 @@ const UserList: React.FC = () => {
       field: "username",
       headerName: "Username",
       flex: 1,
-      minWidth: 150,
+      minWidth: 160,
       renderCell: (params) => (
-        <Typography variant="body2" fontWeight="medium">
-          {params.value}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {getIcon("users", { fontSize: 16 })}
+          <Typography variant="body2" fontWeight="medium">
+            {params.value}
+          </Typography>
+        </Box>
       ),
     },
     {
       field: "role",
       headerName: "Role",
-      width: 130,
+      width: 140,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Chip
           label={params.value}
           color={getRoleColor(params.value)}
           size="small"
+          variant="filled"
         />
       ),
     },
     {
       field: "statusText",
       headerName: "Status",
-      width: 120,
+      width: 140,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 0.5,
+          justifyContent: "center",
+          alignItems: "flex-start",
+          height: "100%"
+        }}>
           <Chip
             label={params.value}
             color={params.row.locked ? "error" : "success"}
             size="small"
-            icon={params.row.locked ? <LockIcon /> : undefined}
+            icon={params.row.locked ? <ErrorIcon /> : <CheckCircleIcon />}
           />
           {params.row.locked && params.row.failedLoginAttempts && (
             <Typography variant="caption" color="text.secondary">
@@ -277,21 +291,29 @@ const UserList: React.FC = () => {
     {
       field: "assignedClustersCount",
       headerName: "Assigned Clusters",
-      width: 150,
+      width: 160,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
-        <Typography variant="body2" color="text.secondary">
-          {params.value} cluster{params.value !== 1 ? "s" : ""}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "center" }}>
+          {getIcon("clusters", { fontSize: 16 })}
+          <Typography variant="body2" fontWeight="medium">
+            {params.value}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            cluster{params.value !== 1 ? "s" : ""}
+          </Typography>
+        </Box>
       ),
     },
     {
       field: "createdAtFormatted",
       headerName: "Created At",
       width: 180,
+      align: "right",
+      headerAlign: "right",
       renderCell: (params) => (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" fontFamily="monospace">
           {params.value}
         </Typography>
       ),

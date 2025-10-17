@@ -463,13 +463,46 @@ export const QueuesList: React.FC<QueuesListProps> = ({
       flex: 1,
       minWidth: 200,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          width: "100%",
+          height: "100%"
+        }}>
           <QueueIcon color="primary" fontSize="small" />
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
+          <Box sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            minWidth: 0,
+            flex: 1
+          }}>
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              sx={{
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.value}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.row.vhost}
             </Typography>
           </Box>
@@ -479,15 +512,17 @@ export const QueuesList: React.FC<QueuesListProps> = ({
     {
       field: "state",
       headerName: "State",
-      width: 120,
+      width: 130,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}>
           {getStateIcon(params.value)}
           <Chip
             label={params.value}
             color={getStateColor(params.value)}
             size="small"
-            variant="outlined"
+            variant="filled"
           />
         </Box>
       ),
@@ -560,13 +595,15 @@ export const QueuesList: React.FC<QueuesListProps> = ({
     {
       field: "durabilityText",
       headerName: "Durability",
-      width: 120,
+      width: 130,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Chip
           label={params.value}
           color={params.row.durable ? "success" : "default"}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },

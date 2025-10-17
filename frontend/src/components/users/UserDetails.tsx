@@ -64,18 +64,24 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                 sx: { minHeight: '400px' }
             }}
         >
-            <DialogTitle sx={{ pb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Typography variant="h5" component="div">
-                        User Details
-                    </Typography>
-                    <Chip
-                        icon={getRoleIcon(user.role)}
-                        label={user.role}
-                        color={getRoleColor(user.role)}
-                        size="small"
-                    />
-                </Box>
+            <DialogTitle
+                component="div"
+                sx={{
+                    pb: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2
+                }}
+            >
+                <Typography variant="h5" component="h2">
+                    User Details
+                </Typography>
+                <Chip
+                    icon={getRoleIcon(user.role)}
+                    label={user.role}
+                    color={getRoleColor(user.role)}
+                    size="small"
+                />
             </DialogTitle>
 
             <DialogContent>
@@ -83,11 +89,13 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                     {/* Basic Information */}
                     <Grid item xs={12} md={6}>
                         <Paper sx={{ p: 3, height: '100%' }}>
-                            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <PersonIcon color="primary" />
-                                Basic Information
-                            </Typography>
-                            <Divider sx={{ mb: 2 }} />
+                                <Typography variant="h6" component="h3">
+                                    Basic Information
+                                </Typography>
+                            </Box>
+                            <Divider sx={{ my: 2 }} />
 
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 <Box>
@@ -121,10 +129,12 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                                 </Box>
 
                                 <Box>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        <CalendarIcon fontSize="small" />
-                                        Created At
-                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                        <CalendarIcon fontSize="small" color="action" />
+                                        <Typography variant="body2" color="text.secondary">
+                                            Created At
+                                        </Typography>
+                                    </Box>
                                     <Typography variant="body1">
                                         {formatDate(user.createdAt)}
                                     </Typography>
@@ -136,17 +146,19 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                     {/* Cluster Assignments */}
                     <Grid item xs={12} md={6}>
                         <Paper sx={{ p: 3, height: '100%' }}>
-                            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <ClusterIcon color="primary" />
-                                Cluster Assignments
+                                <Typography variant="h6" component="h3">
+                                    Cluster Assignments
+                                </Typography>
                                 <Chip
                                     label={user.assignedClusters.length}
                                     size="small"
                                     color="primary"
                                     variant="outlined"
                                 />
-                            </Typography>
-                            <Divider sx={{ mb: 2 }} />
+                            </Box>
+                            <Divider sx={{ my: 2 }} />
 
                             {user.assignedClusters.length === 0 ? (
                                 <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -160,36 +172,42 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                             ) : (
                                 <List dense>
                                     {user.assignedClusters.map((cluster) => (
-                                        <ListItem key={cluster.id} sx={{ px: 0 }}>
-                                            <ListItemIcon>
+                                        <ListItem key={cluster.id} sx={{ px: 0, alignItems: 'flex-start' }}>
+                                            <ListItemIcon sx={{ mt: 0.5 }}>
                                                 <ClusterIcon color="action" />
                                             </ListItemIcon>
                                             <ListItemText
-                                                primary={
-                                                    <Typography variant="body2" fontWeight="medium">
-                                                        {cluster.name}
-                                                    </Typography>
-                                                }
+                                                primary={cluster.name}
                                                 secondary={
-                                                    <Box>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {cluster.apiUrl}
-                                                        </Typography>
+                                                    <>
+                                                        {cluster.apiUrl}
                                                         {cluster.description && (
-                                                            <Typography variant="caption" display="block" color="text.secondary">
+                                                            <>
+                                                                <br />
                                                                 {cluster.description}
-                                                            </Typography>
+                                                            </>
                                                         )}
-                                                        <Chip
-                                                            label={cluster.active ? 'Active' : 'Inactive'}
-                                                            size="small"
-                                                            color={cluster.active ? 'success' : 'default'}
-                                                            variant="outlined"
-                                                            sx={{ mt: 0.5 }}
-                                                        />
-                                                    </Box>
+                                                    </>
                                                 }
+                                                primaryTypographyProps={{
+                                                    variant: 'body2',
+                                                    fontWeight: 'medium'
+                                                }}
+                                                secondaryTypographyProps={{
+                                                    variant: 'caption',
+                                                    color: 'text.secondary',
+                                                    component: 'div'
+                                                }}
+                                                sx={{ mr: 1 }}
                                             />
+                                            <Box sx={{ mt: 0.5 }}>
+                                                <Chip
+                                                    label={cluster.active ? 'Active' : 'Inactive'}
+                                                    size="small"
+                                                    color={cluster.active ? 'success' : 'default'}
+                                                    variant="outlined"
+                                                />
+                                            </Box>
                                         </ListItem>
                                     ))}
                                 </List>

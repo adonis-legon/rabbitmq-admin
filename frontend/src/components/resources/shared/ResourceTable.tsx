@@ -34,6 +34,7 @@ export interface ResourceTableProps<T = any> {
   disableRowSelectionOnClick?: boolean;
   onColumnResize?: (params: GridColumnResizeParams) => void;
   onColumnWidthChange?: (params: GridColumnResizeParams) => void;
+  rowHeight?: number;
   // Sorting mode - 'server' for server-side sorting, 'client' for client-side sorting
   sortingMode?: 'server' | 'client';
 }
@@ -61,6 +62,7 @@ const ResourceTableComponent = <T extends Record<string, any>>({
   disableRowSelectionOnClick = true,
   onColumnResize,
   onColumnWidthChange,
+  rowHeight,
   // Sorting mode
   sortingMode = "server",
 }: ResourceTableProps<T>) => {
@@ -149,6 +151,7 @@ const ResourceTableComponent = <T extends Record<string, any>>({
         disableColumnResize={disableColumnResize}
         onColumnResize={onColumnResize}
         onColumnWidthChange={onColumnWidthChange}
+        rowHeight={rowHeight}
         slots={{
           toolbar: GridToolbar,
         }}
@@ -160,17 +163,33 @@ const ResourceTableComponent = <T extends Record<string, any>>({
         }}
         sx={{
           border: 0,
-          "& .MuiDataGrid-cell": {
-            borderBottom: "1px solid rgba(224, 224, 224, 1)",
+          '& .MuiDataGrid-cell': {
+            borderBottom: '1px solid',
+            borderBottomColor: 'divider',
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
           },
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: "rgba(0, 0, 0, 0.04)",
-            borderBottom: "2px solid rgba(224, 224, 224, 1)",
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
+            borderBottom: '2px solid',
+            borderBottomColor: 'divider',
+            '& .MuiDataGrid-columnHeader': {
+              padding: '8px 12px',
+              display: 'flex',
+              alignItems: 'center',
+            },
           },
-          "& .MuiDataGrid-columnSeparator": {
-            cursor: "col-resize !important",
-            "&:hover": {
-              cursor: "col-resize !important",
+          '& .MuiDataGrid-row': {
+            '&:hover': {
+              backgroundColor: 'action.hover',
+            },
+          },
+          '& .MuiDataGrid-columnSeparator': {
+            cursor: 'col-resize !important',
+            color: 'divider',
+            '&:hover': {
+              cursor: 'col-resize !important',
             },
           },
         }}
