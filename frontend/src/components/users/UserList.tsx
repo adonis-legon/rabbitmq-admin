@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
   Button,
   IconButton,
@@ -18,7 +11,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -27,8 +23,11 @@ import {
   Visibility as ViewIcon,
   Refresh as RefreshIcon,
   LockOpen as UnlockIcon,
-  Lock as LockIcon,
+  MoreVert as MoreVertIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
 } from "@mui/icons-material";
+import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { User } from "../../types/user";
 import { UserRole } from "../../types/auth";
 import { userApi } from "../../services/api/userApi";
@@ -37,6 +36,7 @@ import { UserForm, UserDetails } from "./index";
 import { useNotification } from "../../contexts/NotificationContext";
 import { Breadcrumbs, SearchAndFilter } from "../common";
 import { getIcon, IconSizes } from "../../utils/icons";
+import ResourceTable from "../resources/shared/ResourceTable";
 
 const UserList: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -51,6 +51,8 @@ const UserList: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
+  const [userForAction, setUserForAction] = useState<User | null>(null);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -199,6 +201,145 @@ const UserList: React.FC = () => {
   // Check if current user is admin
   const isAdmin = currentUser?.role === UserRole.ADMINISTRATOR;
 
+  // Handle action menu
+  const handleActionMenuOpen = (event: React.MouseEvent<HTMLElement>, user: User) => {
+    event.stopPropagation();
+    setActionMenuAnchor(event.currentTarget);
+    setUserForAction(user);
+  };
+
+  const handleActionMenuClose = () => {
+    setActionMenuAnchor(null);
+    setUserForAction(null);
+  };
+
+  // Handle row click
+  const handleRowClick = (params: GridRowParams) => {
+    const user = params.row as User;
+    handleViewUser(user);
+  };
+
+  // Format user data for display
+  const formatUserData = (users: User[]) => {
+    return users.map((user) => ({
+      ...user,
+      id: user.id, // Use ID for DataGrid
+      statusText: user.locked ? "Locked" : "Active",
+      assignedClustersCount: user.assignedClusters.length,
+      createdAtFormatted: formatDate(user.createdAt),
+    }));
+  };
+
+  // DataGrid columns
+  const columns: GridColDef[] = [
+    {
+      field: "username",
+      headerName: "Username",
+      flex: 1,
+      minWidth: 160,
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {getIcon("users", { fontSize: 16 })}
+          <Typography variant="body2" fontWeight="medium">
+            {params.value}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "role",
+      headerName: "Role",
+      width: 140,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          color={getRoleColor(params.value)}
+          size="small"
+          variant="filled"
+        />
+      ),
+    },
+    {
+      field: "statusText",
+      headerName: "Status",
+      width: 140,
+      renderCell: (params) => (
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 0.5,
+          justifyContent: "center",
+          alignItems: "flex-start",
+          height: "100%"
+        }}>
+          <Chip
+            label={params.value}
+            color={params.row.locked ? "error" : "success"}
+            size="small"
+            icon={params.row.locked ? <ErrorIcon /> : <CheckCircleIcon />}
+          />
+          {params.row.locked && params.row.failedLoginAttempts && (
+            <Typography variant="caption" color="text.secondary">
+              {params.row.failedLoginAttempts} failed attempts
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: "assignedClustersCount",
+      headerName: "Assigned Clusters",
+      width: 160,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, justifyContent: "center" }}>
+          {getIcon("clusters", { fontSize: 16 })}
+          <Typography variant="body2" fontWeight="medium">
+            {params.value}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            cluster{params.value !== 1 ? "s" : ""}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "createdAtFormatted",
+      headerName: "Created At",
+      width: 180,
+      align: "right",
+      headerAlign: "right",
+      renderCell: (params) => (
+        <Typography variant="body2" color="text.secondary" fontFamily="monospace">
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 80,
+      align: "center",
+      headerAlign: "center",
+      sortable: false,
+      filterable: false,
+      resizable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          onClick={(event) => handleActionMenuOpen(event, params.row as User)}
+          aria-label={`Actions for user ${params.row.username}`}
+        >
+          <MoreVertIcon />
+        </IconButton>
+      ),
+    },
+  ];
+
   if (!isAdmin) {
     return (
       <Box sx={{ mt: { xs: 1, sm: 2 }, mb: 4, px: { xs: 1, sm: 3 } }}>
@@ -321,122 +462,68 @@ const UserList: React.FC = () => {
         searchPlaceholder="Search users by username..."
       />
 
-      <Paper>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Username</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Assigned Clusters</TableCell>
-                <TableCell>Created At</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {users.length === 0
-                        ? 'No users found. Click "Add User" to create the first user.'
-                        : "No users match the current filters."}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id} hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {user.username}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.role}
-                        color={getRoleColor(user.role)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={user.locked ? "Locked" : "Active"}
-                        color={user.locked ? "error" : "success"}
-                        size="small"
-                        icon={user.locked ? <LockIcon /> : undefined}
-                      />
-                      {user.locked && user.failedLoginAttempts && (
-                        <Typography variant="caption" display="block" color="text.secondary">
-                          {user.failedLoginAttempts} failed attempts
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {user.assignedClusters.length} cluster
-                        {user.assignedClusters.length !== 1 ? "s" : ""}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatDate(user.createdAt)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 0.5,
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        <Tooltip title="View Details">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleViewUser(user)}
-                          >
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit User">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditUser(user)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        {user.locked && currentUser?.role === UserRole.ADMINISTRATOR && (
-                          <Tooltip title="Unlock User">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleUnlockUser(user)}
-                              color="success"
-                            >
-                              <UnlockIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                        <Tooltip title="Delete User">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteUser(user)}
-                            disabled={user.id === currentUser?.id}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Paper>
+      <ResourceTable
+        data={formatUserData(filteredUsers)}
+        columns={columns}
+        loading={loading}
+        error={error}
+        onRowClick={handleRowClick}
+        getRowId={(row) => row.id}
+        emptyMessage={
+          users.length === 0
+            ? 'No users found. Click "Add User" to create the first user.'
+            : "No users match the current filters."
+        }
+        height={600}
+        disableColumnFilter={true}
+        disableColumnMenu={false}
+        sortingMode="client"
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={actionMenuAnchor}
+        open={Boolean(actionMenuAnchor)}
+        onClose={handleActionMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <MenuItem onClick={() => { handleViewUser(userForAction!); handleActionMenuClose(); }}>
+          <ListItemIcon>
+            <ViewIcon />
+          </ListItemIcon>
+          <ListItemText>View Details</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { handleEditUser(userForAction!); handleActionMenuClose(); }}>
+          <ListItemIcon>
+            <EditIcon />
+          </ListItemIcon>
+          <ListItemText>Edit User</ListItemText>
+        </MenuItem>
+        {userForAction?.locked && currentUser?.role === UserRole.ADMINISTRATOR && (
+          <MenuItem onClick={() => { handleUnlockUser(userForAction!); handleActionMenuClose(); }}>
+            <ListItemIcon>
+              <UnlockIcon />
+            </ListItemIcon>
+            <ListItemText>Unlock User</ListItemText>
+          </MenuItem>
+        )}
+        <MenuItem
+          onClick={() => { handleDeleteUser(userForAction!); handleActionMenuClose(); }}
+          disabled={userForAction?.id === currentUser?.id}
+        >
+          <ListItemIcon>
+            <DeleteIcon />
+          </ListItemIcon>
+          <ListItemText>Delete User</ListItemText>
+        </MenuItem>
+      </Menu>
 
       {/* User Form Dialog */}
       <UserForm

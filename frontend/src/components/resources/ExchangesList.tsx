@@ -280,7 +280,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         await rabbitmqResourcesApi.deleteExchange(
           clusterId,
           actionMenuExchange.vhost,
-          actionMenuExchange.name,
+          actionMenuExchange.originalName || actionMenuExchange.name,
           options.ifUnused
         );
         notifyExchangeDeleted(actionMenuExchange.name, options.ifUnused);
@@ -321,16 +321,25 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
 
   // Format exchange data for display
   const formatExchangeData = (exchanges: RabbitMQExchange[]) => {
-    return exchanges.map((exchange) => ({
-      ...exchange,
-      id: exchange.name, // Use name as ID for DataGrid
-      durabilityText: exchange.durable ? "Durable" : "Transient",
-      autoDeleteText: exchange.auto_delete ? "Yes" : "No",
-      internalText: exchange.internal ? "Yes" : "No",
-      argumentsCount: Object.keys(exchange.arguments || {}).length,
-      publishInRate: exchange.message_stats?.publish_in_details?.rate || 0,
-      publishOutRate: exchange.message_stats?.publish_out_details?.rate || 0,
-    }));
+    return exchanges.map((exchange) => {
+      // Handle default AMQP exchange (empty name) - display as "(AMQP default)"
+      const displayName = exchange.name === "" ? "(AMQP default)" : exchange.name;
+      // Use vhost + name combination for unique ID to avoid empty ID issues
+      const uniqueId = exchange.name === "" ? `${exchange.vhost}::(AMQP default)` : `${exchange.vhost}::${exchange.name}`;
+
+      return {
+        ...exchange,
+        id: uniqueId, // Use unique ID for DataGrid
+        name: displayName, // Override display name for default exchange
+        originalName: exchange.name, // Keep original name for API operations
+        durabilityText: exchange.durable ? "Durable" : "Transient",
+        autoDeleteText: exchange.auto_delete ? "Yes" : "No",
+        internalText: exchange.internal ? "Yes" : "No",
+        argumentsCount: Object.keys(exchange.arguments || {}).length,
+        publishInRate: exchange.message_stats?.publish_in_details?.rate || 0,
+        publishOutRate: exchange.message_stats?.publish_out_details?.rate || 0,
+      };
+    });
   };
 
   const getTypeIcon = (type: string) => {
@@ -372,13 +381,46 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
       flex: 1,
       minWidth: 200,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          width: "100%",
+          height: "100%"
+        }}>
           {getTypeIcon(params.row.type)}
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
+          <Box sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            minWidth: 0,
+            flex: 1
+          }}>
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              sx={{
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.value}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.row.vhost}
             </Typography>
           </Box>
@@ -388,33 +430,37 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
     {
       field: "type",
       headerName: "Type",
-      width: 120,
+      width: 130,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Chip
           label={params.value}
           color={getTypeColor(params.value)}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },
     {
       field: "durabilityText",
       headerName: "Durability",
-      width: 120,
+      width: 130,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
         <Chip
           label={params.value}
           color={params.row.durable ? "success" : "default"}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },
     {
       field: "autoDeleteText",
       headerName: "Auto Delete",
-      width: 120,
+      width: 130,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
@@ -422,14 +468,14 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           label={params.value}
           color={params.row.auto_delete ? "warning" : "default"}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },
     {
       field: "internalText",
       headerName: "Internal",
-      width: 100,
+      width: 110,
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
@@ -437,7 +483,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           label={params.value}
           color={params.row.internal ? "info" : "default"}
           size="small"
-          variant="outlined"
+          variant="filled"
         />
       ),
     },
@@ -490,6 +536,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
       headerAlign: "center",
       sortable: false,
       filterable: false,
+      resizable: false,
       disableColumnMenu: true,
       renderCell: (params) => (
         <IconButton
@@ -601,6 +648,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage="No exchanges found"
         height={600}
+        sortingMode="client"
       />
 
       {/* Exchange Detail Modal */}
@@ -663,7 +711,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           clusterId={clusterId}
           context="exchange"
           sourceResource={{
-            name: actionMenuExchange.name,
+            name: actionMenuExchange.originalName || actionMenuExchange.name,
             vhost: actionMenuExchange.vhost,
           }}
           onClose={handleCreateBindingClose}
@@ -678,7 +726,7 @@ export const ExchangesList: React.FC<ExchangesListProps> = ({
           clusterId={clusterId}
           context="exchange"
           targetResource={{
-            name: actionMenuExchange.name,
+            name: actionMenuExchange.originalName || actionMenuExchange.name,
             vhost: actionMenuExchange.vhost,
           }}
           onClose={handlePublishMessageClose}

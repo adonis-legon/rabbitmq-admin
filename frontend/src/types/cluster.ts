@@ -1,3 +1,5 @@
+import { User } from './user';
+
 export interface ClusterConnection {
   id: string;
   name: string;
@@ -40,9 +42,4 @@ export interface ConnectionTestResponse {
   message: string;
   errorDetails?: string;
   responseTimeMs?: number;
-}
-
-interface User {
-  id: string;
-  username: string;
 }

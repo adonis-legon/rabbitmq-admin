@@ -18,6 +18,7 @@ import ResourceFilters from "./shared/ResourceFilters";
 import RefreshControls from "./shared/RefreshControls";
 import ChannelDetailModal from "./ChannelDetailModal";
 import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
+import { useAutoRefreshPreferences } from "../../hooks/useAutoRefreshPreferences";
 
 interface ChannelsListProps {
   clusterId: string;
@@ -51,8 +52,12 @@ const ChannelsListComponent: React.FC<ChannelsListProps> = ({
     }
   );
 
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(30);
+  const { autoRefresh, refreshInterval, setAutoRefresh, setRefreshInterval } =
+    useAutoRefreshPreferences({
+      storageKey: 'rabbitmq-admin-channels-autorefresh',
+      defaultInterval: 30,
+      defaultEnabled: false,
+    });
   const [selectedChannel, setSelectedChannel] =
     useState<RabbitMQChannel | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -206,13 +211,46 @@ const ChannelsListComponent: React.FC<ChannelsListProps> = ({
       flex: 1,
       minWidth: 200,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          width: "100%",
+          height: "100%"
+        }}>
           {getStateIcon(params.row.state)}
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
+          <Box sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            minWidth: 0,
+            flex: 1
+          }}>
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              sx={{
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.value}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               Channel #{params.row.number}
             </Typography>
           </Box>
@@ -238,11 +276,39 @@ const ChannelsListComponent: React.FC<ChannelsListProps> = ({
       flex: 1,
       minWidth: 200,
       renderCell: (params) => (
-        <Box>
-          <Typography variant="body2" fontWeight="medium">
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          height: "100%",
+          minWidth: 0,
+          width: "100%"
+        }}>
+          <Typography
+            variant="body2"
+            fontWeight="medium"
+            sx={{
+              lineHeight: 1.2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              width: "100%"
+            }}
+          >
             {params.value}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              lineHeight: 1.1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              width: "100%"
+            }}
+          >
             {params.row.connectionHost}
           </Typography>
         </Box>
@@ -413,6 +479,7 @@ const ChannelsListComponent: React.FC<ChannelsListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage="No channels found"
         height={600}
+        sortingMode="client"
       />
 
       <ChannelDetailModal

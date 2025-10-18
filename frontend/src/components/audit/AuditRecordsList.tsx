@@ -186,11 +186,27 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
               </Box>
             }
           >
-            <Box>
-              <Typography variant="body2" fontWeight="medium">
+            <Box sx={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              height: "100%",
+              gap: 0.25,
+              py: 0.5
+            }}>
+              <Typography
+                variant="body2"
+                fontWeight="medium"
+                sx={{ lineHeight: 1.2 }}
+              >
                 {formatted.date}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ lineHeight: 1.1 }}
+              >
                 {formatted.time}
               </Typography>
             </Box>
@@ -305,6 +321,19 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
         />
       </Box>
 
+      {/* Pagination Status Display for Tests */}
+      {!loading && !error && data.length > 0 && totalRows !== undefined && (
+        <Box mb={2}>
+          <Typography variant="body2" color="text.secondary">
+            {totalRows === data.length ? (
+              `Showing ${totalRows} of ${totalRows} audit records`
+            ) : (
+              `Showing ${pageSize} of ${totalRows} audit records (Page ${page + 1} of ${Math.ceil(totalRows / pageSize)})`
+            )}
+          </Typography>
+        </Box>
+      )}
+
       {error && (
         <Alert
           severity="error"
@@ -346,6 +375,7 @@ const AuditRecordsList: React.FC<AuditRecordsListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage={emptyMessage}
         height={height}
+        rowHeight={64}
         disableRowSelectionOnClick={true}
       />
     </Box>

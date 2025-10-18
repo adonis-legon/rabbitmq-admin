@@ -17,6 +17,7 @@ import ResourceFilters from "./shared/ResourceFilters";
 import RefreshControls from "./shared/RefreshControls";
 import ConnectionDetailModal from "./ConnectionDetailModal";
 import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
+import { useAutoRefreshPreferences } from "../../hooks/useAutoRefreshPreferences";
 
 interface ConnectionsListProps {
   clusterId: string;
@@ -50,8 +51,12 @@ const ConnectionsListComponent: React.FC<ConnectionsListProps> = ({
     }
   );
 
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(30);
+  const { autoRefresh, refreshInterval, setAutoRefresh, setRefreshInterval } =
+    useAutoRefreshPreferences({
+      storageKey: 'rabbitmq-admin-connections-autorefresh',
+      defaultInterval: 30,
+      defaultEnabled: false,
+    });
   const [selectedConnection, setSelectedConnection] =
     useState<RabbitMQConnection | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -211,13 +216,46 @@ const ConnectionsListComponent: React.FC<ConnectionsListProps> = ({
       flex: 1,
       minWidth: 200,
       renderCell: (params) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          width: "100%",
+          height: "100%"
+        }}>
           {getStateIcon(params.row.state)}
-          <Box>
-            <Typography variant="body2" fontWeight="medium">
+          <Box sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "flex-start",
+            minWidth: 0,
+            flex: 1
+          }}>
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              sx={{
+                lineHeight: 1.2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.value}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                lineHeight: 1.1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                width: "100%"
+              }}
+            >
               {params.row.peer_host}:{params.row.peer_port}
             </Typography>
           </Box>
@@ -251,11 +289,39 @@ const ConnectionsListComponent: React.FC<ConnectionsListProps> = ({
       flex: 1,
       minWidth: 200,
       renderCell: (params) => (
-        <Box>
-          <Typography variant="body2" fontWeight="medium">
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          height: "100%",
+          minWidth: 0,
+          width: "100%"
+        }}>
+          <Typography
+            variant="body2"
+            fontWeight="medium"
+            sx={{
+              lineHeight: 1.2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              width: "100%"
+            }}
+          >
             {params.value}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              lineHeight: 1.1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              width: "100%"
+            }}
+          >
             {params.row.clientProduct} {params.row.clientVersion}
           </Typography>
         </Box>
@@ -385,6 +451,7 @@ const ConnectionsListComponent: React.FC<ConnectionsListProps> = ({
         getRowId={(row) => row.id}
         emptyMessage="No connections found"
         height={600}
+        sortingMode="client"
       />
 
       {/* Connection Detail Modal */}

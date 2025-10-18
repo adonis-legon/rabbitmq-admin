@@ -31,6 +31,9 @@ export const rabbitmqResourcesApi = {
     if (params.pageSize !== undefined) searchParams.append('pageSize', params.pageSize.toString());
     if (params.name) searchParams.append('name', params.name);
     if (params.useRegex !== undefined) searchParams.append('useRegex', params.useRegex.toString());
+    // Add sorting parameters (for future backend support)
+    if (params.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params.sortDirection) searchParams.append('sortDirection', params.sortDirection);
 
     const response = await apiClient.get<PagedResponse<RabbitMQConnection>>(
       `/rabbitmq/${clusterId}/resources/connections?${searchParams.toString()}`
@@ -50,6 +53,9 @@ export const rabbitmqResourcesApi = {
     if (params.pageSize !== undefined) searchParams.append('pageSize', params.pageSize.toString());
     if (params.name) searchParams.append('name', params.name);
     if (params.useRegex !== undefined) searchParams.append('useRegex', params.useRegex.toString());
+    // Add sorting parameters (for future backend support)
+    if (params.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params.sortDirection) searchParams.append('sortDirection', params.sortDirection);
 
     const response = await apiClient.get<PagedResponse<RabbitMQChannel>>(
       `/rabbitmq/${clusterId}/resources/channels?${searchParams.toString()}`
@@ -70,6 +76,9 @@ export const rabbitmqResourcesApi = {
     if (params.name) searchParams.append('name', params.name);
     if (params.vhost) searchParams.append('vhost', params.vhost);
     if (params.useRegex !== undefined) searchParams.append('useRegex', params.useRegex.toString());
+    // Add sorting parameters (for future backend support)
+    if (params.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params.sortDirection) searchParams.append('sortDirection', params.sortDirection);
 
     const response = await apiClient.get<PagedResponse<RabbitMQExchange>>(
       `/rabbitmq/${clusterId}/resources/exchanges?${searchParams.toString()}`
@@ -90,6 +99,9 @@ export const rabbitmqResourcesApi = {
     if (params.name) searchParams.append('name', params.name);
     if (params.vhost) searchParams.append('vhost', params.vhost);
     if (params.useRegex !== undefined) searchParams.append('useRegex', params.useRegex.toString());
+    // Add sorting parameters (for future backend support)
+    if (params.sortBy) searchParams.append('sortBy', params.sortBy);
+    if (params.sortDirection) searchParams.append('sortDirection', params.sortDirection);
 
     const response = await apiClient.get<PagedResponse<RabbitMQQueue>>(
       `/rabbitmq/${clusterId}/resources/queues?${searchParams.toString()}`

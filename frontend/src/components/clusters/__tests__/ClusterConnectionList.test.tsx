@@ -217,6 +217,6 @@ describe("ClusterConnectionList", () => {
 
     renderComponent();
 
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
+    expect(screen.getAllByText(errorMessage)).toHaveLength(2);
   });
 });

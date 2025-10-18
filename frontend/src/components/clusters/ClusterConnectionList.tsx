@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Button,
   IconButton,
   Typography,
@@ -18,7 +11,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -28,14 +24,18 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Refresh as RefreshIcon,
+  MoreVert as MoreVertIcon,
 } from "@mui/icons-material";
+import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { ClusterConnection } from "../../types/cluster";
 import { useClusters } from "../../hooks/useClusters";
 import ClusterConnectionForm from "./ClusterConnectionForm";
 import ConnectionTest from "./ConnectionTest";
+import ClusterConnectionDetails from "./ClusterConnectionDetails";
 import { useNotification } from "../../contexts/NotificationContext";
 import { Breadcrumbs, SearchAndFilter } from "../common";
 import { getIcon, IconSizes } from "../../utils/icons";
+import ResourceTable from "../resources/shared/ResourceTable";
 
 const ClusterConnectionList: React.FC = () => {
   const { clusters, loading, error, deleteCluster, clearError, loadClusters } =
@@ -43,12 +43,15 @@ const ClusterConnectionList: React.FC = () => {
   const { success } = useNotification();
   const [formOpen, setFormOpen] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedCluster, setSelectedCluster] =
     useState<ClusterConnection | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clusterToDelete, setClusterToDelete] =
     useState<ClusterConnection | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(null);
+  const [clusterForAction, setClusterForAction] = useState<ClusterConnection | null>(null);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,6 +116,17 @@ const ClusterConnectionList: React.FC = () => {
     setSelectedCluster(null);
   };
 
+  const handleDetailsClose = () => {
+    setDetailsOpen(false);
+    setSelectedCluster(null);
+  };
+
+  const handleEditFromDetails = (cluster: ClusterConnection) => {
+    setDetailsOpen(false);
+    setSelectedCluster(cluster);
+    setFormOpen(true);
+  };
+
   // Filter clusters based on search term and status filter
   useEffect(() => {
     let filtered = clusters;
@@ -160,6 +174,127 @@ const ClusterConnectionList: React.FC = () => {
   const statusOptions = [
     { value: "active", label: "Active" },
     { value: "inactive", label: "Inactive" },
+  ];
+
+  // Handle action menu
+  const handleActionMenuOpen = (event: React.MouseEvent<HTMLElement>, cluster: ClusterConnection) => {
+    event.stopPropagation();
+    setActionMenuAnchor(event.currentTarget);
+    setClusterForAction(cluster);
+  };
+
+  const handleActionMenuClose = () => {
+    setActionMenuAnchor(null);
+    setClusterForAction(null);
+  };
+
+  // Handle row click to open details modal
+  const handleRowClick = (params: GridRowParams) => {
+    const cluster = params.row as ClusterConnection;
+    setSelectedCluster(cluster);
+    setDetailsOpen(true);
+  };
+
+  // Format cluster data for display
+  const formatClusterData = (clusters: ClusterConnection[]) => {
+    return clusters.map((cluster) => ({
+      ...cluster,
+      id: cluster.id, // Use ID for DataGrid
+      statusText: cluster.active ? "Active" : "Inactive",
+      assignedUsersCount: cluster.assignedUsers.length,
+      descriptionDisplay: cluster.description || "-",
+    }));
+  };
+
+  // DataGrid columns
+  const columns: GridColDef[] = [
+    {
+      field: "name",
+      headerName: "Name",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Typography variant="body2" fontWeight="medium">
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "apiUrl",
+      headerName: "API URL",
+      flex: 1,
+      minWidth: 200,
+      renderCell: (params) => (
+        <Typography variant="body2" sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "username",
+      headerName: "Username",
+      width: 130,
+      renderCell: (params) => (
+        <Typography variant="body2">
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "statusText",
+      headerName: "Status",
+      width: 110,
+      renderCell: (params) => (
+        <Chip
+          icon={params.row.active ? <CheckCircleIcon /> : <ErrorIcon />}
+          label={params.value}
+          color={params.row.active ? "success" : "error"}
+          size="small"
+        />
+      ),
+    },
+    {
+      field: "assignedUsersCount",
+      headerName: "Assigned Users",
+      width: 130,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Typography variant="body2">
+          {params.value} user{params.value !== 1 ? "s" : ""}
+        </Typography>
+      ),
+    },
+    {
+      field: "descriptionDisplay",
+      headerName: "Description",
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Typography variant="body2" color="text.secondary">
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 80,
+      align: "center",
+      headerAlign: "center",
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <IconButton
+          size="small"
+          onClick={(event) => handleActionMenuOpen(event, params.row as ClusterConnection)}
+          aria-label={`Actions for cluster ${params.row.name}`}
+        >
+          <MoreVertIcon />
+        </IconButton>
+      ),
+    },
   ];
 
   if (loading) {
@@ -250,110 +385,57 @@ const ClusterConnectionList: React.FC = () => {
         searchPlaceholder="Search clusters by name, URL, username, or description..."
       />
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>API URL</TableCell>
-              <TableCell>Username</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Assigned Users</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredClusters.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body1" color="text.secondary">
-                    {clusters.length === 0
-                      ? "No cluster connections found. Create your first connection to get started."
-                      : "No clusters match the current filters."}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredClusters.map((cluster) => (
-                <TableRow key={cluster.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {cluster.name}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontFamily: "monospace" }}
-                    >
-                      {cluster.apiUrl}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{cluster.username}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      icon={
-                        cluster.active ? <CheckCircleIcon /> : <ErrorIcon />
-                      }
-                      label={cluster.active ? "Active" : "Inactive"}
-                      color={cluster.active ? "success" : "error"}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {cluster.assignedUsers.length} user
-                      {cluster.assignedUsers.length !== 1 ? "s" : ""}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {cluster.description || "-"}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Box
-                      sx={{
-                        display: "flex",
-                        gap: 0.5,
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <Tooltip title="Test Connection">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleTestConnection(cluster)}
-                        >
-                          <TestIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditCluster(cluster)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteClick(cluster)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <ResourceTable
+        data={formatClusterData(filteredClusters)}
+        columns={columns}
+        loading={loading}
+        error={error}
+        onRowClick={handleRowClick}
+        getRowId={(row) => row.id}
+        emptyMessage={
+          clusters.length === 0
+            ? "No cluster connections found. Create your first connection to get started."
+            : "No clusters match the current filters."
+        }
+        height={600}
+        disableColumnFilter={true}
+        disableColumnMenu={false}
+        sortingMode="client"
+      />
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={actionMenuAnchor}
+        open={Boolean(actionMenuAnchor)}
+        onClose={handleActionMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+      >
+        <MenuItem onClick={() => { handleTestConnection(clusterForAction!); handleActionMenuClose(); }}>
+          <ListItemIcon>
+            <TestIcon />
+          </ListItemIcon>
+          <ListItemText>Test Connection</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { handleEditCluster(clusterForAction!); handleActionMenuClose(); }}>
+          <ListItemIcon>
+            <EditIcon />
+          </ListItemIcon>
+          <ListItemText>Edit</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { handleDeleteClick(clusterForAction!); handleActionMenuClose(); }}>
+          <ListItemIcon>
+            <DeleteIcon />
+          </ListItemIcon>
+          <ListItemText>Delete</ListItemText>
+        </MenuItem>
+      </Menu>
 
       {/* Create/Edit Form Dialog */}
       <ClusterConnectionForm
@@ -407,6 +489,14 @@ const ClusterConnectionList: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Cluster Connection Details Modal */}
+      <ClusterConnectionDetails
+        open={detailsOpen}
+        onClose={handleDetailsClose}
+        cluster={selectedCluster}
+        onEdit={handleEditFromDetails}
+      />
     </Box>
   );
 };

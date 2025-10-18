@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from "react";
 import {
   Box,
   Typography,
-  Alert,
   Paper,
   Button,
 } from "@mui/material";
@@ -243,22 +242,6 @@ export const AuditPage: React.FC = () => {
               </Button>
             </Box>
           </Box>
-
-          {/* Summary Information */}
-          {auditData && (
-            <Alert severity="info" sx={{ mb: 3 }}>
-              <Typography variant="body2">
-                Showing {auditData.items.length} of {auditData.totalItems}{" "}
-                audit records
-                {auditData.totalPages > 1 && (
-                  <>
-                    {" "}
-                    (Page {page + 1} of {auditData.totalPages})
-                  </>
-                )}
-              </Typography>
-            </Alert>
-          )}
 
           {/* Filter Validation Errors */}
           {filterValidationErrors.length > 0 && (

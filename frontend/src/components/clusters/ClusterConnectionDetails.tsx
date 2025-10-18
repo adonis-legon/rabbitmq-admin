@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
     Dialog,
     DialogTitle,
@@ -8,33 +8,37 @@ import {
     Box,
     Typography,
     Chip,
+    Grid,
+    Paper,
     Divider,
     List,
     ListItem,
-    ListItemText,
     ListItemIcon,
-    Paper,
-    Grid
-} from '@mui/material';
+    ListItemText,
+} from "@mui/material";
 import {
+    CheckCircle as CheckCircleIcon,
+    Error as ErrorIcon,
     Person as PersonIcon,
-    AdminPanelSettings as AdminIcon,
-    CalendarToday as CalendarIcon,
-    Storage as ClusterIcon,
-    Edit as EditIcon
-} from '@mui/icons-material';
-import { User } from '../../types/user';
-import { UserRole } from '../../types/auth';
+    Link as LinkIcon,
+    Group as GroupIcon,
+} from "@mui/icons-material";
+import { ClusterConnection } from "../../types/cluster";
 
-interface UserDetailsProps {
+interface ClusterConnectionDetailsProps {
     open: boolean;
-    user: User | null;
     onClose: () => void;
-    onEdit: () => void;
+    cluster: ClusterConnection | null;
+    onEdit?: (cluster: ClusterConnection) => void;
 }
 
-const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }) => {
-    if (!user) return null;
+const ClusterConnectionDetails: React.FC<ClusterConnectionDetailsProps> = ({
+    open,
+    onClose,
+    cluster,
+    onEdit,
+}) => {
+    if (!cluster) return null;
 
     const formatDate = (dateString: string): string => {
         return new Date(dateString).toLocaleDateString('en-US', {
@@ -46,14 +50,6 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
         });
     };
 
-    const getRoleColor = (role: UserRole): 'primary' | 'secondary' => {
-        return role === UserRole.ADMINISTRATOR ? 'primary' : 'secondary';
-    };
-
-    const getRoleIcon = (role: UserRole) => {
-        return role === UserRole.ADMINISTRATOR ? <AdminIcon /> : <PersonIcon />;
-    };
-
     return (
         <Dialog
             open={open}
@@ -61,7 +57,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
             maxWidth="md"
             fullWidth
             PaperProps={{
-                sx: { minHeight: '400px' }
+                sx: { minHeight: '500px' }
             }}
         >
             <DialogTitle
@@ -74,12 +70,12 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                 }}
             >
                 <Typography variant="h5" component="h2">
-                    User Details
+                    Cluster Connection Details
                 </Typography>
                 <Chip
-                    icon={getRoleIcon(user.role)}
-                    label={user.role}
-                    color={getRoleColor(user.role)}
+                    icon={cluster.active ? <CheckCircleIcon /> : <ErrorIcon />}
+                    label={cluster.active ? 'Active' : 'Inactive'}
+                    color={cluster.active ? 'success' : 'error'}
                     size="small"
                 />
             </DialogTitle>
@@ -90,9 +86,9 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                     <Grid item xs={12} md={6}>
                         <Paper sx={{ p: 3, height: '100%' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <PersonIcon color="primary" />
+                                <LinkIcon color="primary" />
                                 <Typography variant="h6" component="h3">
-                                    Basic Information
+                                    Connection Information
                                 </Typography>
                             </Box>
                             <Divider sx={{ my: 2 }} />
@@ -100,59 +96,64 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                 <Box>
                                     <Typography variant="body2" color="text.secondary" gutterBottom>
+                                        Connection Name
+                                    </Typography>
+                                    <Typography variant="body1" fontWeight="medium">
+                                        {cluster.name}
+                                    </Typography>
+                                </Box>
+
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                        Connection ID
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                                        {cluster.id}
+                                    </Typography>
+                                </Box>
+
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                        API URL
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
+                                        {cluster.apiUrl}
+                                    </Typography>
+                                </Box>
+
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>
                                         Username
                                     </Typography>
                                     <Typography variant="body1" fontWeight="medium">
-                                        {user.username}
+                                        {cluster.username}
                                     </Typography>
                                 </Box>
 
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                        User ID
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                                        {user.id}
-                                    </Typography>
-                                </Box>
-
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                        Role
-                                    </Typography>
-                                    <Chip
-                                        icon={getRoleIcon(user.role)}
-                                        label={user.role}
-                                        color={getRoleColor(user.role)}
-                                        size="small"
-                                    />
-                                </Box>
-
-                                <Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                                        <CalendarIcon fontSize="small" color="action" />
-                                        <Typography variant="body2" color="text.secondary">
-                                            Created At
+                                {cluster.description && (
+                                    <Box>
+                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                            Description
+                                        </Typography>
+                                        <Typography variant="body1">
+                                            {cluster.description}
                                         </Typography>
                                     </Box>
-                                    <Typography variant="body1">
-                                        {formatDate(user.createdAt)}
-                                    </Typography>
-                                </Box>
+                                )}
                             </Box>
                         </Paper>
                     </Grid>
 
-                    {/* Cluster Assignments */}
+                    {/* Assigned Users */}
                     <Grid item xs={12} md={6}>
                         <Paper sx={{ p: 3, height: '100%' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <ClusterIcon color="primary" />
+                                <GroupIcon color="primary" />
                                 <Typography variant="h6" component="h3">
-                                    Cluster Assignments
+                                    Assigned Users
                                 </Typography>
                                 <Chip
-                                    label={user.assignedClusters.length}
+                                    label={cluster.assignedUsers.length}
                                     size="small"
                                     color="primary"
                                     variant="outlined"
@@ -160,31 +161,31 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                             </Box>
                             <Divider sx={{ my: 2 }} />
 
-                            {user.assignedClusters.length === 0 ? (
+                            {cluster.assignedUsers.length === 0 ? (
                                 <Box sx={{ textAlign: 'center', py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
-                                        No cluster connections assigned
+                                        No users assigned
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
-                                        This user cannot access any RabbitMQ clusters
+                                        This cluster connection is not accessible by any users
                                     </Typography>
                                 </Box>
                             ) : (
                                 <List dense>
-                                    {user.assignedClusters.map((cluster) => (
-                                        <ListItem key={cluster.id} sx={{ px: 0, alignItems: 'flex-start' }}>
+                                    {cluster.assignedUsers.map((user) => (
+                                        <ListItem key={user.id} sx={{ px: 0, alignItems: 'flex-start' }}>
                                             <ListItemIcon sx={{ mt: 0.5 }}>
-                                                <ClusterIcon color="action" />
+                                                <PersonIcon color="action" />
                                             </ListItemIcon>
                                             <ListItemText
-                                                primary={cluster.name}
+                                                primary={user.username}
                                                 secondary={
                                                     <>
-                                                        {cluster.apiUrl}
-                                                        {cluster.description && (
+                                                        {user.role}
+                                                        {user.createdAt && (
                                                             <>
                                                                 <br />
-                                                                {cluster.description}
+                                                                Created: {formatDate(user.createdAt)}
                                                             </>
                                                         )}
                                                     </>
@@ -202,9 +203,9 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                                             />
                                             <Box sx={{ mt: 0.5 }}>
                                                 <Chip
-                                                    label={cluster.active ? 'Active' : 'Inactive'}
+                                                    label={user.role}
                                                     size="small"
-                                                    color={cluster.active ? 'success' : 'default'}
+                                                    color={user.role === 'ADMINISTRATOR' ? 'primary' : 'default'}
                                                     variant="outlined"
                                                 />
                                             </Box>
@@ -215,42 +216,42 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                         </Paper>
                     </Grid>
 
-                    {/* Additional Information */}
+                    {/* Connection Status */}
                     <Grid item xs={12}>
                         <Paper sx={{ p: 3 }}>
                             <Typography variant="h6" gutterBottom>
-                                Access Summary
+                                Connection Summary
                             </Typography>
                             <Divider sx={{ mb: 2 }} />
 
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={4}>
                                     <Box sx={{ textAlign: 'center', p: 2 }}>
+                                        <Typography variant="h4" color={cluster.active ? 'success.main' : 'error.main'} fontWeight="bold">
+                                            {cluster.active ? 'Active' : 'Inactive'}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Connection Status
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                                <Grid item xs={12} sm={4}>
+                                    <Box sx={{ textAlign: 'center', p: 2 }}>
                                         <Typography variant="h4" color="primary" fontWeight="bold">
-                                            {user.assignedClusters.length}
+                                            {cluster.assignedUsers.length}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            Assigned Clusters
+                                            Assigned Users
                                         </Typography>
                                     </Box>
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
                                     <Box sx={{ textAlign: 'center', p: 2 }}>
-                                        <Typography variant="h4" color="success.main" fontWeight="bold">
-                                            {user.assignedClusters.filter(c => c.active).length}
+                                        <Typography variant="h4" color="info.main" fontWeight="bold">
+                                            {cluster.assignedUsers.filter(user => user.role === 'ADMINISTRATOR').length}
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            Active Clusters
-                                        </Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item xs={12} sm={4}>
-                                    <Box sx={{ textAlign: 'center', p: 2 }}>
-                                        <Typography variant="h4" color="warning.main" fontWeight="bold">
-                                            {user.assignedClusters.filter(c => !c.active).length}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Inactive Clusters
+                                            Admin Users
                                         </Typography>
                                     </Box>
                                 </Grid>
@@ -260,20 +261,18 @@ const UserDetails: React.FC<UserDetailsProps> = ({ open, user, onClose, onEdit }
                 </Grid>
             </DialogContent>
 
-            <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button onClick={onClose}>
+            <DialogActions>
+                <Button onClick={onClose} variant="outlined">
                     Close
                 </Button>
-                <Button
-                    onClick={onEdit}
-                    variant="contained"
-                    startIcon={<EditIcon />}
-                >
-                    Edit User
-                </Button>
+                {onEdit && (
+                    <Button onClick={() => onEdit(cluster)} variant="contained">
+                        Edit Connection
+                    </Button>
+                )}
             </DialogActions>
         </Dialog>
     );
 };
 
-export default UserDetails;
+export default ClusterConnectionDetails;
